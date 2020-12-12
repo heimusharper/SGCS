@@ -169,7 +169,7 @@ void RunConfiguration::forceSave()
 void RunConfiguration::save()
 {
     YAML::Node rootNode                  = _yaml;
-    rootNode[this->name().toStdString()] = toNode(rootNode);
+    rootNode[this->name().toStdString()] = toNode(rootNode[this->name().toStdString()]);
     std::ofstream fout(_filename.toStdString());
     fout << rootNode;
 }
