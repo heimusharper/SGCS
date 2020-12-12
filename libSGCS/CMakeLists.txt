@@ -12,11 +12,15 @@ set(CMAKE_AUTOMOC ON)
 SET(SRC_LIST
     SGCS.cpp
     RunConfiguration.cpp
+    plugins/PluginLoader.cpp
+    ui/MainWindow.cpp
     )
 SET(HEADER_LIST
     SGCS.h
     RunConfiguration.h
     plugins/PluginInterface.h
+    plugins/PluginLoader.h
+    ui/MainWindow.h
     )
 
 

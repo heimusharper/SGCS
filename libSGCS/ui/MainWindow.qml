@@ -13,9 +13,8 @@ Window {
 
     Rectangle {
         anchors.fill: parent
-        Text {
-            anchors.centerIn: parent
-            text: "Hello World"
+        PluginLoader {
+            anchors.fill: parent
         }
     }
 
