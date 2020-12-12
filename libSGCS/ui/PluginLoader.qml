@@ -1,7 +1,10 @@
-import QtQuick 2.0
+import QtQuick 2.12
+import QtQuick.Controls 2.12
 import Ru.SGCS 1.0 as SGCS
 
-Item {
+Page {
+    title: qsTr("Tracker")
+
     ListView {
         id: listView
         anchors.fill: parent

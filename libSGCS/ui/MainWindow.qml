@@ -1,21 +1,82 @@
-import QtQuick 2.3
-import QtQuick.Window 2.2
+import QtQuick 2.12
+import QtQuick.Controls 2.12
+import QtQuick.Layouts 1.12
 
 // main window
-Window {
+ApplicationWindow {
+    id: window
     visible: true
-    MouseArea {
-        anchors.fill: parent
-        onClicked: {
-                Qt.quit();
-        }
+    width: 640
+    height: 480
+    title: qsTr("SGCS")
+
+
+    PluginLoader {
+        id: pluginLoader
+    }
+    MapView
+    {
+        id: mapView
     }
 
-    Rectangle {
-        anchors.fill: parent
-        PluginLoader {
+    header: ToolBar {
+        RowLayout {
             anchors.fill: parent
+            ToolButton {
+                text: qsTr("‹")
+                onClicked: {
+                    if (stack.depth > 1) {
+                        stack.pop()
+                    } else {
+                        drawer.open()
+                    }
+                }
+            }
+            Label {
+                text: "Title"
+                elide: Label.ElideRight
+                horizontalAlignment: Qt.AlignHCenter
+                verticalAlignment: Qt.AlignVCenter
+                Layout.fillWidth: true
+            }
+            ToolButton {
+                text: qsTr("⋮")
+                onClicked: menu.open()
+            }
+        }
+    }
+    Drawer {
+        id: drawer
+        width: window.width * 0.66
+        height: window.height
+
+        Column {
+            anchors.fill: parent
+
+            ItemDelegate {
+                text: qsTr("Home")
+                width: parent.width
+                onClicked: {
+                    while (stack > 1) {
+                        stack.pop()
+                    }
+                    drawer.close()
+                }
+            }
+            ItemDelegate {
+                text: qsTr("Plugins")
+                width: parent.width
+                onClicked: {
+                    stack.push(pluginLoader)
+                    drawer.close()
+                }
+            }
         }
     }
 
+    StackView {
+        id: stack
+        initialItem: mapView
+        anchors.fill: parent
+    }
 }

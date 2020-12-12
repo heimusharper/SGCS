@@ -2,5 +2,6 @@
     <qresource prefix="/">
         <file>ui/MainWindow.qml</file>
         <file>ui/PluginLoader.qml</file>
+        <file>ui/MapView.qml</file>
     </qresource>
 </RCC>
