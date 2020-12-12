@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.16.0)
+
+project(UAV LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/../bin )
+set(CMAKE_AUTOMOC ON)
+
+# add srcs
+SET(SRC_LIST
+    UAV.cpp
+    )
+SET(HEADER_LIST
+    UAV.h
+    )
+find_package(Qt6 COMPONENTS Core REQUIRED)
+
+add_library(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST})
+
+target_link_libraries(${PROJECT_NAME} PUBLIC Qt6::Core)
+target_include_directories (${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
