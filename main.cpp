@@ -1,6 +1,8 @@
 #include <QDebug>
 #include <QDir>
+#include <QGuiApplication>
 #include <QPluginLoader>
+#include <QQmlApplicationEngine>
 #include <RunConfiguration.h>
 #include <SGCS.h>
 #include <UAV.h>
@@ -8,11 +10,20 @@
 
 using namespace std;
 
-int main()
+int main(int argc, char *argv[])
 {
-    RunConfiguration::instance().create("default.yaml");
-    // RunConfiguration::instance().get<ApplicationConfiguration>()->setProfile("default");
-    RunConfiguration::instance().forceSave();
+    QGuiApplication app(argc, argv);
+
+    if (!RunConfiguration::instance().create("default.yaml"))
+    {
+        RunConfiguration::instance().get<ApplicationConfiguration>()->setProfile("default");
+        RunConfiguration::instance().forceSave();
+    }
+
+    // QCoreApplication::addLibraryPath("./");
+
+    QQmlApplicationEngine engine;
+    engine.load(QUrl(QStringLiteral("qrc:/ui/MainWindow.qml")));
 
     SGCS sgcs;
     UAV uav;
@@ -44,5 +55,5 @@ int main()
             qWarning() << "Failed: " << fullName << " is not a library/plugin";
         }
     }
-    return 0;
+    return app.exec();
 }

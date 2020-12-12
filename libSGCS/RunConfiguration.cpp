@@ -107,18 +107,20 @@ RunConfiguration &RunConfiguration::instance()
     return rc;
 }
 
-void RunConfiguration::create(const QString &filename)
+bool RunConfiguration::create(const QString &filename)
 {
     _filename = filename;
     try
     {
         _yaml = YAML::LoadFile(filename.toStdString());
         fromNode(_yaml);
+        return true;
     }
-    catch (YAML::BadFile &e)
+    catch (YAML::Exception &e)
     {
-        qWarning() << "Baf config file " << filename;
+        qWarning() << "Exception " << filename << QString(e.what());
     }
+    return false;
 }
 
 QString RunConfiguration::name() const

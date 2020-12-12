@@ -23,11 +23,11 @@ SET(SRC_LIST
     )
 #SET( SGCS_HEADERS main.cpp )
 
+find_package(Qt6 COMPONENTS Core Quick Qml REQUIRED)
 #create exec
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
 #link
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core)
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets)
+target_link_libraries(${PROJECT_NAME} PUBLIC Qt6::Core Qt6::Quick Qt6::Qml)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC SGCS)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC UAV)

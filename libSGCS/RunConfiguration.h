@@ -8,17 +8,32 @@
 class ConfigNode
 {
 };
-
+/*!
+ * \brief The ConfigInterface class
+ * \warning Do not create objects manually,
+ * use RunConfiguration::instance().get<YourImplementationName>()
+ *
+ * example implementation is ApplicationConfiguration
+ */
 class ConfigInterface : public ConfigNode
 {
 public:
+    /*!
+     * \brief ConfigInterface
+     * \param root
+     */
     ConfigInterface(ConfigInterface *root);
     virtual ~ConfigInterface() = default;
 
     template <class T>
+    /*!
+     * \brief get create or get ConfigInterface implementation
+     * \return
+     */
     T *get()
     {
         T *symbol = nullptr;
+        // search existing
         for (ConfigInterface *sym : _nodes)
         {
             symbol = dynamic_cast<T *>(sym);
@@ -32,39 +47,73 @@ public:
             }
         }
         // not exists
+        // create new
         T *object           = new T(this);
         ConfigInterface *ci = dynamic_cast<ConfigInterface *>(object);
         if (ci)
         {
+            //  read configuration from file
             YAML::Node node = nodeAt(ci);
             ci->fromNode(node);
         }
         _nodes.append(object);
         return object;
     }
-
+    /*!
+     * \brief name Implementation name
+     * \return
+     */
     virtual QString name() const = 0;
-
+    /*!
+     * \brief toNode write to file new configuration
+     * \param file
+     * \return
+     */
     virtual YAML::Node toNode(const YAML::Node &file) const = 0;
-    virtual void fromNode(const YAML::Node &node)           = 0;
-
+    /*!
+     * \brief fromNode get configuration from node
+     * \param node
+     */
+    virtual void fromNode(const YAML::Node &node) = 0;
+    /*!
+     * \brief parent node parent
+     * \return
+     */
     ConfigInterface *parent() const;
-
+    /*!
+     * \brief clear delete all nodes
+     * \warning unsafe, do not use
+     */
     void clear();
 
 protected:
+    /*!
+     * \brief save save to file
+     */
     virtual void save();
 
 private:
+    /*!
+     * \brief nodeAt get node at
+     * \param node
+     * \return
+     */
     YAML::Node nodeAt(ConfigInterface *node);
 
 protected:
     ConfigInterface *_parent = nullptr;
     QVector<ConfigInterface *> _nodes;
 };
-
+/*!
+ * \brief The ApplicationConfiguration class
+ */
 class ApplicationConfiguration : public ConfigInterface
 {
+#if defined(ApplicationConfiguration_def)
+#error Redefenition ApplicationConfiguration_def
+#else
+#define ApplicationConfiguration_def
+#endif
 public:
     ApplicationConfiguration(ConfigInterface *parent);
     virtual ~ApplicationConfiguration() = default;
@@ -80,14 +129,16 @@ public:
 private:
     QString m_profile;
 };
-
+/*!
+ * \brief The RunConfiguration class
+ */
 class RunConfiguration : public ConfigInterface
 {
 public:
     virtual ~RunConfiguration();
     static RunConfiguration &instance();
 
-    void create(const QString &filename);
+    bool create(const QString &filename);
 
     virtual QString name() const override final;
 

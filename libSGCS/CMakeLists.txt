@@ -20,13 +20,15 @@ SET(HEADER_LIST
     )
 
 
-find_package(Qt6 COMPONENTS Core REQUIRED)
+find_package(Qt6 COMPONENTS Core Quick Qml REQUIRED)
 # YAML
 find_package(yaml-cpp REQUIRED)
 include_directories(${YAML_CPP_INCLUDE_DIR})
 
-add_library(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST})
+qt6_add_resources(RESOURCES resource.qrc)
+add_library(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST} ${RESOURCES})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Qt6::Core)
+set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC ON)
+target_link_libraries(${PROJECT_NAME} PUBLIC Qt6::Core Qt6::Quick Qt6::Qml)
 target_link_libraries(${PROJECT_NAME} PUBLIC ${YAML_CPP_LIBRARIES})
 target_include_directories (${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
