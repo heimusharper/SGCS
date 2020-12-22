@@ -1,6 +1,7 @@
 #ifndef UAV_H
 #define UAV_H
 #include "plugins/PluginInterface.h"
+#include <QDebug>
 
 class PluginSerialConnectionSymbol : public ConfigInterface
 {
@@ -33,8 +34,9 @@ public:
     PluginSerialConnection();
     virtual ~PluginSerialConnection();
 
-    virtual bool load() const;
+    virtual bool isLoad() const;
     virtual QString name() const;
+    virtual bool create() override final;
 };
 
 #endif // SGCS_H

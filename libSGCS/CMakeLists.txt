@@ -23,19 +23,15 @@ SET(HEADER_LIST
     ui/MainWindow.h
     )
 
-
-#find_package(Qt6 COMPONENTS Core Quick Qml REQUIRED)
 find_package(Qt5 COMPONENTS Core Quick Qml Location REQUIRED)
 # YAML
 find_package(yaml-cpp REQUIRED)
 include_directories(${YAML_CPP_INCLUDE_DIR})
 
-#qt6_add_resources(RESOURCES resource.qrc)
 qt5_add_resources(RESOURCES resource.qrc)
 add_library(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST} ${RESOURCES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC ON)
-#target_link_libraries(${PROJECT_NAME} PUBLIC Qt6::Core Qt6::Quick Qt6::Qml)
 target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Quick Qt5::Qml Qt5::Location)
 target_link_libraries(${PROJECT_NAME} PUBLIC ${YAML_CPP_LIBRARIES})
-target_include_directories (${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

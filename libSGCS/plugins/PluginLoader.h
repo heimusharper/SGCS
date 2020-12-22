@@ -1,6 +1,7 @@
 #ifndef PLUGINLOADER_H
 #define PLUGINLOADER_H
 
+#include "../ui/MainWindow.h"
 #include "PluginInterface.h"
 #include <QAbstractListModel>
 #include <QDir>
@@ -20,7 +21,7 @@ class PluginLoader : public QObject
 public:
     static PluginLoader &instance();
 
-    void load(const QDir &dir);
+    void load(const QDir &dir, MainWindow *window);
     QList<PluginItem *> list() const;
 
 signals:
@@ -42,6 +43,7 @@ public:
         IsLoadedRole
     };
 
+    static void create();
     static QObject *singletonProvider(QQmlEngine *qmlEngine, QJSEngine *jsEngine)
     {
         Q_UNUSED(qmlEngine)

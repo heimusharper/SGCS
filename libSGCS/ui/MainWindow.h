@@ -1,19 +1,30 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "plugins/PluginLoader.h"
 #include <QObject>
 #include <QQmlApplicationEngine>
+#include <QQuickItem>
+#include <QQuickView>
 
 class MainWindow : public QObject
 {
     Q_OBJECT
 
 public:
+    enum class TargetComponent
+    {
+        DRAWER_LIST,
+        ROOT
+    };
+
     explicit MainWindow(QObject *parent = nullptr);
 
+    void addEntry(const QByteArray &qml, TargetComponent target);
+
+    QQmlApplicationEngine *engine() const;
+
 private:
-    QQmlApplicationEngine engine;
+    QQmlApplicationEngine *_engine = nullptr;
 signals:
 };
 

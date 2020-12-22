@@ -9,6 +9,7 @@ ApplicationWindow {
     width: 640
     height: 480
     title: qsTr("SGCS")
+    objectName: "root"
 
 
     PluginLoader {
@@ -45,6 +46,13 @@ ApplicationWindow {
             }
         }
     }
+
+    StackView {
+        id: stack
+        initialItem: mapView
+        anchors.fill: parent
+    }
+
     Drawer {
         id: drawer
         width: window.width * 0.66
@@ -52,6 +60,8 @@ ApplicationWindow {
 
         Column {
             anchors.fill: parent
+            id: drawerButtons
+            objectName: "drawerButtons"
 
             ItemDelegate {
                 text: qsTr("Home")
@@ -74,9 +84,4 @@ ApplicationWindow {
         }
     }
 
-    StackView {
-        id: stack
-        initialItem: mapView
-        anchors.fill: parent
-    }
 }

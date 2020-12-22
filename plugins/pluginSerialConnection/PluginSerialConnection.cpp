@@ -8,7 +8,7 @@ PluginSerialConnection::~PluginSerialConnection()
 {
 }
 
-bool PluginSerialConnection::load() const
+bool PluginSerialConnection::isLoad() const
 {
     return RunConfiguration::instance().get<PluginSerialConnectionSymbol>()->load();
 }
@@ -16,6 +16,35 @@ bool PluginSerialConnection::load() const
 QString PluginSerialConnection::name() const
 {
     return "PluginSerialConnection";
+}
+
+bool PluginSerialConnection::create()
+{
+    if (_window)
+    {
+        _window->addEntry(R"(import QtQuick.Controls 2.12;
+ItemDelegate {
+    text: qsTr("NewPlugin")
+    objectName: "NewPluginButton"
+    width: parent.width
+    onClicked: {
+        stack.push(serialConnection)
+        drawer.close()
+    }
+})",
+                          MainWindow::TargetComponent::DRAWER_LIST);
+        QFile file(":/SerialConnectionView.qml");
+        if (file.open(QIODevice::ReadOnly))
+        {
+            _window->addEntry(file.readAll(), MainWindow::TargetComponent::ROOT);
+            file.close();
+        }
+        else
+        {
+            qWarning() << file.errorString();
+        }
+    }
+    return true;
 }
 
 PluginSerialConnectionSymbol::PluginSerialConnectionSymbol(ConfigInterface *parent) : ConfigInterface(parent)

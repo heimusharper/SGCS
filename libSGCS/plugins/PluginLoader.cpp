@@ -6,7 +6,7 @@ PluginLoader &PluginLoader::instance()
     return pl;
 }
 
-void PluginLoader::load(const QDir &dir)
+void PluginLoader::load(const QDir &dir, MainWindow *window)
 {
     for (auto pluginFilename : dir.entryList())
     {
@@ -21,8 +21,10 @@ void PluginLoader::load(const QDir &dir)
                 {
                     PluginItem *item = new PluginItem;
                     item->_name      = plugin->name();
-                    if (plugin->load())
+                    plugin->setWindow(window);
+                    if (plugin->isLoad())
                     {
+                        plugin->create();
                         item->_load = true;
                     }
                     else
@@ -65,6 +67,11 @@ PluginLoaderListModel *PluginLoaderListModel::m_instance = nullptr;
 
 PluginLoaderListModel::PluginLoaderListModel(QObject *parent) : QAbstractListModel(parent)
 {
+}
+
+void PluginLoaderListModel::create()
+{
+    qmlRegisterSingletonType<PluginLoaderListModel>("Ru.SGCS", 1, 0, "PluginLoaderListModel", PluginLoaderListModel::singletonProvider);
 }
 
 PluginLoaderListModel *PluginLoaderListModel::instance()
