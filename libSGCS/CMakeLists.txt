@@ -12,26 +12,36 @@ set(CMAKE_AUTOMOC ON)
 SET(SRC_LIST
     SGCS.cpp
     RunConfiguration.cpp
-    plugins/PluginLoader.cpp
+    connection/serial/SerialConnectionFabric.cpp
     ui/MainWindow.cpp
     )
 SET(HEADER_LIST
     SGCS.h
     RunConfiguration.h
-    plugins/PluginInterface.h
-    plugins/PluginLoader.h
+    connection/serial/SerialConnectionFabric.h
     ui/MainWindow.h
     )
 
-find_package(Qt5 COMPONENTS Core Quick Qml Location REQUIRED)
+find_package(Qt5 COMPONENTS Core REQUIRED)
+find_package(Qt5 COMPONENTS Quick REQUIRED)
+find_package(Qt5 COMPONENTS Qml REQUIRED)
+find_package(Qt5 COMPONENTS SerialPort REQUIRED)
+find_package(Qt5 COMPONENTS Location REQUIRED)
+qt5_add_resources(RESOURCES resource.qrc)
+
+
 # YAML
 find_package(yaml-cpp REQUIRED)
 include_directories(${YAML_CPP_INCLUDE_DIR})
 
-qt5_add_resources(RESOURCES resource.qrc)
 add_library(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST} ${RESOURCES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC ON)
-target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core Qt5::Quick Qt5::Qml Qt5::Location)
+target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core)
+target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Quick)
+target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Qml)
+target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::SerialPort)
+target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Location)
+
 target_link_libraries(${PROJECT_NAME} PUBLIC ${YAML_CPP_LIBRARIES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -3,6 +3,8 @@
 
 #include <QObject>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QQmlProperty>
 #include <QQuickItem>
 #include <QQuickView>
 
@@ -14,7 +16,8 @@ public:
     enum class TargetComponent
     {
         DRAWER_LIST,
-        ROOT
+        ROOT,
+        STACK
     };
 
     explicit MainWindow(QObject *parent = nullptr);

@@ -5,6 +5,7 @@ import QtPositioning 5.12
 
 Page {
     title: qsTr("Map view")
+    id: mapView
 
     Plugin {
         id: mapPlugin

@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>SerialConnectionView.qml</file>
-    </qresource>
-</RCC>

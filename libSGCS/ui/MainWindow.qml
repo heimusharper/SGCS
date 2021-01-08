@@ -1,6 +1,7 @@
-import QtQuick 2.12
-import QtQuick.Controls 2.12
-import QtQuick.Layouts 1.12
+import QtQuick 2.0
+import QtQuick.Controls 2.0
+import QtQuick.Layouts 1.0
+
 
 // main window
 ApplicationWindow {
@@ -11,12 +12,20 @@ ApplicationWindow {
     title: qsTr("SGCS")
     objectName: "root"
 
+    signal deactivateAll
+    onDeactivateAll: {
+        connection.activated(false)
+    }
+
+    Connection {
+        id: connection
+    }
 
     PluginLoader {
         id: pluginLoader
     }
-    MapView
-    {
+
+    MapView {
         id: mapView
     }
 
@@ -26,6 +35,9 @@ ApplicationWindow {
             ToolButton {
                 text: qsTr("‹")
                 onClicked: {
+                    // deactivate all workflows
+                    deactivateAll()
+                    //
                     if (stack.depth > 1) {
                         stack.pop()
                     } else {
@@ -49,6 +61,7 @@ ApplicationWindow {
 
     StackView {
         id: stack
+        objectName: "stack"
         initialItem: mapView
         anchors.fill: parent
     }
@@ -61,12 +74,11 @@ ApplicationWindow {
         Column {
             anchors.fill: parent
             id: drawerButtons
-            objectName: "drawerButtons"
-
             ItemDelegate {
                 text: qsTr("Home")
                 width: parent.width
                 onClicked: {
+                    deactivateAll()
                     while (stack > 1) {
                         stack.pop()
                     }
@@ -74,14 +86,14 @@ ApplicationWindow {
                 }
             }
             ItemDelegate {
-                text: qsTr("Plugins")
+                text: qsTr("Connection")
                 width: parent.width
                 onClicked: {
-                    stack.push(pluginLoader)
+                    stack.push(connection)
                     drawer.close()
+                    connection.activated(true)
                 }
             }
         }
     }
-
 }

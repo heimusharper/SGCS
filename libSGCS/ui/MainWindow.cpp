@@ -17,6 +17,9 @@ void MainWindow::addEntry(const QByteArray &qml, TargetComponent target)
         case TargetComponent::ROOT:
             objectName = "root";
             break;
+        case TargetComponent::STACK:
+            objectName = "stack";
+            break;
         default:
             break;
     }
@@ -28,12 +31,13 @@ void MainWindow::addEntry(const QByteArray &qml, TargetComponent target)
             QQuickItem *entry = window->findChild<QQuickItem *>(objectName);
             if (entry)
             {
+                qDebug() << "BASE " << _engine->baseUrl();
                 QQmlComponent rect1 = QQmlComponent(_engine, entry);
                 rect1.setData(qml, _engine->baseUrl());
-                QQuickItem *rect1Instance = qobject_cast<QQuickItem *>(rect1.create());
+                QQuickItem *rect1Instance = qobject_cast<QQuickItem *>(rect1.create(_engine->rootContext()));
                 QQmlEngine::setObjectOwnership(rect1Instance, QQmlEngine::CppOwnership);
                 rect1Instance->setParentItem(entry);
-                rect1Instance->setParent(entry);
+                // rect1Instance->setParent(window);
                 return;
             }
         }
