@@ -14,8 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include <UAV.h>
+#include "MainWindow.h"
 
-UAV::UAV()
+MainWindow::MainWindow(QObject *parent) : QObject(parent)
 {
+    _engine = new QQmlApplicationEngine(this);
+    _engine->load(QUrl(QStringLiteral("qrc:/qml/MainWindow.qml")));
 }

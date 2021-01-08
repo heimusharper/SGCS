@@ -23,24 +23,16 @@
 #include <QQmlProperty>
 #include <QQuickItem>
 #include <QQuickView>
-
+/*!
+ * \brief The MainWindow class
+ *
+ */
 class MainWindow : public QObject
 {
     Q_OBJECT
 
 public:
-    enum class TargetComponent
-    {
-        DRAWER_LIST,
-        ROOT,
-        STACK
-    };
-
     explicit MainWindow(QObject *parent = nullptr);
-
-    void addEntry(const QByteArray &qml, TargetComponent target);
-
-    QQmlApplicationEngine *engine() const;
 
 private:
     QQmlApplicationEngine *_engine = nullptr;

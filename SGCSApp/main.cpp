@@ -1,12 +1,12 @@
+#include <MainWindow.h>
 #include <QDebug>
 #include <QDir>
 #include <QGuiApplication>
 #include <QSerialPortInfo>
 #include <RunConfiguration.h>
 #include <SGCS.h>
+#include <SerialConnectionFabric.h>
 #include <UAV.h>
-#include <connection/serial/SerialConnectionFabric.h>
-#include <ui/MainWindow.h>
 
 using namespace std;
 

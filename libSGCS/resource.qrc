@@ -1,7 +1,7 @@
 <RCC>
     <qresource prefix="/">
-        <file>ui/MainWindow.qml</file>
-        <file>ui/MapView.qml</file>
-        <file>ui/Connection.qml</file>
+        <file>qml/MainWindow.qml</file>
+        <file>qml/MapView.qml</file>
+        <file>qml/Connection.qml</file>
     </qresource>
 </RCC>
