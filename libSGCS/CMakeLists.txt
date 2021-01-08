@@ -10,6 +10,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/../bin )
 set(CMAKE_AUTOMOC ON)
 
 include(FindYaml)
+include(GitVersion)
 
 find_package(Qt5 COMPONENTS Core REQUIRED)
 find_package(Qt5 COMPONENTS Quick REQUIRED)
@@ -17,18 +18,22 @@ find_package(Qt5 COMPONENTS SerialPort REQUIRED)
 find_package(Qt5 COMPONENTS Qml REQUIRED)
 find_package(Qt5 COMPONENTS Location REQUIRED)
 
+version_write_to(${CMAKE_CURRENT_SOURCE_DIR})
 # add srcs
 SET(SRC_LIST
     SGCS.cpp
     RunConfiguration.cpp
     SerialConnectionFabric.cpp
     MainWindow.cpp
+    WindowConf.cpp
     )
 SET(HEADER_LIST
     SGCS.h
     RunConfiguration.h
     SerialConnectionFabric.h
     MainWindow.h
+    WindowConf.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/version.h
     )
 
 qt5_add_resources(RESOURCES resource.qrc)

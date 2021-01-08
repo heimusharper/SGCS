@@ -15,6 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "RunConfiguration.h"
+#include "version.h"
 
 ConfigInterface::ConfigInterface(ConfigInterface *root) : _parent(root)
 {
@@ -72,7 +73,12 @@ YAML::Node ConfigInterface::nodeAt(ConfigInterface *node)
 
 //
 
-ApplicationConfiguration::ApplicationConfiguration(ConfigInterface *parent) : ConfigInterface(parent)
+ApplicationConfiguration::ApplicationConfiguration(ConfigInterface *parent)
+: ConfigInterface(parent)
+, m_versionMajor(SGCS_VERSION_MAJOR)
+, m_versionMinor(SGCS_VERSION_MINOR)
+, m_versionPath(SGCS_VERSION_PATH)
+, m_versionHash(SGCS_VERSION_HASH)
 {
 }
 
@@ -104,6 +110,26 @@ QString ApplicationConfiguration::profile() const
 void ApplicationConfiguration::setProfile(const QString &profile)
 {
     m_profile = profile;
+}
+
+int ApplicationConfiguration::versionMajor() const
+{
+    return m_versionMajor;
+}
+
+int ApplicationConfiguration::versionMinor() const
+{
+    return m_versionMinor;
+}
+
+int ApplicationConfiguration::versionPath() const
+{
+    return m_versionPath;
+}
+
+QString ApplicationConfiguration::versionHash() const
+{
+    return m_versionHash;
 }
 
 //

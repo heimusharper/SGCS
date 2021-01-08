@@ -17,7 +17,7 @@
 import QtQuick 2.12
 import QtQuick.Controls 2.12
 import QtQuick.Layouts 1.12
-import Ru.SGCS 1.0 as SGCS
+import SGCS 1.0
 
 Page {
     title: qsTr("Tracker")
@@ -26,7 +26,7 @@ Page {
     signal activated(bool is_active)
 
     onActivated: {
-        SGCS.SerialConnectionFabric.setCheck(is_active)
+        SerialConnectionFabric.setCheck(is_active)
     }
 
     ColumnLayout {
@@ -43,11 +43,11 @@ Page {
                     text: qsTr("Serial")
                 }
                 ComboBox {
-                    model: SGCS.SerialConnectionFabric
+                    model: SerialConnectionFabric
                     textRole: "name"
-                    currentIndex: SGCS.SerialConnectionFabric.current
+                    currentIndex: SerialConnectionFabric.current
                     onCurrentIndexChanged: {
-                        SGCS.SerialConnectionFabric.setCurrent(currentIndex)
+                        SerialConnectionFabric.setCurrent(currentIndex)
                     }
                 }
                 Label {

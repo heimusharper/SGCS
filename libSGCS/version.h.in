@@ -1,0 +1,13 @@
+#ifndef VERSION_H
+#define VERSION_H
+
+/*
+ * These values are automatically set according to their cmake variables.
+ */
+#define SGCS_VERSION_MAJOR ${VERSION_MAJOR}
+#define SGCS_VERSION_MINOR ${VERSION_MINOR}
+#define SGCS_VERSION_PATH ${VERSION_PATH}
+#define SGCS_VERSION_HASH "${VERSION_HASH}"
+
+#endif /* VERSION_H */
+

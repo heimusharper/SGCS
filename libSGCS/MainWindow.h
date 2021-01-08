@@ -17,6 +17,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "MainWindow.h"
+#include "SerialConnectionFabric.h"
 #include <QObject>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>

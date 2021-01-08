@@ -15,9 +15,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "MainWindow.h"
+#include "WindowConf.h"
 
 MainWindow::MainWindow(QObject *parent) : QObject(parent)
 {
+    qmlRegisterType<WindowConf>("SGCS", 1, 0, "WindowConf");
     _engine = new QQmlApplicationEngine(this);
     _engine->load(QUrl(QStringLiteral("qrc:/qml/MainWindow.qml")));
 }

@@ -100,7 +100,7 @@ void SerialConnectionFabric::updatePorts()
 
 void SerialConnectionFabric::create()
 {
-    qmlRegisterSingletonType<SerialConnectionFabric>("Ru.SGCS", 1, 0, "SerialConnectionFabric", SerialConnectionFabric::singletonProvider);
+    qmlRegisterSingletonType<SerialConnectionFabric>("SGCS", 1, 0, "SerialConnectionFabric", SerialConnectionFabric::singletonProvider);
 }
 
 SerialConnectionFabric *SerialConnectionFabric::instance()

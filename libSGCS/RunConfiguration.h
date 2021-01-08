@@ -142,8 +142,17 @@ public:
     QString profile() const;
     void setProfile(const QString &profile);
 
+    int versionMajor() const;
+    int versionMinor() const;
+    int versionPath() const;
+    QString versionHash() const;
+
 private:
     QString m_profile;
+    int m_versionMajor    = 0;
+    int m_versionMinor    = 0;
+    int m_versionPath     = 0;
+    QString m_versionHash = 0;
 };
 /*!
  * \brief The RunConfiguration class
