@@ -122,6 +122,7 @@ protected:
 };
 /*!
  * \brief The ApplicationConfiguration class
+ * Main application configuration
  */
 class ApplicationConfiguration : public ConfigInterface
 {
@@ -133,18 +134,55 @@ class ApplicationConfiguration : public ConfigInterface
 public:
     ApplicationConfiguration(ConfigInterface *parent);
     virtual ~ApplicationConfiguration() = default;
-
+    /*!
+     * \brief name ApplicationConfiguration
+     * \return ApplicationConfiguration
+     */
     virtual QString name() const override final;
-
+    /*!
+     * \brief toNode to yaml node
+     * \param file root
+     * \return
+     */
     virtual YAML::Node toNode(const YAML::Node &file) const override final;
+    /*!
+     * \brief fromNode from yaml node
+     * \param node node
+     */
     virtual void fromNode(const YAML::Node &node) override final;
-
+    /*!
+     * \brief profile get application run profile name
+     * \return profile name
+     */
     QString profile() const;
+    /*!
+     * \brief setProfile change application profile name
+     * \param profile profile name
+     */
     void setProfile(const QString &profile);
-
+    /*!
+     * \brief versionMajor version major
+     * \return version major
+     * \warning do not save to false
+     */
     int versionMajor() const;
+    /*!
+     * \brief versionMinor version major
+     * \return version major
+     * \warning do not save to false
+     */
     int versionMinor() const;
+    /*!
+     * \brief versionPath version major
+     * \return version major
+     * \warning do not save to false
+     */
     int versionPath() const;
+    /*!
+     * \brief versionHash version major
+     * \return version major
+     * \warning do not save to false
+     */
     QString versionHash() const;
 
 private:
@@ -156,30 +194,75 @@ private:
 };
 /*!
  * \brief The RunConfiguration class
+ * Main configuration object
+ * 1. try open file ```RunConfiguration::instance().create("default.yaml")```
+ * 2. if failed, create new
+ *   ```RunConfiguration::instance().get<ApplicationConfiguration>()->setProfile("default");
+ *      RunConfiguration::instance().forceSave();```
+ * 3. access to nodes RunConfiguration::instance().get<Node defenition object name>()
+ * RunConfiguration automatically parse yaml for nodes in get<> function
  */
 class RunConfiguration : public ConfigInterface
 {
 public:
     virtual ~RunConfiguration();
+    /*!
+     * \brief instance RunConfiguration singleton instance
+     * \return
+     */
     static RunConfiguration &instance();
-
+    /*!
+     * \brief create create root from file
+     * \param filename filename
+     * \return true if file exist and yaml is valid
+     */
     bool create(const QString &filename);
-
+    /*!
+     * \brief name ConfigInterface implementation name
+     * \return name
+     */
     virtual QString name() const override final;
-
+    /*!
+     * \brief toNode create yaml node
+     * \param file root
+     * \return
+     */
     virtual YAML::Node toNode(const YAML::Node &file) const override final;
+    /*!
+     * \brief fromNode parse yaml node
+     * \param node yaml node
+     */
     virtual void fromNode(const YAML::Node &node) override final;
-
+    /*!
+     * \brief getFromFile get node from file
+     * \param tree parent nodes
+     * \return node or empty
+     */
     YAML::Node getFromFile(const QStringList &tree);
-
+    /*!
+     * \brief forceSave save to yaml file
+     */
     void forceSave();
 
 protected:
+    /*!
+     * \brief save save node
+     */
     virtual void save() override final;
 
 private:
+    /*!
+     * \brief _yaml root
+     */
     YAML::Node _yaml;
+    /*!
+     * \brief _filename save filename
+     */
     QString _filename;
+    /*!
+     * \brief RunConfiguration
+     * \param root
+     */
     RunConfiguration(ConfigInterface *root = nullptr);
 };
 
