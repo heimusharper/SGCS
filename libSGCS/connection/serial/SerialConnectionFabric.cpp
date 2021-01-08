@@ -55,7 +55,10 @@ void SerialConnectionFabric::setCheck(bool check)
 
     m_check = check;
     if (m_check)
+    {
+        updatePorts();
         m_timer->start(2000);
+    }
     else
         m_timer->stop();
     emit checkChanged(m_check);

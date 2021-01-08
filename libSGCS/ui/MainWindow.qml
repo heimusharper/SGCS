@@ -37,10 +37,6 @@ ApplicationWindow {
         id: connection
     }
 
-    PluginLoader {
-        id: pluginLoader
-    }
-
     MapView {
         id: mapView
     }
