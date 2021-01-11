@@ -5,7 +5,6 @@
 #include <QSerialPortInfo>
 #include <RunConfiguration.h>
 #include <SGCS.h>
-#include <SerialConnectionFabric.h>
 #include <UAV.h>
 
 using namespace std;
@@ -20,7 +19,6 @@ int main(int argc, char *argv[])
         RunConfiguration::instance().get<ApplicationConfiguration>()->setProfile("default");
         RunConfiguration::instance().forceSave();
     }
-    SerialConnectionFabric::create();
 
     MainWindow w;
     return app.exec();

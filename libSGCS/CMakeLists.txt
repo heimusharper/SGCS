@@ -23,16 +23,20 @@ version_write_to(${CMAKE_CURRENT_SOURCE_DIR})
 SET(SRC_LIST
     SGCS.cpp
     RunConfiguration.cpp
-    SerialConnectionFabric.cpp
     MainWindow.cpp
     WindowConf.cpp
+    SerialConnectionFabric.cpp
+    Connection.cpp
+    SerialConnection.cpp
     )
 SET(HEADER_LIST
     SGCS.h
     RunConfiguration.h
-    SerialConnectionFabric.h
     MainWindow.h
     WindowConf.h
+    SerialConnectionFabric.h
+    Connection.h
+    SerialConnection.h
     ${CMAKE_CURRENT_SOURCE_DIR}/version.h
     )
 

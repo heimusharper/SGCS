@@ -41,20 +41,10 @@ public:
         IsBusyRole
     };
     /*!
-     * \brief create register type in qml
+     * \brief SerialConnectionFabric
+     * \param parent
      */
-    static void create();
-    static QObject *singletonProvider(QQmlEngine *qmlEngine, QJSEngine *jsEngine)
-    {
-        Q_UNUSED(qmlEngine)
-        Q_UNUSED(jsEngine);
-        return SerialConnectionFabric::instance();
-    }
-    /*!
-     * \brief instance singleton
-     * \return
-     */
-    static SerialConnectionFabric *instance();
+    explicit SerialConnectionFabric(QObject *parent = nullptr);
     /*!
      * \brief roleNames roles
      * \return
@@ -131,15 +121,6 @@ private slots:
     void updatePorts();
 
 private:
-    /*!
-     * \brief SerialConnectionFabric
-     * \param parent
-     */
-    explicit SerialConnectionFabric(QObject *parent = nullptr);
-    /*!
-     * \brief m_instance singleton instance
-     */
-    static SerialConnectionFabric *m_instance;
     /*!
      * \brief m_info current serial ports list
      */

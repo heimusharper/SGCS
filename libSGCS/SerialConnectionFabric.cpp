@@ -16,8 +16,6 @@
  */
 #include "SerialConnectionFabric.h"
 
-SerialConnectionFabric *SerialConnectionFabric::m_instance = nullptr;
-
 SerialConnectionFabric::SerialConnectionFabric(QObject *parent) : QAbstractListModel(parent)
 {
     m_timer = new QTimer(this);
@@ -98,18 +96,6 @@ void SerialConnectionFabric::updatePorts()
     }
 }
 
-void SerialConnectionFabric::create()
-{
-    qmlRegisterSingletonType<SerialConnectionFabric>("SGCS", 1, 0, "SerialConnectionFabric", SerialConnectionFabric::singletonProvider);
-}
-
-SerialConnectionFabric *SerialConnectionFabric::instance()
-{
-    if (m_instance == nullptr)
-        m_instance = new SerialConnectionFabric();
-    return m_instance;
-}
-
 QHash<int, QByteArray> SerialConnectionFabric::roleNames() const
 {
     return {{NameRole, "name"}, {IsBusyRole, "busy"}};
@@ -119,7 +105,7 @@ int SerialConnectionFabric::rowCount(const QModelIndex &parent) const
 {
     if (parent.isValid())
         return 0;
-    return SerialConnectionFabric::instance()->info().size();
+    return info().size();
 }
 
 bool SerialConnectionFabric::setData(const QModelIndex &index, const QVariant &value, int role)
@@ -127,7 +113,7 @@ bool SerialConnectionFabric::setData(const QModelIndex &index, const QVariant &v
     if (!hasIndex(index.row(), index.column(), index.parent()) || !value.isValid())
         return false;
 
-    QSerialPortInfo item = SerialConnectionFabric::instance()->info().at(index.row());
+    // QSerialPortInfo item = info().at(index.row());
     emit dataChanged(index, index, {role});
     return true;
 }
@@ -136,7 +122,7 @@ QVariant SerialConnectionFabric::data(const QModelIndex &index, int role) const
 {
     if (!hasIndex(index.row(), index.column(), index.parent()))
         return {};
-    QSerialPortInfo item = SerialConnectionFabric::instance()->info().at(index.row());
+    QSerialPortInfo item = info().at(index.row());
     if (role == NameRole)
         return item.portName();
     if (role == IsBusyRole)

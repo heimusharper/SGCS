@@ -19,7 +19,9 @@
 
 MainWindow::MainWindow(QObject *parent) : QObject(parent)
 {
+    qmlRegisterType<SerialConnectionFabric>("SGCS", 1, 0, "SerialConnectionFabric");
     qmlRegisterType<WindowConf>("SGCS", 1, 0, "WindowConf");
+
     _engine = new QQmlApplicationEngine(this);
     _engine->load(QUrl(QStringLiteral("qrc:/qml/MainWindow.qml")));
 }

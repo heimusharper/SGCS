@@ -25,8 +25,12 @@ Page {
 
     signal activated(bool is_active)
 
+    SerialConnectionFabric {
+        id: serialConnection
+    }
+
     onActivated: {
-        SerialConnectionFabric.setCheck(is_active)
+        serialConnection.setCheck(is_active)
     }
 
     ColumnLayout {
@@ -45,9 +49,9 @@ Page {
                 ComboBox {
                     model: SerialConnectionFabric
                     textRole: "name"
-                    currentIndex: SerialConnectionFabric.current
+                    currentIndex: serialConnection.current
                     onCurrentIndexChanged: {
-                        SerialConnectionFabric.setCurrent(currentIndex)
+                        serialConnection.setCurrent(currentIndex)
                     }
                 }
                 Label {
