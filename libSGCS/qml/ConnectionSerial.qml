@@ -11,6 +11,9 @@ RowLayout {
 
     SerialConnectionSelectorListModel {
         id: serialConnection
+        onBaudrateChanged: {
+            combox.currentIndex = combox.find(serialConnection.baudrate.toString())
+        }
     }
 
     ColumnLayout {
@@ -50,9 +53,13 @@ RowLayout {
                 enabled: !serialConnection.connected
             }
             ComboBox {
-                model: ["9600", "57600"]
-                currentIndex: find(serialConnection.baudrate.toString())
+                id: combox
+                model: ["9600", "19200", "38400", "57600", "115200"]
                 enabled: !serialConnection.connected
+                currentIndex: find(serialConnection.baudrate.toString())
+                onCurrentTextChanged: {
+                      serialConnection.setBaudrate(parseInt(combox.currentText))
+                 }
             }
             Rectangle {
                 enabled: !serialConnection.connected
@@ -65,5 +72,6 @@ RowLayout {
     }
     onActivated: {
         serialConnection.setCheck(is_active)
+        combox.currentIndex = combox.find(serialConnection.baudrate.toString())
     }
 }

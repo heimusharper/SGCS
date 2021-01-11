@@ -4,6 +4,11 @@ SerialConnection::SerialConnection() : Connection()
 {
 }
 
+SerialConnection::~SerialConnection()
+{
+    _serial->deleteLater();
+}
+
 void SerialConnection::inittializeObjects()
 {
     connect(this, &SerialConnection::connectToPort, this, &SerialConnection::doConnectToPort);

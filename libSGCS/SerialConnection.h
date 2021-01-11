@@ -11,7 +11,7 @@ class SerialConnection : public Connection
     Q_OBJECT
 public:
     explicit SerialConnection();
-
+    virtual ~SerialConnection();
 signals:
 
     void connectToPort(const QString &portName, int baudRate);

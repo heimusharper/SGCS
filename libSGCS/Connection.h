@@ -9,6 +9,7 @@ class Connection : public QObject
     Q_OBJECT
 public:
     explicit Connection();
+    virtual ~Connection();
 
 public slots:
 
@@ -26,12 +27,16 @@ class ConnectionThread : public QObject
     Q_OBJECT
 public:
     ConnectionThread(QObject *parent = nullptr);
+    ~ConnectionThread();
+
     template <typename T>
     T *create()
     {
         _connection = new T;
         _thread     = new QThread();
         connect(_thread, &QThread::started, _connection, &T::run);
+        connect(_thread, &QThread::finished, _connection, &QObject::deleteLater);
+
         _connection->moveToThread(_thread);
         _thread->start();
         return dynamic_cast<T *>(_connection);
