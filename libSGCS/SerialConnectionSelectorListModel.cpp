@@ -22,6 +22,10 @@ SerialConnectionSelectorListModel::SerialConnectionSelectorListModel(QObject *pa
     connect(m_timer, &QTimer::timeout, this, &SerialConnectionSelectorListModel::updatePorts);
 }
 
+SerialConnectionSelectorListModel::~SerialConnectionSelectorListModel()
+{
+}
+
 QList<QSerialPortInfo> SerialConnectionSelectorListModel::info() const
 {
     return m_info;

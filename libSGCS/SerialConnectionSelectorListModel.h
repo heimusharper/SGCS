@@ -45,6 +45,7 @@ public:
      * \param parent
      */
     explicit SerialConnectionSelectorListModel(QObject *parent = nullptr);
+    ~SerialConnectionSelectorListModel();
     /*!
      * \brief roleNames roles
      * \return
@@ -137,6 +138,7 @@ private:
      * \brief m_timer check timer
      */
     QTimer *m_timer = nullptr;
+    bool m_valid;
 };
 
 #endif // SERIALCONNECTIONSELECTORLISTMODEL_H

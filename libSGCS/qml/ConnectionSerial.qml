@@ -3,7 +3,9 @@ import QtQuick.Layouts 1.12
 import QtQuick.Controls 2.12
 import sgcs 1.0
 
+
 RowLayout {
+    id: control
     Layout.fillWidth: true
     signal activated(bool is_active)
 
@@ -11,13 +13,25 @@ RowLayout {
         id: serialConnection
     }
 
-    GroupBox {
-        label: Label {
-               text: qsTr("Serial")
-           }
+    ColumnLayout {
+
+        RowLayout {
+                Label{
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.fillWidth: true
+                    text: qsTr("Serial")
+                }
+                ToolButton {
+                    id: buttonObj
+                    text: qsTr("x")
+                    Layout.alignment: Qt.AlignRight
+                    onClicked: control.destroy()
+                }
+            }
+
         GridLayout {
+            id: xe
             columns: 2
-            anchors.fill: parent
             Label {
                 text: qsTr("Serial")
             }

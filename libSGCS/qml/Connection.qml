@@ -28,37 +28,43 @@ Page {
     property bool isActive: false;
     signal activated(bool is_active)
 
-
-    ScrollView {
+    ColumnLayout {
         anchors.fill: parent
-        ColumnLayout {
 
-            RowLayout {
-                Label {
-                    text: qsTr("New connection")
-                    Layout.fillWidth: true
-                }
-                ComboBox {
-                    id: methodSelector
-                    model: ["Serial"]
-                    currentIndex: 0
-                    Layout.fillWidth: true
-                }
-                Button {
-                    text: qsTr("Append")
-                    Layout.fillWidth: true
-                    onClicked: {
-                        if (methodSelector.currentIndex === 0){
-                            var component = Qt.createComponent("ConnectionSerial.qml");
-                            if (component.status === Component.Ready) {
-                                var object = component.createObject(rootContainer);
-                                object.activated(isActive)
-                            }
-                            checkWidth()
+        RowLayout {
+            Layout.fillHeight: parent
+            Layout.fillWidth: parent
+            Label {
+                text: qsTr("New connection")
+                Layout.fillWidth: true
+            }
+            ComboBox {
+                id: methodSelector
+                model: ["Serial"]
+                currentIndex: 0
+                Layout.fillWidth: true
+            }
+            Button {
+                text: qsTr("Append")
+                Layout.fillWidth: true
+                onClicked: {
+                    if (methodSelector.currentIndex === 0){
+                        var component = Qt.createComponent("ConnectionSerial.qml");
+                        if (component.status === Component.Ready) {
+                            var object = component.createObject(rootContainer);
+                            object.activated(isActive)
                         }
+                        checkWidth()
                     }
                 }
             }
+        }
+        ScrollView {
+            clip: true
+            Layout.fillHeight: parent
+            Layout.fillWidth: parent
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            ScrollBar.vertical.policy: ScrollBar.AlwaysOn
             GridLayout {
                 id: rootContainer
                 columns: 1
