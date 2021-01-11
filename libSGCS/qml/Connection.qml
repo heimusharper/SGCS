@@ -20,82 +20,70 @@ import QtQuick.Layouts 1.12
 import sgcs 1.0
 
 Page {
+
+    id: rootPage
     title: qsTr("Tracker")
     anchors.fill: parent
 
+    property bool isActive: false;
     signal activated(bool is_active)
 
-    SerialConnectionSelectorListModel {
-        id: serialConnection
-    }
 
-    onActivated: {
-        serialConnection.setCheck(is_active)
-    }
+    ScrollView {
+        anchors.fill: parent
+        ColumnLayout {
 
-    ColumnLayout {
-        GroupBox {
-            label: CheckBox {
-                   id: checkBoxSerialConnection
-                   checked: false
-                   text: qsTr("Serial")
-               }
-            GridLayout {
-                columns: 2
-                anchors.fill: parent
+            RowLayout {
                 Label {
-                    text: qsTr("Serial")
+                    text: qsTr("New connection")
+                    Layout.fillWidth: true
                 }
                 ComboBox {
-                    model: serialConnection
-                    textRole: "name"
-                    currentIndex: serialConnection.current
-                    onCurrentIndexChanged: {
-                        serialConnection.setCurrent(currentIndex)
+                    id: methodSelector
+                    model: ["Serial"]
+                    currentIndex: 0
+                    Layout.fillWidth: true
+                }
+                Button {
+                    text: qsTr("Append")
+                    Layout.fillWidth: true
+                    onClicked: {
+                        if (methodSelector.currentIndex === 0){
+                            var component = Qt.createComponent("ConnectionSerial.qml");
+                            if (component.status === Component.Ready) {
+                                var object = component.createObject(rootContainer);
+                                object.activated(isActive)
+                            }
+                            checkWidth()
+                        }
                     }
                 }
-                Label {
-                    text: qsTr("Baudrate")
-                }
-                ComboBox {
-
-                }
-                Rectangle {
-
-                }
-                Button {
-                    text: qsTr("Connect")
-                }
+            }
+            GridLayout {
+                id: rootContainer
+                columns: 1
             }
         }
-        GroupBox {
-            label: CheckBox {
-                   id: checkBoxNetworkConnection
-                   checked: true
-                   text: qsTr("Network")
-               }
-            GridLayout {
-                columns: 2
-                anchors.fill: parent
-                Label {
-                    text: qsTr("IP")
-                }
-                ComboBox {
+    }
+    onWidthChanged: checkWidth()
 
-                }
-                Label {
-                    text: qsTr("Port")
-                }
-                ComboBox {
+    onActivated: {
+        for(var i = 0; i < rootContainer.children.length; ++i) {
+            rootContainer.activated(is_active);
+        }
+        isActive = is_active;
+    }
 
-                }
-                Rectangle {
-
-                }
-                Button {
-                    text: qsTr("Connect")
-                }
-            }
+    function checkWidth(){
+        var maxWidth = 0;
+        for(var i = 0; i < rootContainer.children.length; ++i) {
+            maxWidth = Math.max(maxWidth, rootContainer.children[i].width);
+        }
+        if (maxWidth > 0 && maxWidth < rootPage.width) {
+            rootContainer.columns = Math.floor(rootPage.width / maxWidth)
+            console.log("set " + rootContainer.columns)
+        } else {
+            rootContainer.columns = 1
         }
     }
 }

@@ -3,5 +3,6 @@
         <file>qml/MainWindow.qml</file>
         <file>qml/MapView.qml</file>
         <file>qml/Connection.qml</file>
+        <file>qml/ConnectionSerial.qml</file>
     </qresource>
 </RCC>

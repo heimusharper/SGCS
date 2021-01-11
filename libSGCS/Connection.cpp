@@ -1,7 +1,12 @@
 #include "Connection.h"
 
-Connection::Connection(QObject *parent) : QObject(parent)
+Connection::Connection() : QObject()
 {
+}
+
+void Connection::run()
+{
+    inittializeObjects();
 }
 
 void Connection::onReceive(const QByteArray &data)

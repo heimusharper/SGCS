@@ -8,7 +8,7 @@ class SerialConnection : public Connection
 {
     Q_OBJECT
 public:
-    explicit SerialConnection(QObject *parent = nullptr);
+    explicit SerialConnection();
 
 protected slots:
     virtual void onTransmit(const QByteArray &data) override final;
