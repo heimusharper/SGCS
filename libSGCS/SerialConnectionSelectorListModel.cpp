@@ -124,8 +124,15 @@ QVariant SerialConnectionSelectorListModel::data(const QModelIndex &index, int r
         return {};
     QSerialPortInfo item = info().at(index.row());
     if (role == NameRole)
-        return item.portName();
+    {
+        return (item.description().isEmpty()) ? item.portName() : item.portName() + " (" + item.description() + ")";
+    }
     if (role == IsBusyRole)
+    {
+        if ((item.hasProductIdentifier() && item.productIdentifier() == 0) ||
+            (item.hasVendorIdentifier() && item.productIdentifier() == 0))
+            return false; // TODO: USR-VCOM create 0:0 devices and have lag when get "isBusy"
         return item.isBusy();
+    }
     return {};
 }
