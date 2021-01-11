@@ -16,6 +16,8 @@
  */
 #ifndef SERIALCONNECTIONSELECTORLISTMODEL_H
 #define SERIALCONNECTIONSELECTORLISTMODEL_H
+#include "Connection.h"
+#include "SerialConnection.h"
 #include <QAbstractListModel>
 #include <QDebug>
 #include <QMutex>
@@ -33,7 +35,9 @@ class SerialConnectionSelectorListModel : public QAbstractListModel
     Q_OBJECT
     Q_DISABLE_COPY(SerialConnectionSelectorListModel)
     Q_PROPERTY(int current READ current WRITE setCurrent NOTIFY currentChanged)
+    Q_PROPERTY(int baudrate READ baudrate WRITE setBaudrate NOTIFY baudrateChanged)
     Q_PROPERTY(bool check READ check WRITE setCheck NOTIFY checkChanged)
+    Q_PROPERTY(bool connected READ connected WRITE setConnected NOTIFY connectedChanged)
 public:
     enum MyRoles
     {
@@ -89,6 +93,16 @@ public:
      * \return
      */
     bool check() const;
+    /*!
+     * \brief baudrate serial baudrate
+     * \return
+     */
+    int baudrate() const;
+    /*!
+     * \brief connected serial port is connected
+     * \return
+     */
+    bool connected() const;
 
 public slots:
     /*!
@@ -102,6 +116,16 @@ public slots:
      * \param check true - start checks, false - stop
      */
     void setCheck(bool check);
+    /*!
+     * \brief setBaudrate serial baudrate
+     * \param baudrate
+     */
+    void setBaudrate(int baudrate);
+    /*!
+     * \brief setConnected serial port is connected
+     * \param connected
+     */
+    void setConnected(bool connected);
 
 signals:
     /*!
@@ -114,6 +138,20 @@ signals:
      * \param check
      */
     void checkChanged(bool check);
+    /*!
+     * \brief baudrateChanged baudrate is changed
+     * \param baudrate
+     */
+    void baudrateChanged(int baudrate);
+    /*!
+     * \brief connectedChanged serial is connected changed
+     * \param connected
+     */
+    void connectedChanged(bool connected);
+
+    void tryConnect(const QString &portName, int baudrate);
+
+    void tryDisconnect();
 
 private slots:
     /*!
@@ -121,7 +159,16 @@ private slots:
      */
     void updatePorts();
 
+    void onSerialConnectedTo(const QString &portName, int baudRate);
+
+    void onSerialDisconnected();
+
 private:
+    /*!
+     * \brief timer get timer
+     * \return
+     */
+    QTimer *timer();
     /*!
      * \brief m_info current serial ports list
      */
@@ -129,16 +176,28 @@ private:
     /*!
      * \brief m_current current serial port index
      */
-    int m_current = -1;
+    int m_current;
     /*!
      * \brief m_check check on timer
      */
-    bool m_check = false;
+    bool m_check;
+    /*!
+     * \brief m_baudrate serial baudrate
+     */
+    int m_baudrate;
+    /*!
+     * \brief m_connected setial port is connected
+     */
+    bool m_connected;
     /*!
      * \brief m_timer check timer
+     * \warning use timer() function
      */
     QTimer *m_timer = nullptr;
-    bool m_valid;
+    /*!
+     * \brief _connection serial connection object
+     */
+    ConnectionThread *_connection = nullptr;
 };
 
 #endif // SERIALCONNECTIONSELECTORLISTMODEL_H

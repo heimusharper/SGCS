@@ -34,26 +34,32 @@ RowLayout {
             columns: 2
             Label {
                 text: qsTr("Serial")
+                enabled: !serialConnection.connected
             }
             ComboBox {
                 model: serialConnection
                 textRole: "name"
                 currentIndex: serialConnection.current
+                enabled: !serialConnection.connected
                 onCurrentIndexChanged: {
                     serialConnection.setCurrent(currentIndex)
                 }
             }
             Label {
                 text: qsTr("Baudrate")
+                enabled: !serialConnection.connected
             }
             ComboBox {
-
+                model: ["9600", "57600"]
+                currentIndex: find(serialConnection.baudrate.toString())
+                enabled: !serialConnection.connected
             }
             Rectangle {
-
+                enabled: !serialConnection.connected
             }
             Button {
-                text: qsTr("Connect")
+                text: serialConnection.connected ? qsTr("Close") : qsTr("Connect")
+                onClicked: serialConnection.setConnected(!serialConnection.connected)
             }
         }
     }

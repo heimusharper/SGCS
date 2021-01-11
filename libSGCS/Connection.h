@@ -19,19 +19,22 @@ protected slots:
     virtual void inittializeObjects() = 0;
     virtual void onReceive(const QByteArray &data) final;
     virtual void onTransmit(const QByteArray &data) = 0;
-signals:
 };
 
 class ConnectionThread : public QObject
 {
     Q_OBJECT
 public:
+    ConnectionThread(QObject *parent = nullptr);
     template <typename T>
-    ConnectionThread(QObject *parent = nullptr) : QObject(parent)
+    T *create()
     {
         _connection = new T;
         _thread     = new QThread();
         connect(_thread, &QThread::started, _connection, &T::run);
+        _connection->moveToThread(_thread);
+        _thread->start();
+        return dynamic_cast<T *>(_connection);
     }
 
 private:

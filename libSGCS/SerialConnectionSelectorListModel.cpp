@@ -16,10 +16,16 @@
  */
 #include "SerialConnectionSelectorListModel.h"
 
-SerialConnectionSelectorListModel::SerialConnectionSelectorListModel(QObject *parent) : QAbstractListModel(parent)
+SerialConnectionSelectorListModel::SerialConnectionSelectorListModel(QObject *parent)
+: QAbstractListModel(parent), m_current(-1), m_check(false), m_baudrate(57600), m_connected(false)
 {
-    m_timer = new QTimer(this);
-    connect(m_timer, &QTimer::timeout, this, &SerialConnectionSelectorListModel::updatePorts);
+    _connection                = new ConnectionThread();
+    SerialConnection *instance = _connection->create<SerialConnection>();
+
+    connect(this, &SerialConnectionSelectorListModel::tryConnect, instance, &SerialConnection::connectToPort);
+    connect(this, &SerialConnectionSelectorListModel::tryDisconnect, instance, &SerialConnection::disconnectFromPort);
+    connect(instance, &SerialConnection::onConnected, this, &SerialConnectionSelectorListModel::onSerialConnectedTo);
+    connect(instance, &SerialConnection::onDisconnected, this, &SerialConnectionSelectorListModel::onSerialDisconnected);
 }
 
 SerialConnectionSelectorListModel::~SerialConnectionSelectorListModel()
@@ -41,6 +47,16 @@ bool SerialConnectionSelectorListModel::check() const
     return m_check;
 }
 
+int SerialConnectionSelectorListModel::baudrate() const
+{
+    return m_baudrate;
+}
+
+bool SerialConnectionSelectorListModel::connected() const
+{
+    return m_connected;
+}
+
 void SerialConnectionSelectorListModel::setCurrent(int current)
 {
     if (m_current == current)
@@ -59,11 +75,43 @@ void SerialConnectionSelectorListModel::setCheck(bool check)
     if (m_check)
     {
         updatePorts();
-        m_timer->start(2000);
+        timer()->start(2000);
     }
     else
-        m_timer->stop();
+        timer()->stop();
     emit checkChanged(m_check);
+}
+
+void SerialConnectionSelectorListModel::setBaudrate(int baudrate)
+{
+    if (m_baudrate == baudrate)
+        return;
+
+    m_baudrate = baudrate;
+    emit baudrateChanged(m_baudrate);
+}
+
+void SerialConnectionSelectorListModel::setConnected(bool connected)
+{
+    if (m_connected == connected)
+        return;
+
+    qDebug() << "SET CONNECTED" << connected << ((m_current >= 0) ? m_info.at(m_current).portName() : "ttyNA") << m_baudrate;
+    if (connected)
+    {
+        if (m_current >= 0 && m_current < m_info.size() && m_baudrate > 0)
+        {
+            emit tryConnect(m_info.at(m_current).portName(), m_baudrate);
+        }
+        else
+            return; // failed, return
+    }
+    else
+    {
+        emit tryDisconnect();
+    }
+    m_connected = connected;
+    emit connectedChanged(m_connected);
 }
 
 void SerialConnectionSelectorListModel::updatePorts()
@@ -98,6 +146,39 @@ void SerialConnectionSelectorListModel::updatePorts()
         }
         setCurrent(newIndex);
     }
+}
+
+void SerialConnectionSelectorListModel::onSerialConnectedTo(const QString &portName, int baudRate)
+{
+    int current = -1;
+    int i       = 0;
+    for (auto p : m_info)
+    {
+        if (p.portName() == portName)
+        {
+            current = i;
+            break;
+        }
+        i++;
+    }
+    setCurrent(current);
+    setBaudrate(baudRate);
+    setConnected(true);
+}
+
+void SerialConnectionSelectorListModel::onSerialDisconnected()
+{
+    setConnected(false);
+}
+
+QTimer *SerialConnectionSelectorListModel::timer()
+{
+    if (!m_timer)
+    {
+        m_timer = new QTimer(this);
+        connect(m_timer, &QTimer::timeout, this, &SerialConnectionSelectorListModel::updatePorts);
+    }
+    return m_timer;
 }
 
 QHash<int, QByteArray> SerialConnectionSelectorListModel::roleNames() const

@@ -12,3 +12,7 @@ void Connection::run()
 void Connection::onReceive(const QByteArray &data)
 {
 }
+
+ConnectionThread::ConnectionThread(QObject *parent) : QObject(parent)
+{
+}
