@@ -14,8 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef SERIALCONNECTIONFABRIC_H
-#define SERIALCONNECTIONFABRIC_H
+#ifndef SERIALCONNECTIONSELECTORLISTMODEL_H
+#define SERIALCONNECTIONSELECTORLISTMODEL_H
 #include <QAbstractListModel>
 #include <QDebug>
 #include <QMutex>
@@ -28,10 +28,10 @@
  * Configure serial connection
  * \todo delete object
  */
-class SerialConnectionFabric : public QAbstractListModel
+class SerialConnectionSelectorListModel : public QAbstractListModel
 {
     Q_OBJECT
-    Q_DISABLE_COPY(SerialConnectionFabric)
+    Q_DISABLE_COPY(SerialConnectionSelectorListModel)
     Q_PROPERTY(int current READ current WRITE setCurrent NOTIFY currentChanged)
     Q_PROPERTY(bool check READ check WRITE setCheck NOTIFY checkChanged)
 public:
@@ -44,7 +44,7 @@ public:
      * \brief SerialConnectionFabric
      * \param parent
      */
-    explicit SerialConnectionFabric(QObject *parent = nullptr);
+    explicit SerialConnectionSelectorListModel(QObject *parent = nullptr);
     /*!
      * \brief roleNames roles
      * \return
@@ -139,4 +139,4 @@ private:
     QTimer *m_timer = nullptr;
 };
 
-#endif // SERIALCONNECTIONFABRIC_H
+#endif // SERIALCONNECTIONSELECTORLISTMODEL_H

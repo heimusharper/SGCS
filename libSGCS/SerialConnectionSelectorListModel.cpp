@@ -14,30 +14,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "SerialConnectionFabric.h"
+#include "SerialConnectionSelectorListModel.h"
 
-SerialConnectionFabric::SerialConnectionFabric(QObject *parent) : QAbstractListModel(parent)
+SerialConnectionSelectorListModel::SerialConnectionSelectorListModel(QObject *parent) : QAbstractListModel(parent)
 {
     m_timer = new QTimer(this);
-    connect(m_timer, &QTimer::timeout, this, &SerialConnectionFabric::updatePorts);
+    connect(m_timer, &QTimer::timeout, this, &SerialConnectionSelectorListModel::updatePorts);
 }
 
-QList<QSerialPortInfo> SerialConnectionFabric::info() const
+QList<QSerialPortInfo> SerialConnectionSelectorListModel::info() const
 {
     return m_info;
 }
 
-int SerialConnectionFabric::current() const
+int SerialConnectionSelectorListModel::current() const
 {
     return m_current;
 }
 
-bool SerialConnectionFabric::check() const
+bool SerialConnectionSelectorListModel::check() const
 {
     return m_check;
 }
 
-void SerialConnectionFabric::setCurrent(int current)
+void SerialConnectionSelectorListModel::setCurrent(int current)
 {
     if (m_current == current)
         return;
@@ -46,7 +46,7 @@ void SerialConnectionFabric::setCurrent(int current)
     emit currentChanged(m_current);
 }
 
-void SerialConnectionFabric::setCheck(bool check)
+void SerialConnectionSelectorListModel::setCheck(bool check)
 {
     if (m_check == check)
         return;
@@ -62,7 +62,7 @@ void SerialConnectionFabric::setCheck(bool check)
     emit checkChanged(m_check);
 }
 
-void SerialConnectionFabric::updatePorts()
+void SerialConnectionSelectorListModel::updatePorts()
 {
     QSerialPortInfo lastCurrent; // remember last current
     {
@@ -96,19 +96,19 @@ void SerialConnectionFabric::updatePorts()
     }
 }
 
-QHash<int, QByteArray> SerialConnectionFabric::roleNames() const
+QHash<int, QByteArray> SerialConnectionSelectorListModel::roleNames() const
 {
     return {{NameRole, "name"}, {IsBusyRole, "busy"}};
 }
 
-int SerialConnectionFabric::rowCount(const QModelIndex &parent) const
+int SerialConnectionSelectorListModel::rowCount(const QModelIndex &parent) const
 {
     if (parent.isValid())
         return 0;
     return info().size();
 }
 
-bool SerialConnectionFabric::setData(const QModelIndex &index, const QVariant &value, int role)
+bool SerialConnectionSelectorListModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     if (!hasIndex(index.row(), index.column(), index.parent()) || !value.isValid())
         return false;
@@ -118,7 +118,7 @@ bool SerialConnectionFabric::setData(const QModelIndex &index, const QVariant &v
     return true;
 }
 
-QVariant SerialConnectionFabric::data(const QModelIndex &index, int role) const
+QVariant SerialConnectionSelectorListModel::data(const QModelIndex &index, int role) const
 {
     if (!hasIndex(index.row(), index.column(), index.parent()))
         return {};

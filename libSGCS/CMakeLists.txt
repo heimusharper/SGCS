@@ -25,7 +25,7 @@ SET(SRC_LIST
     RunConfiguration.cpp
     MainWindow.cpp
     WindowConf.cpp
-    SerialConnectionFabric.cpp
+    SerialConnectionSelectorListModel.cpp
     Connection.cpp
     SerialConnection.cpp
     )
@@ -34,7 +34,7 @@ SET(HEADER_LIST
     RunConfiguration.h
     MainWindow.h
     WindowConf.h
-    SerialConnectionFabric.h
+    SerialConnectionSelectorListModel.h
     Connection.h
     SerialConnection.h
     ${CMAKE_CURRENT_SOURCE_DIR}/version.h
