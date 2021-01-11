@@ -133,8 +133,10 @@ void SerialConnectionSelectorListModel::updatePorts()
         endInsertRows();
         // find last current
         int newIndex = -1;
-        if (!lastCurrent.portName().isEmpty())
+        if (!m_info.isEmpty())
         {
+            if (lastCurrent.portName().isEmpty())
+                lastCurrent = m_info.first();
             for (int i = 0; i < m_info.size(); i++)
             {
                 if (m_info.at(i).portName() == lastCurrent.portName())
