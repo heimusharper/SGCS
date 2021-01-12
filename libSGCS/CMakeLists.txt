@@ -40,7 +40,7 @@ SET(HEADER_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/version.h
     )
 
-qt5_add_resources(RESOURCES resource.qrc)
+qt5_add_resources(RESOURCES resourcelibsgcs.qrc)
 
 # YAML
 add_library(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST} ${RESOURCES})

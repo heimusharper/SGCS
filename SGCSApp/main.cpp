@@ -12,6 +12,7 @@ using namespace std;
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
+    app.setWindowIcon(QIcon(":/logo.png"));
 
     QSerialPortInfo::availablePorts();
     if (!RunConfiguration::instance().create("default.yaml"))

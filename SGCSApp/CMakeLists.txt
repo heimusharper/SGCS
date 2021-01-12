@@ -22,8 +22,10 @@ SET(SRC_LIST
     main.cpp
     )
 
+qt5_add_resources(RESOURCES resourceapp.qrc)
+
 #create exec
-add_executable(${PROJECT_NAME} ${SRC_LIST})
+add_executable(${PROJECT_NAME} ${SRC_LIST} ${RESOURCES})
 
 #link
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC SGCS)
