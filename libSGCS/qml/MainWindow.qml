@@ -39,6 +39,7 @@ ApplicationWindow {
 
     property int previousX
     property int previousY
+    property int headerHeight: 40
 
     WindowConf {
         id: conf
@@ -74,12 +75,21 @@ ApplicationWindow {
 
     header: ToolBar {
         id: toolBarObj
+        height: headerHeight
         RowLayout {
             anchors.fill: parent
             spacing: 0
             ToolButton {
-                text: qsTr("‹")
+                id: logoButton
                 Layout.fillHeight: true
+                hoverEnabled: true
+                background: Image {
+                            width: toolBarObj.height
+                            height: toolBarObj.height
+                            anchors.fill: logoButtonRect
+                            source: "qrc:/logo.png"
+                            opacity: (logoButton.hovered || logoButton.checked || logoButton.highlighted) ? 0.5 : 1.
+                        }
 
                 onClicked: {
                     // deactivate all workflows

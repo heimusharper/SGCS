@@ -25,3 +25,8 @@ MainWindow::MainWindow(QObject *parent) : QObject(parent)
     _engine = new QQmlApplicationEngine(this);
     _engine->load(QUrl(QStringLiteral("qrc:/qml/MainWindow.qml")));
 }
+
+QIcon MainWindow::icon()
+{
+    return QIcon(":/logo.png");
+}

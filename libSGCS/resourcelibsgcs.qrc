@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+        <file>logo.png</file>
         <file>qml/MainWindow.qml</file>
         <file>qml/MapView.qml</file>
         <file>qml/Connection.qml</file>

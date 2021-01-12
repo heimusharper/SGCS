@@ -35,6 +35,7 @@ class MainWindow : public QObject
 
 public:
     explicit MainWindow(QObject *parent = nullptr);
+    static QIcon icon();
 
 private:
     QQmlApplicationEngine *_engine = nullptr;
