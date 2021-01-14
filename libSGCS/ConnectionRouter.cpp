@@ -14,19 +14,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "Connection.h"
+#include "ConnectionRouter.h"
 
 namespace connection
 {
-Connection::Connection() : QObject()
+ConnectionRouter::ConnectionRouter(Connection *connection, QObject *parent) : _connection(connection)
 {
 }
 
-Connection::~Connection()
+ConnectionRouter::~ConnectionRouter()
 {
 }
 
-void Connection::onReceive(const QByteArray &data)
+void ConnectionRouter::run()
+{
+    qDebug() << "RUN ON THREAD ROUTER" << QThread::currentThreadId();
+    _watcher = new QTimer();
+    connect(_watcher, &QTimer::timeout, this, &ConnectionRouter::watch);
+    _watcher->start(1000);
+}
+
+void ConnectionRouter::watch()
 {
 }
 }

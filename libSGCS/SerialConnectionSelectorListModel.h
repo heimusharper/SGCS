@@ -16,7 +16,7 @@
  */
 #ifndef SERIALCONNECTIONSELECTORLISTMODEL_H
 #define SERIALCONNECTIONSELECTORLISTMODEL_H
-#include "Connection.h"
+#include "ConnectionThread.h"
 #include "SerialConnection.h"
 #include <QAbstractListModel>
 #include <QDebug>
@@ -197,7 +197,7 @@ private:
     /*!
      * \brief _connection serial connection object
      */
-    ConnectionThread *_connection = nullptr;
+    connection::ConnectionThread *_connection = nullptr;
 };
 
 #endif // SERIALCONNECTIONSELECTORLISTMODEL_H

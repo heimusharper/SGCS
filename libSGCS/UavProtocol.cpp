@@ -14,19 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "Connection.h"
+#include "UavProtocol.h"
 
-namespace connection
+UavProtocol::UavProtocol(QObject *parent) : QObject(parent)
 {
-Connection::Connection() : QObject()
-{
-}
-
-Connection::~Connection()
-{
-}
-
-void Connection::onReceive(const QByteArray &data)
-{
-}
 }

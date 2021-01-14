@@ -14,19 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "Connection.h"
+#include "ConnectionThread.h"
 
 namespace connection
 {
-Connection::Connection() : QObject()
+ConnectionThread::ConnectionThread(QObject *parent) : QObject(parent)
 {
 }
 
-Connection::~Connection()
+ConnectionThread::~ConnectionThread()
 {
+    if (_thread)
+    {
+        _thread->quit();
+        _thread->deleteLater();
+    }
 }
 
-void Connection::onReceive(const QByteArray &data)
+ConnectionRouter *ConnectionThread::router() const
 {
 }
 }

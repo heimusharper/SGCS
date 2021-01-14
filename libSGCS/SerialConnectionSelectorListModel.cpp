@@ -19,7 +19,7 @@
 SerialConnectionSelectorListModel::SerialConnectionSelectorListModel(QObject *parent)
 : QAbstractListModel(parent), m_current(-1), m_check(false), m_baudrate(57600), m_connected(false)
 {
-    _connection                = new ConnectionThread();
+    _connection                = new connection::ConnectionThread();
     SerialConnection *instance = _connection->create<SerialConnection>();
 
     connect(this, &SerialConnectionSelectorListModel::tryConnect, instance, &SerialConnection::connectToPort);

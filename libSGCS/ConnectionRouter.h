@@ -14,19 +14,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef CONNECTIONROUTER_H
+#define CONNECTIONROUTER_H
+
 #include "Connection.h"
 
 namespace connection
 {
-Connection::Connection() : QObject()
+class ConnectionRouter : public QObject
 {
-}
+    Q_OBJECT
+public:
+    ConnectionRouter(Connection *connection, QObject *parent = nullptr);
+    ~ConnectionRouter();
 
-Connection::~Connection()
-{
-}
+public slots:
 
-void Connection::onReceive(const QByteArray &data)
-{
+    void run();
+
+private slots:
+
+    void watch();
+
+private:
+    QTimer *_watcher = nullptr;
+
+    Connection *_connection = nullptr;
+    UavProtocol *_protocol  = nullptr;
+
+signals:
+
+    void readyProtocol(const UavProtocol *protocol);
+};
 }
-}
+#endif // CONNECTIONROUTER_H

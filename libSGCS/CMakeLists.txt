@@ -25,18 +25,26 @@ SET(SRC_LIST
     RunConfiguration.cpp
     MainWindow.cpp
     WindowConf.cpp
-    SerialConnectionSelectorListModel.cpp
     Connection.cpp
+    ConnectionRouter.cpp
+    ConnectionThread.cpp
+    SerialConnectionSelectorListModel.cpp
     SerialConnection.cpp
+    UavProtocol.cpp
+    UavMessage.cpp
     )
 SET(HEADER_LIST
     SGCS.h
     RunConfiguration.h
     MainWindow.h
     WindowConf.h
-    SerialConnectionSelectorListModel.h
     Connection.h
+    ConnectionRouter.h
+    ConnectionThread.h
+    SerialConnectionSelectorListModel.h
     SerialConnection.h
+    UavProtocol.h
+    UavMessage.h
     ${CMAKE_CURRENT_SOURCE_DIR}/version.h
     )
 

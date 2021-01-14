@@ -14,19 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "Connection.h"
+#include "UavMessage.h"
 
-namespace connection
+UavMessage::UavMessage()
 {
-Connection::Connection() : QObject()
-{
-}
-
-Connection::~Connection()
-{
-}
-
-void Connection::onReceive(const QByteArray &data)
-{
-}
 }
