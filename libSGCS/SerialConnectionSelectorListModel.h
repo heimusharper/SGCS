@@ -38,6 +38,8 @@ class SerialConnectionSelectorListModel : public QAbstractListModel
     Q_PROPERTY(int baudrate READ baudrate WRITE setBaudrate NOTIFY baudrateChanged)
     Q_PROPERTY(bool check READ check WRITE setCheck NOTIFY checkChanged)
     Q_PROPERTY(bool connected READ connected WRITE setConnected NOTIFY connectedChanged)
+    Q_PROPERTY(QString serialError READ serialError NOTIFY serialErrorChanged)
+
 public:
     enum MyRoles
     {
@@ -103,6 +105,11 @@ public:
      * \return
      */
     bool connected() const;
+    /*!
+     * \brief serialError last serial error
+     * \return error string
+     */
+    QString serialError() const;
 
 public slots:
     /*!
@@ -148,20 +155,38 @@ signals:
      * \param connected
      */
     void connectedChanged(bool connected);
-
+    /*!
+     * \brief tryConnect try connect to port
+     * \param portName port name
+     * \param baudrate baudrate
+     */
     void tryConnect(const QString &portName, int baudrate);
-
+    /*!
+     * \brief tryDisconnect disconnect from port
+     */
     void tryDisconnect();
+    /*!
+     * \brief serialErrorChanged last serial error changed
+     * \param serialError last serial error
+     */
+    void serialErrorChanged(QString serialError);
 
 private slots:
     /*!
      * \brief updatePorts get new serial ports list
      */
     void updatePorts();
-
+    /*!
+     * \brief onSerialConnectedTo serial port connected
+     * \param portName port name
+     * \param baudRate baudrate
+     */
     void onSerialConnectedTo(const QString &portName, int baudRate);
-
-    void onSerialDisconnected();
+    /*!
+     * \brief onSerialDisconnected serial disconnected
+     * \param error last  error, empty if not
+     */
+    void onSerialDisconnected(const QString &error);
 
 private:
     /*!
@@ -198,6 +223,10 @@ private:
      * \brief _connection serial connection object
      */
     connection::ConnectionThread *_connection = nullptr;
+    /*!
+     * \brief m_serialError last serial error
+     */
+    QString m_serialError;
 };
 
 #endif // SERIALCONNECTIONSELECTORLISTMODEL_H

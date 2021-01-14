@@ -25,8 +25,4 @@ Connection::Connection() : QObject()
 Connection::~Connection()
 {
 }
-
-void Connection::onReceive(const QByteArray &data)
-{
-}
 }

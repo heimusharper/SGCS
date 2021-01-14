@@ -38,6 +38,7 @@ protected slots:
 
 private slots:
 
+    void onError(QSerialPort::SerialPortError error);
     void doConnectToPort(const QString &portName, int baudRate);
     void doDisconnectFromPort();
     void readyRead();
@@ -45,9 +46,11 @@ private slots:
 signals:
 
     void onConnected(const QString &portName, int baudRate);
-    void onDisconnected();
+    void onDisconnected(const QString &error);
 
 private:
+    const int MAX_BUFFER_SIZE = 1024;
+    QByteArray _writeBuffer;
     QSerialPort *_serial = nullptr;
 };
 

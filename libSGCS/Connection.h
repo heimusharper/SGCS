@@ -34,12 +34,17 @@ public:
     virtual ~Connection();
 
 public slots:
-
+    /*!
+     * \brief inittializeObjects create objects
+     */
     virtual void inittializeObjects() = 0;
+
+signals:
+
+    void onReceive(const QByteArray &data);
 
 protected slots:
 
-    virtual void onReceive(const QByteArray &data) final;
     virtual void onTransmit(const QByteArray &data) = 0;
 };
 }

@@ -16,6 +16,7 @@
  */
 import QtQuick 2.0
 import QtQuick.Layouts 1.12
+import QtQuick.Dialogs 1.2
 import QtQuick.Controls 2.12
 import sgcs 1.0
 
@@ -29,6 +30,23 @@ RowLayout {
         id: serialConnection
         onBaudrateChanged: {
             combox.currentIndex = combox.find(serialConnection.baudrate.toString())
+        }
+        onSerialErrorChanged: {
+            if (serialError)
+            {
+                serialErrorDialog.text = serialError
+                serialErrorDialog.visible = true
+            }
+        }
+    }
+
+    MessageDialog {
+        id: serialErrorDialog
+        title: qsTr("Serial connection error?")
+        icon: StandardIcon.Warning
+        standardButtons: MessageDialog.Ok
+
+        onApply: {
         }
     }
 

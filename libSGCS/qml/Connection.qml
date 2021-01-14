@@ -28,6 +28,7 @@ Page {
     property bool isActive: false;
     signal activated(bool is_active)
 
+
     ColumnLayout {
         anchors.fill: parent
 

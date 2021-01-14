@@ -28,6 +28,7 @@ ConnectionRouter::~ConnectionRouter()
 
 void ConnectionRouter::run()
 {
+    _connection->inittializeObjects();
     qDebug() << "RUN ON THREAD ROUTER" << QThread::currentThreadId();
     _watcher = new QTimer();
     connect(_watcher, &QTimer::timeout, this, &ConnectionRouter::watch);

@@ -57,6 +57,11 @@ bool SerialConnectionSelectorListModel::connected() const
     return m_connected;
 }
 
+QString SerialConnectionSelectorListModel::serialError() const
+{
+    return m_serialError;
+}
+
 void SerialConnectionSelectorListModel::setCurrent(int current)
 {
     if (m_current == current)
@@ -168,9 +173,11 @@ void SerialConnectionSelectorListModel::onSerialConnectedTo(const QString &portN
     setConnected(true);
 }
 
-void SerialConnectionSelectorListModel::onSerialDisconnected()
+void SerialConnectionSelectorListModel::onSerialDisconnected(const QString &error)
 {
     setConnected(false);
+    m_serialError = error;
+    emit serialErrorChanged(m_serialError);
 }
 
 QTimer *SerialConnectionSelectorListModel::timer()

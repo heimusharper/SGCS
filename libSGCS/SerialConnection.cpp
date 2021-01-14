@@ -32,10 +32,28 @@ void SerialConnection::inittializeObjects()
 
     _serial = new QSerialPort();
     connect(_serial, &QSerialPort::readyRead, this, &SerialConnection::readyRead);
+    connect(_serial, &QSerialPort::errorOccurred, this, &SerialConnection::onError);
 }
 
 void SerialConnection::onTransmit(const QByteArray &data)
 {
+    if (_serial->isOpen())
+        _serial->write(data);
+    else
+    {
+        _writeBuffer.append(data);
+        if (_writeBuffer.size() > MAX_BUFFER_SIZE)
+            _writeBuffer.remove(0, _writeBuffer.size() - (MAX_BUFFER_SIZE + MAX_BUFFER_SIZE * 0.2));
+    }
+}
+
+void SerialConnection::onError(QSerialPort::SerialPortError error)
+{
+    if (error == QSerialPort::SerialPortError::NoError)
+        return;
+    QString err = _serial->errorString();
+    qWarning() << err;
+    emit onDisconnected(err);
 }
 
 void SerialConnection::doConnectToPort(const QString &portName, int baudRate)
@@ -45,24 +63,28 @@ void SerialConnection::doConnectToPort(const QString &portName, int baudRate)
     _serial->setDataBits(QSerialPort::Data8);
     _serial->setFlowControl(QSerialPort::NoFlowControl);
     _serial->setParity(QSerialPort::NoParity);
+    _serial->setStopBits(QSerialPort::OneStop);
     if (_serial->open(QIODevice::ReadWrite))
     {
+        if (!_writeBuffer.isEmpty())
+            _serial->write(_writeBuffer);
         emit onConnected(portName, baudRate);
     }
     else
     {
-        qWarning() << _serial->errorString();
-        emit onDisconnected();
+        QString err = _serial->errorString();
+        qWarning() << err;
+        emit onDisconnected(err);
     }
 }
 
 void SerialConnection::doDisconnectFromPort()
 {
     _serial->close();
-    emit onDisconnected();
+    emit onDisconnected(QString());
 }
 
 void SerialConnection::readyRead()
 {
-    qDebug() << _serial->readAll();
+    emit onReceive(_serial->readAll());
 }
