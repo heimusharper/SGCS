@@ -55,7 +55,6 @@ ApplicationWindow {
         id: mapView
     }
 
-
     MessageDialog {
         id: checkCloseDialog
         title: qsTr("Realy close?")

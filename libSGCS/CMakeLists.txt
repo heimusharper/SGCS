@@ -32,6 +32,8 @@ SET(SRC_LIST
     SerialConnection.cpp
     UavProtocol.cpp
     UavMessage.cpp
+    UavObject.cpp
+    UavFabric.cpp
     )
 SET(HEADER_LIST
     SGCS.h
@@ -45,6 +47,8 @@ SET(HEADER_LIST
     SerialConnection.h
     UavProtocol.h
     UavMessage.h
+    UavObject.h
+    UavFabric.h
     ${CMAKE_CURRENT_SOURCE_DIR}/version.h
     )
 

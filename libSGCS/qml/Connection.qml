@@ -55,7 +55,6 @@ Page {
                             var object = component.createObject(rootContainer);
                             object.activated(isActive)
                         }
-                        checkWidth()
                     }
                 }
             }
@@ -66,9 +65,9 @@ Page {
             Layout.fillWidth: parent
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
             ScrollBar.vertical.policy: ScrollBar.AlwaysOn
-            GridLayout {
+            ColumnLayout {
                 id: rootContainer
-                columns: 1
+
             }
         }
     }
@@ -79,18 +78,5 @@ Page {
             rootContainer.activated(is_active);
         }
         isActive = is_active;
-    }
-
-    function checkWidth(){
-        var maxWidth = 0;
-        for(var i = 0; i < rootContainer.children.length; ++i) {
-            maxWidth = Math.max(maxWidth, rootContainer.children[i].width);
-        }
-        if (maxWidth > 0 && maxWidth < rootPage.width) {
-            rootContainer.columns = Math.floor(rootPage.width / maxWidth)
-            console.log("set " + rootContainer.columns)
-        } else {
-            rootContainer.columns = 1
-        }
     }
 }

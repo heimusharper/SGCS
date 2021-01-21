@@ -20,6 +20,10 @@
 MainWindow::MainWindow(QObject *parent) : QObject(parent)
 {
     qmlRegisterType<SerialConnectionSelectorListModel>("sgcs", 1, 0, "SerialConnectionSelectorListModel");
+    qmlRegisterType<UavObject>("sgcs", 1, 0, "UavObject");
+    // qRegisterMetaType<UavObject>("UavObject");
+    qmlRegisterType<UavFabric>("sgcs", 1, 0, "UavFabric");
+
     qmlRegisterType<WindowConf>("sgcs", 1, 0, "WindowConf");
 
     _engine = new QQmlApplicationEngine(this);

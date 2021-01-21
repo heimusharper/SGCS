@@ -18,6 +18,7 @@
 #define SERIALCONNECTIONSELECTORLISTMODEL_H
 #include "ConnectionThread.h"
 #include "SerialConnection.h"
+#include "UavObject.h"
 #include <QAbstractListModel>
 #include <QDebug>
 #include <QMutex>
@@ -227,6 +228,7 @@ private:
      * \brief m_serialError last serial error
      */
     QString m_serialError;
+    UavObject m_obj;
 };
 
 #endif // SERIALCONNECTIONSELECTORLISTMODEL_H

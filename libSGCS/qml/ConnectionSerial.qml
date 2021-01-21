@@ -66,41 +66,55 @@ RowLayout {
                 }
             }
 
-        GridLayout {
-            id: xe
-            columns: 2
-            Label {
-                text: qsTr("Serial")
-                enabled: !serialConnection.connected
-            }
-            ComboBox {
-                model: serialConnection
-                textRole: "name"
-                currentIndex: serialConnection.current
-                enabled: !serialConnection.connected
-                onCurrentIndexChanged: {
-                    serialConnection.setCurrent(currentIndex)
+        RowLayout {
+            GridLayout {
+                id: xe
+                columns: 2
+                Label {
+                    text: qsTr("Serial")
+                    enabled: !serialConnection.connected
+                }
+                ComboBox {
+                    model: serialConnection
+                    textRole: "name"
+                    currentIndex: serialConnection.current
+                    enabled: !serialConnection.connected
+                    onCurrentIndexChanged: {
+                        serialConnection.setCurrent(currentIndex)
+                    }
+                }
+                Label {
+                    text: qsTr("Baudrate")
+                    enabled: !serialConnection.connected
+                }
+                ComboBox {
+                    id: combox
+                    model: ["9600", "19200", "38400", "57600", "115200"]
+                    enabled: !serialConnection.connected
+                    currentIndex: find(serialConnection.baudrate.toString())
+                    onCurrentTextChanged: {
+                          serialConnection.setBaudrate(parseInt(combox.currentText))
+                    }
+                }
+                Rectangle {
+                    enabled: !serialConnection.connected
+                }
+                Button {
+                    text: serialConnection.connected ? qsTr("Close") : qsTr("Connect")
+                    onClicked: serialConnection.setConnected(!serialConnection.connected)
+                }
+                Button {
+                    text: qsTr("Create")
+                    onClicked: {
+                        var component = Qt.createComponent("UavInstance.qml");
+                        if (component.status === Component.Ready) {
+                            var object = component.createObject(rootContainerSerial)
+                        }
+                    }
                 }
             }
-            Label {
-                text: qsTr("Baudrate")
-                enabled: !serialConnection.connected
-            }
-            ComboBox {
-                id: combox
-                model: ["9600", "19200", "38400", "57600", "115200"]
-                enabled: !serialConnection.connected
-                currentIndex: find(serialConnection.baudrate.toString())
-                onCurrentTextChanged: {
-                      serialConnection.setBaudrate(parseInt(combox.currentText))
-                 }
-            }
-            Rectangle {
-                enabled: !serialConnection.connected
-            }
-            Button {
-                text: serialConnection.connected ? qsTr("Close") : qsTr("Connect")
-                onClicked: serialConnection.setConnected(!serialConnection.connected)
+            ColumnLayout {
+                id: rootContainerSerial
             }
         }
     }

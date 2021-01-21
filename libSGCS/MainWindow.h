@@ -19,6 +19,8 @@
 
 #include "MainWindow.h"
 #include "SerialConnectionSelectorListModel.h"
+#include "UavFabric.h"
+#include "UavObject.h"
 #include <QObject>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
