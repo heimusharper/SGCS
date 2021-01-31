@@ -16,6 +16,16 @@
  */
 #include "PluginSerialConnection.h"
 
-PluginSerialConnection::PluginSerialConnection() : SgcsPlugin()
+PluginSerialConnection::PluginSerialConnection(QObject *parent) : sgcs::plugin::DataSourcePlugin(parent)
 {
+}
+
+QString PluginSerialConnection::name() const
+{
+    return tr("Serial connection");
+}
+
+sgcs::connection::Connection *PluginSerialConnection::instance()
+{
+    return new SerialConnection();
 }

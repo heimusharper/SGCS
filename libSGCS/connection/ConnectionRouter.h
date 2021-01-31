@@ -17,15 +17,19 @@
 #ifndef CONNECTIONROUTER_H
 #define CONNECTIONROUTER_H
 
+#include "../plugins/ProtocolPlugin.h"
 #include "Connection.h"
+#include <UavProtocol.h>
 
+namespace sgcs
+{
 namespace connection
 {
 class ConnectionRouter : public QObject
 {
     Q_OBJECT
 public:
-    ConnectionRouter(Connection *connection, QObject *parent = nullptr);
+    ConnectionRouter(Connection *connection, const QList<plugin::ProtocolPlugin *> &protos, QObject *parent = nullptr);
     ~ConnectionRouter();
 
 public slots:
@@ -38,13 +42,15 @@ private slots:
 
 private:
     QTimer *_watcher = nullptr;
+    QList<plugin::ProtocolPlugin *> _protos;
 
-    Connection *_connection = nullptr;
-    UavProtocol *_protocol  = nullptr;
+    Connection *_connection     = nullptr;
+    uav::UavProtocol *_protocol = nullptr;
 
 signals:
 
-    void readyProtocol(const UavProtocol *protocol);
+    void readyProtocol(const uav::UavProtocol *protocol);
 };
+}
 }
 #endif // CONNECTIONROUTER_H

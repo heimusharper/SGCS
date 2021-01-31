@@ -16,7 +16,7 @@
  */
 #include "SerialConnection.h"
 
-SerialConnection::SerialConnection() : Connection()
+SerialConnection::SerialConnection() : sgcs::connection::Connection()
 {
 }
 

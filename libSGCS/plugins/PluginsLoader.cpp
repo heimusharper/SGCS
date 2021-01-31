@@ -16,6 +16,10 @@
  */
 #include "PluginsLoader.h"
 
+namespace sgcs
+{
+namespace plugin
+{
 PluginsLoader::PluginsLoader(QObject *parent) : QObject(parent)
 {
 }
@@ -29,20 +33,35 @@ bool PluginsLoader::load(const QDir &pluginsDir)
         QObject *plugin = pluginLoader.instance();
         if (plugin)
         {
-            SgcsPlugin *sgcs = qobject_cast<SgcsPlugin *>(plugin);
-            if (sgcs)
+            ProtocolPlugin *protocolPlugin     = qobject_cast<ProtocolPlugin *>(plugin);
+            DataSourcePlugin *datasourcePlugin = qobject_cast<DataSourcePlugin *>(plugin);
+            if (protocolPlugin)
             {
-                const QMetaObject *meta = sgcs->metaObject();
-                qDebug() << "ON LOADED" << QString(meta->className());
-                return true;
+                _protocol.append(protocolPlugin);
             }
-            pluginLoader.unload();
+            else if (datasourcePlugin)
+            {
+                _datasources.append(datasourcePlugin);
+            }
+            else
+                pluginLoader.unload();
         }
         else
         {
             qWarning() << "Failed load plugin " << pluginLoader.errorString();
         }
     }
+    return true;
+}
 
-    return false;
+QList<ProtocolPlugin *> PluginsLoader::protocols() const
+{
+    return _protocol;
+}
+
+QList<DataSourcePlugin *> PluginsLoader::datasources() const
+{
+    return _datasources;
+}
+}
 }

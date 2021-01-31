@@ -17,18 +17,22 @@
 #ifndef PLUGINSERIALCONNECTION_H
 #define PLUGINSERIALCONNECTION_H
 
+#include "SerialConnection.h"
 #include <QObject>
-#include <plugins/SgcsPlugins.h>
+#include <plugins/DataSourcePlugin.h>
 
-class PluginSerialConnection : public SgcsPlugin
+class PluginSerialConnection : public sgcs::plugin::DataSourcePlugin
 {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID "ru.heimusharper.SGCS.PluginInterface" FILE "meta.json")
-    Q_INTERFACES(SgcsPlugin)
+    Q_PLUGIN_METADATA(IID "ru.heimusharper.SGCS.DataSourcePlugin" FILE "meta.json")
+    Q_INTERFACES(sgcs::plugin::DataSourcePlugin)
 public:
-    explicit PluginSerialConnection();
+    explicit PluginSerialConnection(QObject *parent = nullptr);
     virtual ~PluginSerialConnection() = default;
 
+    virtual QString name() const override;
+
+    virtual sgcs::connection::Connection *instance() override;
 signals:
 };
 

@@ -14,9 +14,15 @@ find_package(Qt5 COMPONENTS Location REQUIRED)
 # add srcs
 SET(SRC_LIST
     UAV.cpp
+    UavProtocol.cpp
+    UavMessage.cpp
+    UavObject.cpp
     )
 SET(HEADER_LIST
     UAV.h
+    UavProtocol.h
+    UavMessage.h
+    UavObject.h
     )
 
 add_library(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST})

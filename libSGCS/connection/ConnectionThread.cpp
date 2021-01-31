@@ -15,7 +15,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "ConnectionThread.h"
-
+namespace sgcs
+{
 namespace connection
 {
 ConnectionThread::ConnectionThread(QObject *parent) : QObject(parent)
@@ -31,7 +32,21 @@ ConnectionThread::~ConnectionThread()
     }
 }
 
+void ConnectionThread::create(Connection *connection, const QList<plugin::ProtocolPlugin *> &protos)
+{
+    _router = new ConnectionRouter(connection, protos);
+    _thread = new QThread();
+    connect(_thread, &QThread::started, _router, &ConnectionRouter::run);
+    connect(_thread, &QThread::finished, _router, &QObject::deleteLater);
+    _router->moveToThread(_thread);
+    for (auto x : protos)
+        x->moveToThread(_thread);
+    connection->moveToThread(_thread);
+    _thread->start();
+}
+
 ConnectionRouter *ConnectionThread::router() const
 {
+}
 }
 }

@@ -17,8 +17,11 @@
 #ifndef CONNECTIONTHREAD_H
 #define CONNECTIONTHREAD_H
 
+#include "../plugins/ProtocolPlugin.h"
 #include "ConnectionRouter.h"
 
+namespace sgcs
+{
 namespace connection
 {
 class ConnectionThread : public QObject
@@ -28,23 +31,7 @@ public:
     ConnectionThread(QObject *parent = nullptr);
     ~ConnectionThread();
 
-    template <typename T>
-    T *create()
-    {
-        qDebug() << "RUN ON THREAD ROOT" << QThread::currentThreadId();
-        T *connection = new T;
-        _router       = new ConnectionRouter(connection);
-
-        _thread = new QThread();
-        connect(_thread, &QThread::started, _router, &ConnectionRouter::run);
-        connect(_thread, &QThread::finished, _router, &QObject::deleteLater);
-        _router->moveToThread(_thread);
-        auto qo = qobject_cast<Connection *>(connection);
-        if (qo)
-            qo->moveToThread(_thread);
-        _thread->start();
-        return connection;
-    }
+    void create(Connection *connection, const QList<plugin::ProtocolPlugin *> &protos);
 
     ConnectionRouter *router() const;
 
@@ -53,5 +40,5 @@ private:
     QThread *_thread          = nullptr;
 };
 }
-
+}
 #endif // CONNECTIONTHREAD_H

@@ -16,6 +16,8 @@
  */
 #include "Connection.h"
 
+namespace sgcs
+{
 namespace connection
 {
 Connection::Connection() : QObject()
@@ -24,5 +26,6 @@ Connection::Connection() : QObject()
 
 Connection::~Connection()
 {
+}
 }
 }

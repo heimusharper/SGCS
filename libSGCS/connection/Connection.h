@@ -24,6 +24,8 @@
 #include <QTimer>
 #include <memory.h>
 
+namespace sgcs
+{
 namespace connection
 {
 class Connection : public QObject
@@ -47,5 +49,6 @@ protected slots:
 
     virtual void onTransmit(const QByteArray &data) = 0;
 };
+}
 }
 #endif // CONNECTION_H

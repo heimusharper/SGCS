@@ -14,13 +14,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef SGCS_H
-#define SGCS_H
+#include "UavObject.h"
 
-class SGCS
+namespace uav
 {
-public:
-    SGCS();
-};
+UavObject::UavObject(QObject *parent) : QObject(parent)
+{
+}
 
-#endif // SGCS_H
+bool UavObject::connected() const
+{
+    return m_connected;
+}
+
+int UavObject::id() const
+{
+    return m_id;
+}
+
+void UavObject::setConnected(bool connected)
+{
+    if (m_connected == connected)
+        return;
+
+    m_connected = connected;
+    emit connectedChanged(m_connected);
+}
+
+void UavObject::setId(int id)
+{
+    if (m_id == id)
+        return;
+
+    m_id = id;
+    emit idChanged(m_id);
+}
+}

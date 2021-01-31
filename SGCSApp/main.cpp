@@ -19,9 +19,9 @@
 #include <QDir>
 #include <QGuiApplication>
 #include <QSerialPortInfo>
-#include <SGCS.h>
 #include <UAV.h>
 #include <config/RunConfiguration.h>
+#include <connection/ConnectionThread.h>
 #include <plugins/PluginsLoader.h>
 
 using namespace std;
@@ -42,10 +42,14 @@ int main(int argc, char *argv[])
         RunConfiguration::instance().forceSave();
     }
 
-    PluginsLoader loader;
+    sgcs::plugin::PluginsLoader loader;
     QDir plugins = QDir(app.applicationDirPath());
     plugins.cd("plugins");
     loader.load(plugins);
-
+    if (!loader.datasources().isEmpty())
+    {
+        sgcs::connection::ConnectionThread thr;
+        thr.create(loader.datasources().first()->instance(), loader.protocols());
+    }
     return app.exec();
 }

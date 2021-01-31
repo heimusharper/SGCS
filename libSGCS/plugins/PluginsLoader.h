@@ -17,11 +17,16 @@
 #ifndef PLUGINSLOADER_H
 #define PLUGINSLOADER_H
 
-#include "SgcsPlugins.h"
+#include "DataSourcePlugin.h"
+#include "ProtocolPlugin.h"
 #include <QDir>
 #include <QObject>
 #include <QPluginLoader>
 
+namespace sgcs
+{
+namespace plugin
+{
 class PluginsLoader : public QObject
 {
     Q_OBJECT
@@ -30,7 +35,16 @@ public:
 
     bool load(const QDir &pluginsDir);
 
+    QList<ProtocolPlugin *> protocols() const;
+
+    QList<DataSourcePlugin *> datasources() const;
+
+private:
+    QList<ProtocolPlugin *> _protocol;
+    QList<DataSourcePlugin *> _datasources;
+
 signals:
 };
-
+}
+}
 #endif // PLUGINSLOADER_H

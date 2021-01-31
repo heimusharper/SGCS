@@ -14,13 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef UAVMESSAGE_H
-#define UAVMESSAGE_H
+#include "UavProtocol.h"
 
-class UavMessage
+namespace uav
 {
-public:
-    UavMessage();
-};
-
-#endif // UAVMESSAGE_H
+UavProtocol::UavProtocol(QObject *parent) : QObject(parent)
+{
+}
+}

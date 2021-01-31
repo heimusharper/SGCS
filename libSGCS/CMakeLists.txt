@@ -23,32 +23,25 @@ SET(SRC_LIST
     connection/Connection.cpp
     connection/ConnectionRouter.cpp
     connection/ConnectionThread.cpp
-    plugins/SgcsPlugins.cpp
+    plugins/ProtocolPlugin.cpp
+    plugins/DataSourcePlugin.cpp
     plugins/PluginsLoader.cpp
-    SGCS.cpp
-    UavProtocol.cpp
-    UavMessage.cpp
-    UavObject.cpp
-    UavFabric.cpp
     )
 SET(HEADER_LIST
     config/RunConfiguration.h
     connection/Connection.h
     connection/ConnectionRouter.h
     connection/ConnectionThread.h
-    plugins/SgcsPlugins.h
+    plugins/ProtocolPlugin.h
+    plugins/DataSourcePlugin.h
     plugins/PluginsLoader.h
-    SGCS.h
-    UavProtocol.h
-    UavMessage.h
-    UavObject.h
-    UavFabric.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/version.h
+    version.h
     )
 
 # YAML
 add_library(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST} ${RESOURCES})
 
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC UAV)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 add_yaml(${PROJECT_NAME})
 

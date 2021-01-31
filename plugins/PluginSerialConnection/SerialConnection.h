@@ -21,7 +21,7 @@
 #include <QSerialPort>
 #include <connection/Connection.h>
 
-class SerialConnection : public connection::Connection
+class SerialConnection : public sgcs::connection::Connection
 {
     Q_OBJECT
 public:

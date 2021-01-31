@@ -16,9 +16,12 @@
  */
 #include "ConnectionRouter.h"
 
+namespace sgcs
+{
 namespace connection
 {
-ConnectionRouter::ConnectionRouter(Connection *connection, QObject *parent) : _connection(connection)
+ConnectionRouter::ConnectionRouter(Connection *connection, const QList<plugin::ProtocolPlugin *> &protos, QObject *parent)
+: _connection(connection), _protos(protos)
 {
 }
 
@@ -33,9 +36,11 @@ void ConnectionRouter::run()
     _watcher = new QTimer();
     connect(_watcher, &QTimer::timeout, this, &ConnectionRouter::watch);
     _watcher->start(1000);
+    qDebug() << "HAVE PROTOS!" << _protos.size();
 }
 
 void ConnectionRouter::watch()
 {
+}
 }
 }

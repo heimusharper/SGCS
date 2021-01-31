@@ -14,21 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef UAVFABRIC_H
-#define UAVFABRIC_H
-#include "UavObject.h"
-#include <QDebug>
-#include <QJSValue>
+#ifndef UAVPROTOCOL_H
+#define UAVPROTOCOL_H
+
+#include "UavMessage.h"
 #include <QObject>
 
-class UavFabric : public QObject
+namespace uav
+{
+class UavProtocol : public QObject
 {
     Q_OBJECT
 public:
-    explicit UavFabric(QObject *parent = nullptr);
+    explicit UavProtocol(QObject *parent = nullptr);
 
-    Q_INVOKABLE static void createObject(QJSValue *obj);
 signals:
 };
-
-#endif // UAVFABRIC_H
+}
+#endif // UAVPROTOCOL_H
