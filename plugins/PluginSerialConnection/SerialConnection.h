@@ -16,6 +16,7 @@
  */
 #ifndef SERIALCONNECTION_H
 #define SERIALCONNECTION_H
+#include "SerialConfig.h"
 #include <QDebug>
 #include <QObject>
 #include <QSerialPort>
@@ -49,6 +50,8 @@ signals:
     void onDisconnected(const QString &error);
 
 private:
+    QString m_portName;
+    int m_baudRate            = 0;
     const int MAX_BUFFER_SIZE = 1024;
     QByteArray _writeBuffer;
     QSerialPort *_serial = nullptr;

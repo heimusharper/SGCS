@@ -15,10 +15,12 @@ find_package(Qt5 COMPONENTS Location REQUIRED)
 SET(SRC_LIST
     PluginSerialConnection.cpp
     SerialConnection.cpp
+    SerialConfig.cpp
     )
 SET(HEADER_LIST
     PluginSerialConnection.h
     SerialConnection.h
+    SerialConfig.h
     )
 SET(OTHER_FILES
     meta.json

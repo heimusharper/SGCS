@@ -21,9 +21,6 @@
 #include <fstream>
 #include <yaml-cpp/yaml.h>
 
-class ConfigNode
-{
-};
 /*!
  * \brief The ConfigInterface class
  * \warning Do not create objects manually,
@@ -31,7 +28,7 @@ class ConfigNode
  *
  * example implementation is ApplicationConfiguration
  */
-class ConfigInterface : public ConfigNode
+class ConfigInterface
 {
 public:
     /*!
@@ -41,40 +38,6 @@ public:
     ConfigInterface(ConfigInterface *root);
     virtual ~ConfigInterface() = default;
 
-    template <class T>
-    /*!
-     * \brief get create or get ConfigInterface implementation
-     * \return
-     */
-    T *get()
-    {
-        T *symbol = nullptr;
-        // search existing
-        for (ConfigInterface *sym : _nodes)
-        {
-            symbol = dynamic_cast<T *>(sym);
-            if (symbol)
-                return symbol;
-            else
-            {
-                symbol = sym->get<T>();
-                if (symbol)
-                    return symbol;
-            }
-        }
-        // not exists
-        // create new
-        T *object           = new T(this);
-        ConfigInterface *ci = dynamic_cast<ConfigInterface *>(object);
-        if (ci)
-        {
-            //  read configuration from file
-            YAML::Node node = nodeAt(ci);
-            ci->fromNode(node);
-        }
-        _nodes.append(object);
-        return object;
-    }
     /*!
      * \brief name Implementation name
      * \return
@@ -96,11 +59,6 @@ public:
      * \return
      */
     ConfigInterface *parent() const;
-    /*!
-     * \brief clear delete all nodes
-     * \warning unsafe, do not use
-     */
-    void clear();
 
 protected:
     /*!
@@ -108,17 +66,8 @@ protected:
      */
     virtual void save();
 
-private:
-    /*!
-     * \brief nodeAt get node at
-     * \param node
-     * \return
-     */
-    YAML::Node nodeAt(ConfigInterface *node);
-
 protected:
     ConfigInterface *_parent = nullptr;
-    QVector<ConfigInterface *> _nodes;
 };
 /*!
  * \brief The ApplicationConfiguration class
@@ -184,6 +133,16 @@ public:
      * \warning do not save to false
      */
     QString versionHash() const;
+    /*!
+     * \brief startDatasource autostart datasource plugin name
+     * \return
+     */
+    QString startDatasource() const;
+    /*!
+     * \brief setStartDatasource autostart datasource plugin name
+     * \param startDatasource
+     */
+    void setStartDatasource(const QString &startDatasource);
 
 private:
     QString m_profile;
@@ -191,6 +150,7 @@ private:
     int m_versionMinor    = 0;
     int m_versionPath     = 0;
     QString m_versionHash = 0;
+    QString m_startDatasource;
 };
 /*!
  * \brief The RunConfiguration class
@@ -211,6 +171,42 @@ public:
      * \return
      */
     static RunConfiguration &instance();
+
+    template <class T>
+    /*!
+     * \brief get create or get ConfigInterface implementation
+     * \return
+     */
+    T *get()
+    {
+        T *symbol = get_if_exists<T>();
+        if (symbol)
+            return symbol;
+        // not exists
+        // create new
+        T *object           = new T(this);
+        ConfigInterface *ci = dynamic_cast<ConfigInterface *>(object);
+        if (ci)
+        {
+            //  read configuration from file
+            YAML::Node node = this->getFromFile(ci->name());
+            if (node)
+                ci->fromNode(node);
+        }
+        _nodes.append(object);
+        return object;
+    }
+    template <class T>
+    T *get_if_exists()
+    {
+        for (ConfigInterface *sym : _nodes)
+        {
+            T *symbol = dynamic_cast<T *>(sym);
+            if (symbol)
+                return symbol;
+        }
+        return nullptr;
+    }
     /*!
      * \brief create create root from file
      * \param filename filename
@@ -238,11 +234,16 @@ public:
      * \param tree parent nodes
      * \return node or empty
      */
-    YAML::Node getFromFile(const QStringList &tree);
+    YAML::Node getFromFile(const QString &link);
     /*!
      * \brief forceSave save to yaml file
      */
     void forceSave();
+    /*!
+     * \brief clear delete all nodes
+     * \warning unsafe, do not use
+     */
+    void clear();
 
 protected:
     /*!
@@ -251,6 +252,7 @@ protected:
     virtual void save() override final;
 
 private:
+    QVector<ConfigInterface *> _nodes;
     /*!
      * \brief _yaml root
      */

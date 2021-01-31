@@ -16,7 +16,10 @@
  */
 #include "SerialConnection.h"
 
-SerialConnection::SerialConnection() : sgcs::connection::Connection()
+SerialConnection::SerialConnection()
+: sgcs::connection::Connection()
+, m_portName(RunConfiguration::instance().get<SerialConfig>()->portName())
+, m_baudRate(RunConfiguration::instance().get<SerialConfig>()->baudRate())
 {
 }
 
@@ -33,6 +36,12 @@ void SerialConnection::inittializeObjects()
     _serial = new QSerialPort();
     connect(_serial, &QSerialPort::readyRead, this, &SerialConnection::readyRead);
     connect(_serial, &QSerialPort::errorOccurred, this, &SerialConnection::onError);
+
+    if (!m_portName.isEmpty() && m_baudRate >= 9600)
+    {
+        // ready to connect automaticaly
+        doConnectToPort(m_portName, m_baudRate);
+    }
 }
 
 void SerialConnection::onTransmit(const QByteArray &data)
@@ -58,6 +67,9 @@ void SerialConnection::onError(QSerialPort::SerialPortError error)
 
 void SerialConnection::doConnectToPort(const QString &portName, int baudRate)
 {
+    m_portName = portName;
+    m_baudRate = baudRate;
+
     _serial->setPortName(portName);
     _serial->setBaudRate(baudRate);
     _serial->setDataBits(QSerialPort::Data8);
@@ -66,6 +78,7 @@ void SerialConnection::doConnectToPort(const QString &portName, int baudRate)
     _serial->setStopBits(QSerialPort::OneStop);
     if (_serial->open(QIODevice::ReadWrite))
     {
+        qInfo() << "Serial connected " << m_portName << m_baudRate;
         if (!_writeBuffer.isEmpty())
             _serial->write(_writeBuffer);
         emit onConnected(portName, baudRate);

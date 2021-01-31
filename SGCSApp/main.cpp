@@ -46,10 +46,25 @@ int main(int argc, char *argv[])
     QDir plugins = QDir(app.applicationDirPath());
     plugins.cd("plugins");
     loader.load(plugins);
-    if (!loader.datasources().isEmpty())
+    QString datasource = RunConfiguration::instance().get<ApplicationConfiguration>()->startDatasource();
+    if (!datasource.isEmpty())
     {
-        sgcs::connection::ConnectionThread thr;
-        thr.create(loader.datasources().first()->instance(), loader.protocols());
+        auto dss = loader.datasources();
+        for (auto ds : dss)
+        {
+            if (ds->name().compare(datasource) == 0)
+            {
+                qDebug() << "DS: " << ds->name() << "take";
+                sgcs::connection::ConnectionThread thr;
+                thr.create(ds->instance(), loader.protocols());
+                break;
+            }
+            else
+            {
+                qDebug() << "DS: " << ds->name() << "pass";
+            }
+        }
     }
+    RunConfiguration::instance().forceSave();
     return app.exec();
 }
