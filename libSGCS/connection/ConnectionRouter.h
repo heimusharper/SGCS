@@ -20,6 +20,7 @@
 #include "../plugins/ProtocolPlugin.h"
 #include "Connection.h"
 #include <UavProtocol.h>
+#include <boost/circular_buffer.hpp>
 
 namespace sgcs
 {
@@ -39,13 +40,16 @@ public slots:
 private slots:
 
     void watch();
+    void onReceive(const QByteArray &data);
 
 private:
-    QTimer *_watcher = nullptr;
-    QList<plugin::ProtocolPlugin *> _protos;
+    QTimer *m_watcher = nullptr;
+    QList<plugin::ProtocolPlugin *> m_protos;
 
-    Connection *_connection     = nullptr;
-    uav::UavProtocol *_protocol = nullptr;
+    Connection *m_connection     = nullptr;
+    uav::UavProtocol *m_protocol = nullptr;
+
+    boost::circular_buffer<char> m_buffer;
 
 signals:
 

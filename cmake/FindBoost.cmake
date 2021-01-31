@@ -1,16 +1,16 @@
 GET_FILENAME_COMPONENT(module_file_path ${CMAKE_CURRENT_LIST_FILE} PATH)
 
-FIND_PATH(YAML_INCLUDE_DIR
+FIND_PATH(BOOST_INCLUDE_DIR
     NAMES
-        yaml-cpp/yaml.h
+        circular_buffer.hpp
     PATHS
         /usr/local/include/boost
         /usr/local/include
         /usr/include/boost
         /usr/include)
-FIND_LIBRARY(YAML_LIBRARY_DIR
+FIND_LIBRARY(BOOST_LIBRARY_DIR
     NAMES
-        libyaml-cpp.so
+        libboost_container.so
     PATHS
         /usr/local/lib64
         /usr/local/lib

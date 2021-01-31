@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 #include "ConnectionRouter.h"
 
 namespace sgcs
@@ -21,7 +22,7 @@ namespace sgcs
 namespace connection
 {
 ConnectionRouter::ConnectionRouter(Connection *connection, const QList<plugin::ProtocolPlugin *> &protos, QObject *parent)
-: _connection(connection), _protos(protos)
+: m_connection(connection), m_protos(protos)
 {
 }
 
@@ -31,16 +32,25 @@ ConnectionRouter::~ConnectionRouter()
 
 void ConnectionRouter::run()
 {
-    _connection->inittializeObjects();
+    m_buffer.resize(1024, 0x00);
+    m_connection->inittializeObjects();
+    connect(m_connection, &Connection::onReceive, this, &ConnectionRouter::onReceive);
+
     qDebug() << "RUN ON THREAD ROUTER" << QThread::currentThreadId();
-    _watcher = new QTimer();
-    connect(_watcher, &QTimer::timeout, this, &ConnectionRouter::watch);
-    _watcher->start(1000);
-    qDebug() << "HAVE PROTOS!" << _protos.size();
+    m_watcher = new QTimer();
+    connect(m_watcher, &QTimer::timeout, this, &ConnectionRouter::watch);
+    m_watcher->start(1000);
+    qDebug() << "HAVE PROTOS!" << m_protos.size();
 }
 
 void ConnectionRouter::watch()
 {
+}
+
+void ConnectionRouter::onReceive(const QByteArray &data)
+{
+    for (int i = 0; i < data.size(); i++)
+        m_buffer.push_back(data.at(i));
 }
 }
 }

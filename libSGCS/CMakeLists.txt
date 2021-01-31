@@ -11,6 +11,7 @@ set(CMAKE_AUTOMOC ON)
 
 include(FindYaml)
 include(GitVersion)
+include(FindBoost)
 
 find_package(Qt5 COMPONENTS Core REQUIRED)
 find_package(Qt5 COMPONENTS SerialPort REQUIRED)
@@ -38,14 +39,19 @@ SET(HEADER_LIST
     version.h
     )
 
-# YAML
+INCLUDE_DIRECTORIES(${BOOST_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${YAML_INCLUDE_DIR})
+
 add_library(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST} ${RESOURCES})
 
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC UAV)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-add_yaml(${PROJECT_NAME})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC ON)
 target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core)
 target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::SerialPort)
 target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Location)
+
+message(${YAML_INCLUDE_DIR})
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC ${BOOST_LIBRARY_DIR})
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC ${YAML_LIBRARY_DIR})

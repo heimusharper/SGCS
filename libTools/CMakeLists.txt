@@ -1,28 +1,27 @@
 cmake_minimum_required(VERSION 3.16.0)
-
-project(SGCSApp LANGUAGES CXX)
+project(Tools LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake)
 
-set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/../bin )
+set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/../bin )
+set(CMAKE_AUTOMOC ON)
 
 find_package(Qt5 COMPONENTS Core REQUIRED)
 find_package(Qt5 COMPONENTS Location REQUIRED)
 
 # add srcs
 SET(SRC_LIST
-    main.cpp
+    )
+SET(HEADER_LIST
     )
 
-#create exec
-add_executable(${PROJECT_NAME} ${SRC_LIST})
+add_library(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST})
 
-#link
-target_link_libraries(${PROJECT_NAME} LINK_PUBLIC SGCS)
-target_link_libraries(${PROJECT_NAME} LINK_PUBLIC UAV)
+target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core)
+
+target_include_directories (${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC ON)
 target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core)
