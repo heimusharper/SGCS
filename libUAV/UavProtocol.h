@@ -27,8 +27,15 @@ class UavProtocol : public QObject
     Q_OBJECT
 public:
     explicit UavProtocol(QObject *parent = nullptr);
+    virtual ~UavProtocol();
+    virtual QByteArray hello() const;
+
+    virtual QString name() const                    = 0;
+    virtual void onReceived(const QByteArray &data) = 0;
 
 signals:
+
+    void onReadyData();
 };
 }
 #endif // UAVPROTOCOL_H

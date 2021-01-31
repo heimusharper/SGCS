@@ -34,12 +34,19 @@ ConnectionThread::~ConnectionThread()
 
 void ConnectionThread::create(Connection *connection, const QList<plugin::ProtocolPlugin *> &protos)
 {
-    _router = new ConnectionRouter(connection, protos);
+    QList<uav::UavProtocol *> protosImpl;
+    for (auto x : protos)
+    {
+        auto inst = x->instance();
+        if (inst)
+            protosImpl.append(inst);
+    }
+    _router = new ConnectionRouter(connection, protosImpl);
     _thread = new QThread();
     connect(_thread, &QThread::started, _router, &ConnectionRouter::run);
     connect(_thread, &QThread::finished, _router, &QObject::deleteLater);
     _router->moveToThread(_thread);
-    for (auto x : protos)
+    for (auto x : protosImpl)
         x->moveToThread(_thread);
     connection->moveToThread(_thread);
     _thread->start();

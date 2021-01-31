@@ -1,2 +1,3 @@
 *.user
 libSGCS/version.h
+thirdparty/*

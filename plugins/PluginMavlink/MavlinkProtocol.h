@@ -18,6 +18,8 @@
 #ifndef MAVLINKPROTOCOL_H
 #define MAVLINKPROTOCOL_H
 
+#include "ardupilotmega/mavlink.h"
+#include <QDebug>
 #include <QObject>
 #include <UavProtocol.h>
 
@@ -26,6 +28,20 @@ class MavlinkProtocol : public uav::UavProtocol
     Q_OBJECT
 public:
     explicit MavlinkProtocol(QObject *parent = nullptr);
+
+    virtual QString name() const override;
+    virtual QByteArray hello() const override;
+
+    virtual void onReceived(const QByteArray &data) override;
+
+private:
+    bool check(char c, mavlink_message_t *msg);
+
+    static QByteArray packMessage(mavlink_message_t *msg);
+
+    const int DIFFERENT_CHANNEL = 1;
+    bool _isCheckAPM            = false;
+    bool _waitForSignal         = true;
 
 signals:
 };

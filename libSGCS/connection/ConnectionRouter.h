@@ -19,6 +19,7 @@
 
 #include "../plugins/ProtocolPlugin.h"
 #include "Connection.h"
+#include <QMutex>
 #include <UavProtocol.h>
 #include <boost/circular_buffer.hpp>
 
@@ -30,7 +31,7 @@ class ConnectionRouter : public QObject
 {
     Q_OBJECT
 public:
-    ConnectionRouter(Connection *connection, const QList<plugin::ProtocolPlugin *> &protos, QObject *parent = nullptr);
+    ConnectionRouter(Connection *connection, const QList<uav::UavProtocol *> &protos, QObject *parent = nullptr);
     ~ConnectionRouter();
 
 public slots:
@@ -44,12 +45,13 @@ private slots:
 
 private:
     QTimer *m_watcher = nullptr;
-    QList<plugin::ProtocolPlugin *> m_protos;
+    QList<uav::UavProtocol *> m_protos;
 
     Connection *m_connection     = nullptr;
     uav::UavProtocol *m_protocol = nullptr;
 
     boost::circular_buffer<char> m_buffer;
+    QMutex _mutex;
 
 signals:
 

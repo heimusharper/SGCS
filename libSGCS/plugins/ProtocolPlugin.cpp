@@ -4,6 +4,7 @@ namespace sgcs
 {
 namespace plugin
 {
+//
 ProtocolPlugin::ProtocolPlugin(QObject *parent) : QObject(parent)
 {
 }

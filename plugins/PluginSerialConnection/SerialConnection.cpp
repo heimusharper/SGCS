@@ -46,6 +46,7 @@ void SerialConnection::inittializeObjects()
 
 void SerialConnection::onTransmit(const QByteArray &data)
 {
+    qDebug() << "WRITE" << data.toHex();
     if (_serial->isOpen())
         _serial->write(data);
     else

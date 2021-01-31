@@ -21,4 +21,13 @@ namespace uav
 UavProtocol::UavProtocol(QObject *parent) : QObject(parent)
 {
 }
+
+UavProtocol::~UavProtocol()
+{
+}
+
+QByteArray UavProtocol::hello() const
+{
+    return QByteArray();
+}
 }

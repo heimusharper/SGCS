@@ -52,6 +52,5 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Core)
 target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::SerialPort)
 target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Location)
 
-message(${YAML_INCLUDE_DIR})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC ${BOOST_LIBRARY_DIR})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC ${YAML_LIBRARY_DIR})

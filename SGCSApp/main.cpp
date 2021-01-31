@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "stdio.h"
+#include "iostream"
 #include <QDebug>
 #include <QDir>
 #include <QGuiApplication>
@@ -27,8 +27,7 @@
 using namespace std;
 void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
-    printf(qUtf8Printable(msg));
-    printf("\n");
+    std::cout << (qUtf8Printable(msg)) << std::endl;
 }
 
 int main(int argc, char *argv[])
@@ -46,6 +45,7 @@ int main(int argc, char *argv[])
     QDir plugins = QDir(app.applicationDirPath());
     plugins.cd("plugins");
     loader.load(plugins);
+    sgcs::connection::ConnectionThread thr;
     QString datasource = RunConfiguration::instance().get<ApplicationConfiguration>()->startDatasource();
     if (!datasource.isEmpty())
     {
@@ -55,7 +55,6 @@ int main(int argc, char *argv[])
             if (ds->name().compare(datasource) == 0)
             {
                 qDebug() << "DS: " << ds->name() << "take";
-                sgcs::connection::ConnectionThread thr;
                 thr.create(ds->instance(), loader.protocols());
                 break;
             }
@@ -65,6 +64,5 @@ int main(int argc, char *argv[])
             }
         }
     }
-    RunConfiguration::instance().forceSave();
     return app.exec();
 }
