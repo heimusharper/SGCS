@@ -14,35 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef WINDOWCONF_H
-#define WINDOWCONF_H
+#include "PluginSerialConnection.h"
 
-#include "RunConfiguration.h"
-#include <QObject>
-/*!
- * \brief The WindowConf class
- * Some window preferences
- */
-class WindowConf : public QObject
+PluginSerialConnection::PluginSerialConnection() : SgcsPlugin()
 {
-    Q_OBJECT
-    Q_PROPERTY(QString version READ version NOTIFY versionChanged)
-
-public:
-    explicit WindowConf(QObject *parent = nullptr);
-
-    /*!
-     * \brief version get version string (1.2.3-abcd1234)
-     * \return
-     *  read only
-     */
-    QString version() const;
-
-private:
-    QString m_version;
-
-signals:
-    void versionChanged(QString version);
-};
-
-#endif // WINDOWCONF_H
+}

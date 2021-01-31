@@ -1,5 +1,3 @@
-#ifndef SERIALCONNECTION_H
-#define SERIALCONNECTION_H
 /*
  * This file is part of the SGCS distribution (https://github.com/heimusharper/SGCS).
  * Copyright (c) 2020 Andrey Stepanov.
@@ -16,10 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "Connection.h"
+#ifndef SERIALCONNECTION_H
+#define SERIALCONNECTION_H
 #include <QDebug>
 #include <QObject>
 #include <QSerialPort>
+#include <connection/Connection.h>
 
 class SerialConnection : public connection::Connection
 {

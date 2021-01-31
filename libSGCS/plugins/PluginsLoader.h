@@ -14,18 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "WindowConf.h"
+#ifndef PLUGINSLOADER_H
+#define PLUGINSLOADER_H
 
-WindowConf::WindowConf(QObject *parent) : QObject(parent)
-{
-    int major    = RunConfiguration::instance().get<ApplicationConfiguration>()->versionMajor();
-    int minor    = RunConfiguration::instance().get<ApplicationConfiguration>()->versionMinor();
-    int path     = RunConfiguration::instance().get<ApplicationConfiguration>()->versionPath();
-    QString hash = RunConfiguration::instance().get<ApplicationConfiguration>()->versionHash();
-    m_version    = QString("%1.%2.%3-%4").arg(major).arg(minor).arg(path).arg(hash);
-}
+#include "SgcsPlugins.h"
+#include <QDir>
+#include <QObject>
+#include <QPluginLoader>
 
-QString WindowConf::version() const
+class PluginsLoader : public QObject
 {
-    return m_version;
-}
+    Q_OBJECT
+public:
+    explicit PluginsLoader(QObject *parent = nullptr);
+
+    bool load(const QDir &pluginsDir);
+
+signals:
+};
+
+#endif // PLUGINSLOADER_H

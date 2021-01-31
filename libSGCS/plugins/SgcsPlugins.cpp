@@ -14,34 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#include "SgcsPlugins.h"
 
-#include "MainWindow.h"
-#include "SerialConnectionSelectorListModel.h"
-#include "UavFabric.h"
-#include "UavObject.h"
-#include <QObject>
-#include <QQmlApplicationEngine>
-#include <QQmlContext>
-#include <QQmlProperty>
-#include <QQuickItem>
-#include <QQuickView>
-/*!
- * \brief The MainWindow class
- *
- */
-class MainWindow : public QObject
+SgcsPlugin::SgcsPlugin()
 {
-    Q_OBJECT
-
-public:
-    explicit MainWindow(QObject *parent = nullptr);
-    static QIcon icon();
-
-private:
-    QQmlApplicationEngine *_engine = nullptr;
-signals:
-};
-
-#endif // MAINWINDOW_H
+}

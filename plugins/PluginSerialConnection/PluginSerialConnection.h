@@ -14,29 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import QtQuick 2.12
-import QtQuick.Controls 2.12
-import QtLocation 5.12
-import QtPositioning 5.12
+#ifndef PLUGINSERIALCONNECTION_H
+#define PLUGINSERIALCONNECTION_H
 
-Page {
-    title: qsTr("Map view")
-    id: mapView
+#include <QObject>
+#include <plugins/SgcsPlugins.h>
 
-    Plugin {
-        id: mapPlugin
-        name: "osm"
-        PluginParameter {
-            name: "osm.mapping.host";
-            value: "http://a.tile.openstreetmap.org/"
-        }
-    }
+class PluginSerialConnection : public SgcsPlugin
+{
+    Q_OBJECT
+    Q_PLUGIN_METADATA(IID "ru.heimusharper.SGCS.PluginInterface" FILE "meta.json")
+    Q_INTERFACES(SgcsPlugin)
+public:
+    explicit PluginSerialConnection();
+    virtual ~PluginSerialConnection() = default;
 
-    Map {
-        id: map
-        anchors.fill: parent
-        plugin: mapPlugin
-        center: QtPositioning.coordinate(59.91, 10.75) // Oslo
-        zoomLevel: 14
-    }
-}
+signals:
+};
+
+#endif // PLUGINSERIALCONNECTION_H

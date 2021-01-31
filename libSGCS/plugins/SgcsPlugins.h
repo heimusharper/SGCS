@@ -14,23 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "MainWindow.h"
-#include "WindowConf.h"
+#ifndef SGCSPLUGINS_H
+#define SGCSPLUGINS_H
 
-MainWindow::MainWindow(QObject *parent) : QObject(parent)
+#include <QObject>
+
+class SgcsPlugin : public QObject
 {
-    qmlRegisterType<SerialConnectionSelectorListModel>("sgcs", 1, 0, "SerialConnectionSelectorListModel");
-    qmlRegisterType<UavObject>("sgcs", 1, 0, "UavObject");
-    // qRegisterMetaType<UavObject>("UavObject");
-    qmlRegisterType<UavFabric>("sgcs", 1, 0, "UavFabric");
+    Q_OBJECT
+public:
+    explicit SgcsPlugin();
+    virtual ~SgcsPlugin() = default;
+};
 
-    qmlRegisterType<WindowConf>("sgcs", 1, 0, "WindowConf");
+#define PluginInterface_iid "ru.heimusharper.SGCS.PluginInterface"
+Q_DECLARE_INTERFACE(SgcsPlugin, PluginInterface_iid)
 
-    _engine = new QQmlApplicationEngine(this);
-    _engine->load(QUrl(QStringLiteral("qrc:/qml/MainWindow.qml")));
-}
-
-QIcon MainWindow::icon()
-{
-    return QIcon(":/logo.png");
-}
+#endif // SGCSPLUGINS_H
