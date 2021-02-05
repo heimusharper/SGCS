@@ -1,6 +1,4 @@
-GET_FILENAME_COMPONENT(module_file_path ${CMAKE_CURRENT_LIST_FILE} PATH)
-
-FIND_PATH(YAML_INCLUDE_DIR
+FIND_PATH(Yaml_INCLUDE_DIR
     NAMES
         yaml-cpp/yaml.h
     PATHS
@@ -8,12 +6,20 @@ FIND_PATH(YAML_INCLUDE_DIR
         /usr/local/include
         /usr/include/boost
         /usr/include)
-FIND_LIBRARY(YAML_LIBRARY_DIR
+FIND_LIBRARY(Yaml_LIBRARY_DIR
     NAMES
-        libyaml-cpp.so
+        yaml-cpp
     PATHS
         /usr/local/lib64
         /usr/local/lib
         /usr/lib
         /lib
 )
+
+SET(Yaml_INCLUDE_DIRS ${Yaml_INCLUDE_DIR})
+SET(Yaml_LIBRARY_DIRS ${Yaml_LIBRARY_DIR} )
+
+SET(Yaml_FOUND "NO")
+IF (Yaml_INCLUDE_DIRS AND Yaml_LIBRARY_DIRS)
+    SET(Yaml_FOUND "YES")
+ENDIF()
