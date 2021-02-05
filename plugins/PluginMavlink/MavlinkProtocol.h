@@ -19,9 +19,9 @@
 #define MAVLINKPROTOCOL_H
 
 #include "ardupilotmega/mavlink.h"
-#include <QDebug>
 #include <QObject>
 #include <UavProtocol.h>
+#include <boost/log/trivial.hpp>
 
 class MavlinkProtocol : public uav::UavProtocol
 {

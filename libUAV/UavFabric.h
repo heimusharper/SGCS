@@ -17,7 +17,6 @@
 #ifndef UAVFABRIC_H
 #define UAVFABRIC_H
 #include "UavObject.h"
-#include <QDebug>
 #include <QJSValue>
 #include <QObject>
 

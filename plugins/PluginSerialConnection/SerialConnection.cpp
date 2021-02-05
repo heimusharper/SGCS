@@ -18,7 +18,7 @@
 
 SerialConnection::SerialConnection()
 : sgcs::connection::Connection()
-, m_portName(RunConfiguration::instance().get<SerialConfig>()->portName())
+, m_portName(QString::fromStdString(RunConfiguration::instance().get<SerialConfig>()->portName()))
 , m_baudRate(RunConfiguration::instance().get<SerialConfig>()->baudRate())
 {
 }
@@ -46,7 +46,7 @@ void SerialConnection::inittializeObjects()
 
 void SerialConnection::onTransmit(const QByteArray &data)
 {
-    qDebug() << "WRITE" << data.toHex();
+    BOOST_LOG_TRIVIAL(debug) << "WRITE" << data.toHex().toStdString();
     if (_serial->isOpen())
         _serial->write(data);
     else
@@ -62,7 +62,7 @@ void SerialConnection::onError(QSerialPort::SerialPortError error)
     if (error == QSerialPort::SerialPortError::NoError)
         return;
     QString err = _serial->errorString();
-    qWarning() << err;
+    BOOST_LOG_TRIVIAL(warning) << err.toStdString();
     emit onDisconnected(err);
 }
 
@@ -79,7 +79,7 @@ void SerialConnection::doConnectToPort(const QString &portName, int baudRate)
     _serial->setStopBits(QSerialPort::OneStop);
     if (_serial->open(QIODevice::ReadWrite))
     {
-        qInfo() << "Serial connected " << m_portName << m_baudRate;
+        BOOST_LOG_TRIVIAL(info) << "Serial connected " << m_portName.toStdString() << m_baudRate;
         if (!_writeBuffer.isEmpty())
             _serial->write(_writeBuffer);
         emit onConnected(portName, baudRate);
@@ -87,7 +87,7 @@ void SerialConnection::doConnectToPort(const QString &portName, int baudRate)
     else
     {
         QString err = _serial->errorString();
-        qWarning() << err;
+        BOOST_LOG_TRIVIAL(warning) << err.toStdString() << portName.toStdString() << baudRate;
         emit onDisconnected(err);
     }
 }

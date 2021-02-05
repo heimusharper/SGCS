@@ -41,7 +41,7 @@ void ConnectionRouter::run()
             if (!m_protocol)
             {
                 m_protocol = p;
-                qInfo() << "Ready " << m_protocol->name() << " protocol";
+                BOOST_LOG_TRIVIAL(info) << "Ready " << m_protocol->name().toStdString() << " protocol";
                 while (!m_protos.empty())
                 {
                     auto px = m_protos.takeFirst();
@@ -56,12 +56,12 @@ void ConnectionRouter::run()
         });
     }
 
-    qDebug() << "RUN ON THREAD ROUTER" << QThread::currentThreadId();
+    BOOST_LOG_TRIVIAL(debug) << "RUN ON THREAD ROUTER" << QThread::currentThreadId();
     m_watcher = new QTimer();
     connect(m_watcher, &QTimer::timeout, this, &ConnectionRouter::watch);
     m_watcher->start(1000);
     watch();
-    qDebug() << "HAVE PROTOS!" << m_protos.size();
+    BOOST_LOG_TRIVIAL(debug) << "HAVE PROTOS!" << m_protos.size();
 }
 
 void ConnectionRouter::watch()

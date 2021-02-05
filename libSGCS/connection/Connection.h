@@ -18,7 +18,6 @@
 #define CONNECTION_H
 
 #include "UavProtocol.h"
-#include <QDebug>
 #include <QObject>
 #include <QThread>
 #include <QTimer>

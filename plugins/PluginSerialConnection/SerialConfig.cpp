@@ -1,10 +1,10 @@
 #include "SerialConfig.h"
 
-SerialConfig::SerialConfig(ConfigInterface *parent) : ConfigInterface(parent), m_portName(QString()), m_baudRate(0)
+SerialConfig::SerialConfig(ConfigInterface *parent) : ConfigInterface(parent), m_baudRate()
 {
 }
 
-QString SerialConfig::name() const
+std::string SerialConfig::name() const
 {
     return "SerialConnectionConfiguration";
 }
@@ -12,7 +12,7 @@ QString SerialConfig::name() const
 YAML::Node SerialConfig::toNode(const YAML::Node &file) const
 {
     YAML::Node node   = file;
-    node["port_name"] = m_portName.toStdString();
+    node["port_name"] = m_portName;
     node["port_baud"] = m_baudRate;
     return node;
 }
@@ -20,31 +20,31 @@ YAML::Node SerialConfig::toNode(const YAML::Node &file) const
 void SerialConfig::fromNode(const YAML::Node &node)
 {
     if (node["port_name"])
-        m_portName = QString::fromStdString(node["port_name"].as<std::string>());
+        m_portName = node["port_name"].as<std::string>();
     else
         m_portName = "";
     if (node["port_baud"])
-        m_baudRate = node["port_baud"].as<int>();
+        m_baudRate = node["port_baud"].as<uint16_t>();
     else
         m_baudRate = 0;
 }
 
-QString SerialConfig::portName() const
+std::string SerialConfig::portName() const
 {
     return m_portName;
 }
 
-void SerialConfig::setPortName(const QString &portName)
+void SerialConfig::setPortName(const std::string &portName)
 {
     m_portName = portName;
 }
 
-quint16 SerialConfig::baudRate() const
+uint16_t SerialConfig::baudRate() const
 {
     return m_baudRate;
 }
 
-void SerialConfig::setBaudRate(const quint16 &baudRate)
+void SerialConfig::setBaudRate(const uint16_t &baudRate)
 {
     m_baudRate = baudRate;
 }

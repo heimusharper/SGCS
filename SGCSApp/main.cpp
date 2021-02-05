@@ -54,7 +54,7 @@ void initLogger(bool output, bool trace, const std::string &file)
 int main(int argc, char *argv[])
 {
     boost::program_options::options_description description("SGCS commandline");
-    description.add_options()("help", "produce help message")("output", "debug output")("trace", "trace output")("ap", "autoconnect");
+    description.add_options()("help", "produce help message")("output", "debug output")("trace", "trace output")("auto", "autoconnect");
 
     boost::program_options::variables_map vm;
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, description), vm);
@@ -79,10 +79,9 @@ int main(int argc, char *argv[])
 
     initLogger(debugOutput, trace, logFile);
     //
-    BOOST_LOG_TRIVIAL(debug) << "Qt";
+    BOOST_LOG_TRIVIAL(debug) << "processing...";
 
     QGuiApplication app(argc, argv);
-    qDebug() << "processing...";
     if (!RunConfiguration::instance().create("default.yaml"))
     {
         RunConfiguration::instance().get<ApplicationConfiguration>()->setProfile("default");
@@ -94,18 +93,29 @@ int main(int argc, char *argv[])
     plugins.cd("plugins");
     loader.load(plugins);
     sgcs::connection::ConnectionThread thr;
-    QString datasource = RunConfiguration::instance().get<ApplicationConfiguration>()->startDatasource();
-    if (!datasource.isEmpty())
+    std::string datasource = RunConfiguration::instance().get<ApplicationConfiguration>()->startDatasource();
+    if (!datasource.empty())
     {
         auto dss = loader.datasources();
         for (auto ds : dss)
         {
-            if (ds->name().compare(datasource) == 0)
+            if (ds->name().compare(QString::fromStdString(datasource)) == 0)
             {
                 thr.create(ds->instance(), loader.protocols());
                 break;
             }
         }
     }
+    else if (vm.count("auto"))
+    {
+        BOOST_LOG_TRIVIAL(debug) << "DS" << datasource;
+        auto dss = loader.datasources();
+        if (!dss.isEmpty())
+        {
+            BOOST_LOG_TRIVIAL(debug) << "DS" << datasource;
+            thr.create(dss.first()->instance(), loader.protocols());
+        }
+    }
+    RunConfiguration::instance().forceSave();
     return app.exec();
 }

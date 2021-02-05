@@ -22,6 +22,7 @@
 #include <QMutex>
 #include <UavProtocol.h>
 #include <boost/circular_buffer.hpp>
+#include <boost/log/trivial.hpp>
 
 namespace sgcs
 {

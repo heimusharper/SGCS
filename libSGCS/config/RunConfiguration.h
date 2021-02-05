@@ -16,9 +16,10 @@
  */
 #ifndef RUNCONFIGURATION_H
 #define RUNCONFIGURATION_H
-#include <QDebug>
-#include <QString>
+#include <boost/container/vector.hpp>
+#include <boost/log/trivial.hpp>
 #include <fstream>
+#include <string>
 #include <yaml-cpp/yaml.h>
 
 /*!
@@ -42,7 +43,7 @@ public:
      * \brief name Implementation name
      * \return
      */
-    virtual QString name() const = 0;
+    virtual std::string name() const = 0;
     /*!
      * \brief toNode write to file new configuration
      * \param file
@@ -87,7 +88,7 @@ public:
      * \brief name ApplicationConfiguration
      * \return ApplicationConfiguration
      */
-    virtual QString name() const override final;
+    virtual std::string name() const override final;
     /*!
      * \brief toNode to yaml node
      * \param file root
@@ -103,12 +104,12 @@ public:
      * \brief profile get application run profile name
      * \return profile name
      */
-    QString profile() const;
+    std::string profile() const;
     /*!
      * \brief setProfile change application profile name
      * \param profile profile name
      */
-    void setProfile(const QString &profile);
+    void setProfile(const std::string &profile);
     /*!
      * \brief versionMajor version major
      * \return version major
@@ -132,25 +133,25 @@ public:
      * \return version major
      * \warning do not save to false
      */
-    QString versionHash() const;
+    std::string versionHash() const;
     /*!
      * \brief startDatasource autostart datasource plugin name
      * \return
      */
-    QString startDatasource() const;
+    std::string startDatasource() const;
     /*!
      * \brief setStartDatasource autostart datasource plugin name
      * \param startDatasource
      */
-    void setStartDatasource(const QString &startDatasource);
+    void setStartDatasource(const std::string &startDatasource);
 
 private:
-    QString m_profile;
-    int m_versionMajor    = 0;
-    int m_versionMinor    = 0;
-    int m_versionPath     = 0;
-    QString m_versionHash = 0;
-    QString m_startDatasource;
+    std::string m_profile;
+    int m_versionMajor        = 0;
+    int m_versionMinor        = 0;
+    int m_versionPath         = 0;
+    std::string m_versionHash = 0;
+    std::string m_startDatasource;
 };
 /*!
  * \brief The RunConfiguration class
@@ -193,7 +194,7 @@ public:
             if (node)
                 ci->fromNode(node);
         }
-        _nodes.append(object);
+        _nodes.push_back(object);
         return object;
     }
     template <class T>
@@ -212,12 +213,12 @@ public:
      * \param filename filename
      * \return true if file exist and yaml is valid
      */
-    bool create(const QString &filename);
+    bool create(const std::string &filename);
     /*!
      * \brief name ConfigInterface implementation name
      * \return name
      */
-    virtual QString name() const override final;
+    virtual std::string name() const override final;
     /*!
      * \brief toNode create yaml node
      * \param file root
@@ -234,7 +235,7 @@ public:
      * \param tree parent nodes
      * \return node or empty
      */
-    YAML::Node getFromFile(const QString &link);
+    YAML::Node getFromFile(const std::string &link);
     /*!
      * \brief forceSave save to yaml file
      */
@@ -252,7 +253,7 @@ protected:
     virtual void save() override final;
 
 private:
-    QVector<ConfigInterface *> _nodes;
+    boost::container::vector<ConfigInterface *> _nodes;
     /*!
      * \brief _yaml root
      */
@@ -260,7 +261,7 @@ private:
     /*!
      * \brief _filename save filename
      */
-    QString _filename;
+    std::string _filename;
     /*!
      * \brief RunConfiguration
      * \param root

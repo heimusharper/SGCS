@@ -16,7 +16,7 @@ public:
      * \brief name ApplicationConfiguration
      * \return ApplicationConfiguration
      */
-    virtual QString name() const override final;
+    virtual std::string name() const override final;
     /*!
      * \brief toNode to yaml node
      * \param file root
@@ -33,15 +33,15 @@ public:
      * \return profile name
      */
 
-    QString portName() const;
-    void setPortName(const QString &portName);
+    std::string portName() const;
+    void setPortName(const std::string &portName);
 
-    quint16 baudRate() const;
-    void setBaudRate(const quint16 &baudRate);
+    uint16_t baudRate() const;
+    void setBaudRate(const uint16_t &baudRate);
 
 private:
-    QString m_portName;
-    quint16 m_baudRate;
+    std::string m_portName;
+    uint16_t m_baudRate;
 };
 
 #endif // SERIALCONFIG_H

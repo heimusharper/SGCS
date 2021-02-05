@@ -41,11 +41,11 @@ ApplicationConfiguration::ApplicationConfiguration(ConfigInterface *parent)
 , m_versionMinor(SGCS_VERSION_MINOR)
 , m_versionPath(SGCS_VERSION_PATH)
 , m_versionHash(SGCS_VERSION_HASH)
-, m_startDatasource(QString())
+, m_startDatasource(std::string())
 {
 }
 
-QString ApplicationConfiguration::name() const
+std::string ApplicationConfiguration::name() const
 {
     return "ApplicationConfiguration";
 }
@@ -53,29 +53,29 @@ QString ApplicationConfiguration::name() const
 YAML::Node ApplicationConfiguration::toNode(const YAML::Node &file) const
 {
     YAML::Node node                     = file;
-    node["run_profile_name"]            = m_profile.toStdString();
-    node["datasource_autostart_plugin"] = m_startDatasource.toStdString();
+    node["run_profile_name"]            = m_profile;
+    node["datasource_autostart_plugin"] = m_startDatasource;
     return node;
 }
 
 void ApplicationConfiguration::fromNode(const YAML::Node &node)
 {
     if (node["run_profile_name"])
-        m_profile = QString::fromStdString(node["run_profile_name"].as<std::string>());
+        m_profile = node["run_profile_name"].as<std::string>();
     else
         m_profile = "default";
     if (node["datasource_autostart_plugin"])
-        m_startDatasource = QString::fromStdString(node["datasource_autostart_plugin"].as<std::string>());
+        m_startDatasource = node["datasource_autostart_plugin"].as<std::string>();
     else
         m_startDatasource = "";
 }
 
-QString ApplicationConfiguration::profile() const
+std::string ApplicationConfiguration::profile() const
 {
     return m_profile;
 }
 
-void ApplicationConfiguration::setProfile(const QString &profile)
+void ApplicationConfiguration::setProfile(const std::string &profile)
 {
     m_profile = profile;
 }
@@ -95,17 +95,17 @@ int ApplicationConfiguration::versionPath() const
     return m_versionPath;
 }
 
-QString ApplicationConfiguration::versionHash() const
+std::string ApplicationConfiguration::versionHash() const
 {
     return m_versionHash;
 }
 
-QString ApplicationConfiguration::startDatasource() const
+std::string ApplicationConfiguration::startDatasource() const
 {
     return m_startDatasource;
 }
 
-void ApplicationConfiguration::setStartDatasource(const QString &startDatasource)
+void ApplicationConfiguration::setStartDatasource(const std::string &startDatasource)
 {
     m_startDatasource = startDatasource;
 }
@@ -127,24 +127,24 @@ RunConfiguration &RunConfiguration::instance()
     return rc;
 }
 
-bool RunConfiguration::create(const QString &filename)
+bool RunConfiguration::create(const std::string &filename)
 {
     _filename = filename;
     try
     {
         // open YAML file
-        _yaml = YAML::LoadFile(filename.toStdString());
+        _yaml = YAML::LoadFile(filename);
         fromNode(_yaml);
         return true;
     }
     catch (YAML::Exception &e)
     {
-        qWarning() << "YAML EXCEPTION " << filename << QString(e.what());
+        BOOST_LOG_TRIVIAL(warning) << "YAML EXCEPTION " << filename << e.what();
     }
     return false;
 }
 
-QString RunConfiguration::name() const
+std::string RunConfiguration::name() const
 {
     return "RunConfiguration";
 }
@@ -154,7 +154,7 @@ YAML::Node RunConfiguration::toNode(const YAML::Node &file) const
     YAML::Node root = file;
     // all childs
     for (const ConfigInterface *node : _nodes)
-        root[node->name().toStdString()] = node->toNode(root[node->name().toStdString()]);
+        root[node->name()] = node->toNode(root[node->name()]);
     return root;
 }
 
@@ -162,25 +162,25 @@ void RunConfiguration::fromNode(const YAML::Node &node)
 {
     // all childs
     for (ConfigInterface *i : _nodes)
-        if (node[i->name().toStdString()])
-            i->fromNode(node[i->name().toStdString()]);
+        if (node[i->name()])
+            i->fromNode(node[i->name()]);
 }
 
-YAML::Node RunConfiguration::getFromFile(const QString &link)
+YAML::Node RunConfiguration::getFromFile(const std::string &link)
 {
     try
     {
-        if (_yaml[link.toStdString()])
-            return _yaml[link.toStdString()];
+        if (_yaml[link])
+            return _yaml[link];
     }
     catch (YAML::BadFile &e)
     {
-        qWarning() << "YAML BAD FILE" << QString(e.what()) << " tree " << link;
+        BOOST_LOG_TRIVIAL(warning) << "YAML BAD FILE" << e.what() << " tree " << link;
         save();
         return getFromFile(link);
     }
     YAML::Node n;
-    _yaml[link.toStdString()] = n;
+    _yaml[link] = n;
     return n;
 }
 
@@ -191,10 +191,10 @@ void RunConfiguration::forceSave()
 
 void RunConfiguration::clear()
 {
-    while (!_nodes.isEmpty())
+    while (!_nodes.empty())
     {
-        auto obj = _nodes.takeFirst();
-        // obj->clear();
+        auto obj = _nodes.back();
+        _nodes.pop_back();
         delete obj;
     }
 }
@@ -202,6 +202,6 @@ void RunConfiguration::clear()
 void RunConfiguration::save()
 {
     _yaml = toNode(_yaml);
-    std::ofstream fout(_filename.toStdString());
+    std::ofstream fout(_filename);
     fout << _yaml;
 }

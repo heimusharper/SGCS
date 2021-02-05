@@ -17,9 +17,9 @@
 #ifndef SERIALCONNECTION_H
 #define SERIALCONNECTION_H
 #include "SerialConfig.h"
-#include <QDebug>
 #include <QObject>
 #include <QSerialPort>
+#include <boost/log/trivial.hpp>
 #include <connection/Connection.h>
 
 class SerialConnection : public sgcs::connection::Connection
@@ -51,7 +51,7 @@ signals:
 
 private:
     QString m_portName;
-    int m_baudRate            = 0;
+    uint16_t m_baudRate       = 0;
     const int MAX_BUFFER_SIZE = 1024;
     QByteArray _writeBuffer;
     QSerialPort *_serial = nullptr;

@@ -39,7 +39,7 @@ void MavlinkProtocol::onReceived(const QByteArray &data)
     {
         if (check(data.at(i), &msg))
         {
-            qInfo() << "MSG ID" << msg.msgid;
+            BOOST_LOG_TRIVIAL(debug) << "MSG ID" << msg.msgid;
             if (_waitForSignal)
             {
                 _waitForSignal = false;
