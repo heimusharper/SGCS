@@ -15,7 +15,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "iostream"
-#include <QDebug>
 #include <QDir>
 #include <QGuiApplication>
 #include <QSerialPortInfo>
@@ -24,15 +23,64 @@
 #include <connection/ConnectionThread.h>
 #include <plugins/PluginsLoader.h>
 
-using namespace std;
-void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
-{
-    std::cout << (qUtf8Printable(msg)) << std::endl;
-}
+#include <boost/log/core.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/sinks/text_file_backend.hpp>
+#include <boost/log/sources/record_ostream.hpp>
+#include <boost/log/sources/severity_logger.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/program_options.hpp>
 
+void initLogger(bool output, bool trace, const std::string &file)
+{
+    if (!output)
+        boost::log::core::get()->set_filter((trace) ? boost::log::trivial::severity >= boost::log::trivial::trace
+                                                    : boost::log::trivial::severity >= boost::log::trivial::info);
+
+    if (!file.empty())
+    {
+        boost::log::add_file_log(boost::log::keywords::file_name     = file,
+                                 boost::log::keywords::rotation_size = 10 * 1024 * 1024,
+                                 boost::log::keywords::time_based_rotation =
+                                 boost::log::sinks::file::rotation_at_time_point(0, 0, 0),
+                                 boost::log::keywords::format = "[%TimeStamp%]: %Message%");
+
+        boost::log::core::get()->set_filter((trace) ? boost::log::trivial::severity >= boost::log::trivial::trace
+                                                    : boost::log::trivial::severity >= boost::log::trivial::info);
+    }
+}
 int main(int argc, char *argv[])
 {
-    qInstallMessageHandler(messageHandler);
+    boost::program_options::options_description description("SGCS commandline");
+    description.add_options()("help", "produce help message")("output", "debug output")("trace", "trace output")("ap", "autoconnect");
+
+    boost::program_options::variables_map vm;
+    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, description), vm);
+    boost::program_options::notify(vm);
+
+    bool debugOutput = false;
+    bool trace       = false;
+
+    if (vm.count("help"))
+    {
+        initLogger(true, false, "");
+        BOOST_LOG_TRIVIAL(debug) << description << "\n";
+        return 1;
+    }
+    if (vm.count("output"))
+        debugOutput = true;
+    if (vm.count("trace"))
+        trace = true;
+    std::string logFile;
+    if (vm.count("log"))
+        logFile = "sample_%N.log";
+
+    initLogger(debugOutput, trace, logFile);
+    //
+    BOOST_LOG_TRIVIAL(debug) << "Qt";
+
     QGuiApplication app(argc, argv);
     qDebug() << "processing...";
     if (!RunConfiguration::instance().create("default.yaml"))
@@ -54,13 +102,8 @@ int main(int argc, char *argv[])
         {
             if (ds->name().compare(datasource) == 0)
             {
-                qDebug() << "DS: " << ds->name() << "take";
                 thr.create(ds->instance(), loader.protocols());
                 break;
-            }
-            else
-            {
-                qDebug() << "DS: " << ds->name() << "pass";
             }
         }
     }
