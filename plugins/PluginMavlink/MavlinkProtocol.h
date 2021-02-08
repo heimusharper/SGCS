@@ -19,15 +19,18 @@
 #define MAVLINKPROTOCOL_H
 
 #include "ardupilotmega/mavlink.h"
-#include <QObject>
 #include <UavProtocol.h>
+#include <atomic>
 #include <boost/log/trivial.hpp>
+#include <mutex>
+#include <queue>
+#include <thread>
 
-class MavlinkProtocol : public QObject, public uav::UavProtocol
+class MavlinkProtocol : public uav::UavProtocol
 {
-    Q_OBJECT
 public:
     explicit MavlinkProtocol();
+    ~MavlinkProtocol();
 
     virtual std::string name() const override;
     virtual boost::container::vector<uint8_t> hello() const override;
@@ -35,15 +38,24 @@ public:
     virtual void onReceived(const boost::container::vector<uint8_t> &data) override;
 
 private:
+    void run();
+
+private:
     bool check(char c, mavlink_message_t *msg);
 
     static boost::container::vector<uint8_t> packMessage(mavlink_message_t *msg);
 
-    const int DIFFERENT_CHANNEL = 1;
-    bool _isCheckAPM            = false;
-    bool _waitForSignal         = true;
+    const int DIFFERENT_CHANNEL     = 1;
+    std::atomic_bool _isCheckAPM    = false;
+    std::atomic_bool _waitForSignal = true;
 
-signals:
+    std::queue<mavlink_message_t> _mavlinkMessages;
+    std::mutex _mavlinkStoreMutex;
+
+    std::atomic_bool _stopThread;
+    std::thread *_dataProcessorThread = nullptr;
+    std::queue<boost::container::vector<uint8_t>> _dataTasks;
+    std::mutex _dataTaskMutex;
 };
 
 #endif // MAVLINKPROTOCOL_H

@@ -16,13 +16,28 @@
  */
 #include "MavlinkProtocol.h"
 
-MavlinkProtocol::MavlinkProtocol() : QObject(), uav::UavProtocol()
+MavlinkProtocol::MavlinkProtocol() : uav::UavProtocol()
 {
+    _isCheckAPM.store(false);
+    _waitForSignal.store(true);
+    _stopThread.store(false);
+    _dataProcessorThread = new std::thread(&MavlinkProtocol::run, this);
+}
+
+MavlinkProtocol::~MavlinkProtocol()
+{
+    _stopThread.store(true);
+    if (_dataProcessorThread)
+    {
+        if (_dataProcessorThread->joinable())
+            _dataProcessorThread->join();
+        delete _dataProcessorThread;
+    }
 }
 
 std::string MavlinkProtocol::name() const
 {
-    return tr("Mavlink APM").toStdString();
+    return "Mavlink APM";
 }
 
 boost::container::vector<uint8_t> MavlinkProtocol::hello() const
@@ -34,18 +49,53 @@ boost::container::vector<uint8_t> MavlinkProtocol::hello() const
 
 void MavlinkProtocol::onReceived(const boost::container::vector<uint8_t> &data)
 {
-    mavlink_message_t msg;
-    for (int i = 0; i < data.size(); i++)
+    _dataTaskMutex.lock();
+    _dataTasks.push(data);
+    _dataTaskMutex.unlock();
+}
+
+void MavlinkProtocol::run()
+{
+    boost::container::vector<uint8_t> buffer;
+    while (!_stopThread.load())
     {
-        if (check((char)data[i], &msg))
+        // collect buffers
+        while (!_dataTasks.empty())
         {
-            BOOST_LOG_TRIVIAL(info) << "MSG ID" << msg.msgid;
-            if (_waitForSignal)
-            {
-                _waitForSignal = false;
-                setIsHasData(true);
-            }
+            _dataTaskMutex.lock();
+            boost::container::vector<uint8_t> data = _dataTasks.front();
+            _dataTasks.pop();
+            _dataTaskMutex.unlock();
+            for (int i = 0; i < data.size(); i++)
+                buffer.push_back(data.at(i));
         }
+
+        // parser
+        if (!buffer.empty())
+        {
+            mavlink_message_t msg;
+            for (int i = 0; i < buffer.size(); i++)
+            {
+                if (check((char)buffer[i], &msg))
+                {
+                    if (_isCheckAPM.load())
+                    {
+                        _mavlinkStoreMutex.lock();
+                        _mavlinkMessages.push(msg);
+                        _mavlinkStoreMutex.unlock();
+                        BOOST_LOG_TRIVIAL(info) << "MSG ID" << msg.msgid;
+                        if (_waitForSignal.load())
+                        {
+                            _waitForSignal.store(false);
+                            setIsHasData(true);
+                        }
+                    }
+                }
+            }
+            buffer.clear();
+        }
+
+        usleep(10000);
     }
 }
 
@@ -55,7 +105,7 @@ bool MavlinkProtocol::check(char c, mavlink_message_t *msg)
     uint8_t i = mavlink_parse_char(DIFFERENT_CHANNEL, c, msg, &stats);
     if (i != 0)
     {
-        if (!_isCheckAPM)
+        if (!_isCheckAPM.load())
         {
             if (msg->msgid == MAVLINK_MSG_ID_HEARTBEAT)
             {
@@ -63,7 +113,7 @@ bool MavlinkProtocol::check(char c, mavlink_message_t *msg)
                 mavlink_msg_heartbeat_decode(msg, &hrt);
                 if (hrt.autopilot == MAV_AUTOPILOT_ARDUPILOTMEGA)
                 {
-                    _isCheckAPM = true;
+                    _isCheckAPM.store(true);
                     return true;
                 }
             }
