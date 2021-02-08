@@ -17,18 +17,10 @@
 #include "SerialConnection.h"
 
 SerialConnection::SerialConnection()
-: sgcs::connection::Connection()
+: QObject()
+, sgcs::connection::Connection()
 , m_portName(QString::fromStdString(RunConfiguration::instance().get<SerialConfig>()->portName()))
 , m_baudRate(RunConfiguration::instance().get<SerialConfig>()->baudRate())
-{
-}
-
-SerialConnection::~SerialConnection()
-{
-    _serial->deleteLater();
-}
-
-void SerialConnection::inittializeObjects()
 {
     connect(this, &SerialConnection::connectToPort, this, &SerialConnection::doConnectToPort);
     connect(this, &SerialConnection::disconnectFromPort, this, &SerialConnection::doDisconnectFromPort);
@@ -44,17 +36,36 @@ void SerialConnection::inittializeObjects()
     }
 }
 
-void SerialConnection::onTransmit(const QByteArray &data)
+SerialConnection::~SerialConnection()
 {
-    BOOST_LOG_TRIVIAL(debug) << "WRITE" << data.toHex().toStdString();
+    _serial->deleteLater();
+}
+
+void SerialConnection::onTransmit(const boost::container::vector<uint8_t> &data)
+{
+    BOOST_LOG_TRIVIAL(debug) << "WRITE SIZE" << data.size();
     if (_serial->isOpen())
-        _serial->write(data);
+        _serial->write((char *)data.data(), data.size());
     else
     {
-        _writeBuffer.append(data);
+        for (int i = 0; i < data.size(); i++)
+            _writeBuffer.push(data[i]);
         if (_writeBuffer.size() > MAX_BUFFER_SIZE)
-            _writeBuffer.remove(0, _writeBuffer.size() - (MAX_BUFFER_SIZE + MAX_BUFFER_SIZE * 0.2));
+            while (_writeBuffer.size() > MAX_BUFFER_SIZE - MAX_BUFFER_SIZE / 4)
+                _writeBuffer.pop();
     }
+}
+
+boost::container::vector<uint8_t> SerialConnection::collectBytesAndClear()
+{
+    boost::container::vector<uint8_t> bytes;
+    setHasBytes(false);
+    while (!_readBuffer.empty())
+    {
+        bytes.push_back(_readBuffer.front());
+        _readBuffer.pop();
+    }
+    return bytes;
 }
 
 void SerialConnection::onError(QSerialPort::SerialPortError error)
@@ -80,8 +91,16 @@ void SerialConnection::doConnectToPort(const QString &portName, int baudRate)
     if (_serial->open(QIODevice::ReadWrite))
     {
         BOOST_LOG_TRIVIAL(info) << "Serial connected " << m_portName.toStdString() << m_baudRate;
-        if (!_writeBuffer.isEmpty())
-            _serial->write(_writeBuffer);
+        if (!_writeBuffer.empty())
+        {
+            QByteArray data;
+            while (!_writeBuffer.empty())
+            {
+                data.append(_writeBuffer.front());
+                _writeBuffer.pop();
+            }
+            _serial->write(data);
+        }
         emit onConnected(portName, baudRate);
     }
     else
@@ -100,5 +119,13 @@ void SerialConnection::doDisconnectFromPort()
 
 void SerialConnection::readyRead()
 {
-    emit onReceive(_serial->readAll());
+    auto data = _serial->readAll();
+    for (int i = 0; i < data.size(); i++)
+        _readBuffer.push(data.at(i));
+
+    if (_readBuffer.size() > MAX_BUFFER_SIZE)
+        while (_readBuffer.size() > MAX_BUFFER_SIZE - MAX_BUFFER_SIZE / 4)
+            _readBuffer.pop();
+
+    setHasBytes(!_readBuffer.empty());
 }

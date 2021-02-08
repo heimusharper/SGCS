@@ -19,41 +19,29 @@ namespace sgcs
 {
 namespace connection
 {
-ConnectionThread::ConnectionThread(QObject *parent) : QObject(parent)
+ConnectionThread::ConnectionThread()
 {
 }
 
 ConnectionThread::~ConnectionThread()
 {
-    if (_thread)
-    {
-        _thread->quit();
-        _thread->deleteLater();
-    }
 }
 
-void ConnectionThread::create(Connection *connection, const QList<plugin::ProtocolPlugin *> &protos)
+void ConnectionThread::create(Connection *connection, const boost::container::vector<plugin::ProtocolPlugin *> &protos)
 {
-    QList<uav::UavProtocol *> protosImpl;
+    boost::container::vector<uav::UavProtocol *> protosImpl;
     for (auto x : protos)
     {
         auto inst = x->instance();
         if (inst)
-            protosImpl.append(inst);
+            protosImpl.push_back(inst);
     }
     _router = new ConnectionRouter(connection, protosImpl);
-    _thread = new QThread();
-    connect(_thread, &QThread::started, _router, &ConnectionRouter::run);
-    connect(_thread, &QThread::finished, _router, &QObject::deleteLater);
-    _router->moveToThread(_thread);
-    for (auto x : protosImpl)
-        x->moveToThread(_thread);
-    connection->moveToThread(_thread);
-    _thread->start();
 }
 
 ConnectionRouter *ConnectionThread::router() const
 {
+    return _router;
 }
 }
 }

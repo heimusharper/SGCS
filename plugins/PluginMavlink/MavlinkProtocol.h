@@ -23,21 +23,21 @@
 #include <UavProtocol.h>
 #include <boost/log/trivial.hpp>
 
-class MavlinkProtocol : public uav::UavProtocol
+class MavlinkProtocol : public QObject, public uav::UavProtocol
 {
     Q_OBJECT
 public:
-    explicit MavlinkProtocol(QObject *parent = nullptr);
+    explicit MavlinkProtocol();
 
-    virtual QString name() const override;
-    virtual QByteArray hello() const override;
+    virtual std::string name() const override;
+    virtual boost::container::vector<uint8_t> hello() const override;
 
-    virtual void onReceived(const QByteArray &data) override;
+    virtual void onReceived(const boost::container::vector<uint8_t> &data) override;
 
 private:
     bool check(char c, mavlink_message_t *msg);
 
-    static QByteArray packMessage(mavlink_message_t *msg);
+    static boost::container::vector<uint8_t> packMessage(mavlink_message_t *msg);
 
     const int DIFFERENT_CHANNEL = 1;
     bool _isCheckAPM            = false;

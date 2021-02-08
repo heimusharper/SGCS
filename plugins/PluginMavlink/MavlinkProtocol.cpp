@@ -16,34 +16,34 @@
  */
 #include "MavlinkProtocol.h"
 
-MavlinkProtocol::MavlinkProtocol(QObject *parent) : uav::UavProtocol(parent)
+MavlinkProtocol::MavlinkProtocol() : QObject(), uav::UavProtocol()
 {
 }
 
-QString MavlinkProtocol::name() const
+std::string MavlinkProtocol::name() const
 {
-    return tr("Mavlink APM");
+    return tr("Mavlink APM").toStdString();
 }
 
-QByteArray MavlinkProtocol::hello() const
+boost::container::vector<uint8_t> MavlinkProtocol::hello() const
 {
     mavlink_message_t msg;
     mavlink_msg_ping_pack_chan(0, 0, DIFFERENT_CHANNEL, &msg, 0, 0, 0, 0);
     return packMessage(&msg);
 }
 
-void MavlinkProtocol::onReceived(const QByteArray &data)
+void MavlinkProtocol::onReceived(const boost::container::vector<uint8_t> &data)
 {
     mavlink_message_t msg;
     for (int i = 0; i < data.size(); i++)
     {
-        if (check(data.at(i), &msg))
+        if (check((char)data[i], &msg))
         {
-            BOOST_LOG_TRIVIAL(debug) << "MSG ID" << msg.msgid;
+            BOOST_LOG_TRIVIAL(info) << "MSG ID" << msg.msgid;
             if (_waitForSignal)
             {
                 _waitForSignal = false;
-                emit onReadyData();
+                setIsHasData(true);
             }
         }
     }
@@ -74,13 +74,15 @@ bool MavlinkProtocol::check(char c, mavlink_message_t *msg)
     return false;
 }
 
-QByteArray MavlinkProtocol::packMessage(mavlink_message_t *msg)
+boost::container::vector<uint8_t> MavlinkProtocol::packMessage(mavlink_message_t *msg)
 {
-    uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
-    int lenght = mavlink_msg_to_send_buffer(buffer, msg);
+    boost::container::vector<uint8_t> data = boost::container::vector<uint8_t>(MAVLINK_MAX_PACKET_LEN, (uint8_t)0x0);
+    int lenght                             = mavlink_msg_to_send_buffer(data.data(), msg);
     if (lenght > 0)
     {
-        return QByteArray((const char *)buffer, lenght);
+        while (data.size() > lenght)
+            data.pop_back();
+        return data;
     }
-    return QByteArray();
+    return boost::container::vector<uint8_t>();
 }

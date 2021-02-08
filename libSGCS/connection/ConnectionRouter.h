@@ -19,44 +19,37 @@
 
 #include "../plugins/ProtocolPlugin.h"
 #include "Connection.h"
-#include <QMutex>
 #include <UavProtocol.h>
-#include <boost/circular_buffer.hpp>
+#include <atomic>
+#include <boost/container/vector.hpp>
 #include <boost/log/trivial.hpp>
+#include <queue>
+#include <thread>
 
 namespace sgcs
 {
 namespace connection
 {
-class ConnectionRouter : public QObject
+class ConnectionRouter
 {
-    Q_OBJECT
 public:
-    ConnectionRouter(Connection *connection, const QList<uav::UavProtocol *> &protos, QObject *parent = nullptr);
+    ConnectionRouter(Connection *connection, const boost::container::vector<uav::UavProtocol *> &protos);
     ~ConnectionRouter();
 
-public slots:
-
+private:
     void run();
 
-private slots:
-
-    void watch();
-    void onReceive(const QByteArray &data);
-
 private:
-    QTimer *m_watcher = nullptr;
-    QList<uav::UavProtocol *> m_protos;
+    const int MAX_BUFFER_SIZE = 1024;
+    boost::container::vector<uav::UavProtocol *> m_protos;
 
     Connection *m_connection     = nullptr;
     uav::UavProtocol *m_protocol = nullptr;
 
-    boost::circular_buffer<char> m_buffer;
-    QMutex _mutex;
+    std::queue<char> m_buffer;
 
-signals:
-
-    void readyProtocol(const uav::UavProtocol *protocol);
+    std::thread *_thread = nullptr;
+    std::atomic_bool _stopThread {false};
 };
 }
 }

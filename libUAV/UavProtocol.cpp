@@ -18,16 +18,22 @@
 
 namespace uav
 {
-UavProtocol::UavProtocol(QObject *parent) : QObject(parent)
+UavProtocol::UavProtocol()
 {
 }
 
-UavProtocol::~UavProtocol()
+boost::container::vector<uint8_t> UavProtocol::hello() const
 {
+    return boost::container::vector<uint8_t>();
 }
 
-QByteArray UavProtocol::hello() const
+void UavProtocol::setIsHasData(bool l)
 {
-    return QByteArray();
+    _hasData.store(l);
+}
+
+bool UavProtocol::isHasData() const
+{
+    return _hasData.load();
 }
 }

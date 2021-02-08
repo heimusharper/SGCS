@@ -21,83 +21,77 @@ namespace sgcs
 {
 namespace connection
 {
-ConnectionRouter::ConnectionRouter(Connection *connection, const QList<uav::UavProtocol *> &protos, QObject *parent)
+ConnectionRouter::ConnectionRouter(Connection *connection, const boost::container::vector<uav::UavProtocol *> &protos)
 : m_connection(connection), m_protos(protos)
 {
+    _stopThread.store(false);
+    _thread = new std::thread(&ConnectionRouter::run, this);
 }
 
 ConnectionRouter::~ConnectionRouter()
 {
+    _stopThread.store(false);
+    if (_thread)
+    {
+        _thread->join();
+        delete _thread;
+    }
 }
 
 void ConnectionRouter::run()
 {
-    m_buffer.set_capacity(1024);
-    m_connection->inittializeObjects();
-    connect(m_connection, &Connection::onReceive, this, &ConnectionRouter::onReceive);
-    for (uav::UavProtocol *p : m_protos)
+    while (!_stopThread.load())
     {
-        connect(p, &uav::UavProtocol::onReadyData, [this, p]() {
-            if (!m_protocol)
+        // collect buffer
+        if (!m_protocol && m_connection->isHasBytes())
+        {
+            boost::container::vector<uint8_t> bytes = m_connection->collectBytesAndClear();
+            for (int i = 0; i < bytes.size(); i++)
+                m_buffer.push(bytes[i]);
+            if (m_buffer.size() > MAX_BUFFER_SIZE)
+                while (m_buffer.size() > MAX_BUFFER_SIZE - MAX_BUFFER_SIZE / 4)
+                    m_buffer.pop();
+        }
+        // try to create root protocol
+        if (!m_protocol)
+        {
+            boost::container::vector<uint8_t> bytes;
+            std::queue<char> tmp = m_buffer;
+            while (!tmp.empty())
             {
-                m_protocol = p;
-                BOOST_LOG_TRIVIAL(info) << "Ready " << m_protocol->name().toStdString() << " protocol";
-                while (!m_protos.empty())
+                bytes.push_back(tmp.front());
+                tmp.pop();
+            }
+            for (uav::UavProtocol *p : m_protos)
+            {
+                p->onReceived(bytes);
+                if (p->isHasData())
                 {
-                    auto px = m_protos.takeFirst();
-                    if (px != m_protocol)
+                    m_protocol = p;
+                    BOOST_LOG_TRIVIAL(info) << "Ready " << m_protocol->name() << " protocol";
+
+                    while (m_protos.empty())
                     {
-                        px->deleteLater();
+                        auto obj = m_protos.back();
+                        if (obj != m_protocol)
+                            delete obj;
+                        m_protos.pop_back();
                     }
                 }
-                disconnect(m_connection, &Connection::onReceive, this, &ConnectionRouter::onReceive);
-                connect(m_connection, &Connection::onReceive, m_protocol, &uav::UavProtocol::onReceived);
             }
-        });
-    }
-
-    BOOST_LOG_TRIVIAL(debug) << "RUN ON THREAD ROUTER" << QThread::currentThreadId();
-    m_watcher = new QTimer();
-    connect(m_watcher, &QTimer::timeout, this, &ConnectionRouter::watch);
-    m_watcher->start(1000);
-    watch();
-    BOOST_LOG_TRIVIAL(debug) << "HAVE PROTOS!" << m_protos.size();
-}
-
-void ConnectionRouter::watch()
-{
-    if (m_protocol)
-        return;
-    for (auto p : m_protos)
-    {
-        if (!p->hello().isEmpty())
-            m_connection->onTransmit(p->hello()); // hello ping!
-    }
-    if (m_buffer.empty())
-        return;
-
-    QByteArray data;
-    {
-        QMutexLocker lock(&_mutex);
-        while (!m_buffer.empty())
-        {
-            data.append(m_buffer.front());
-            m_buffer.pop_front();
         }
+        // bridge
+        if (m_protocol && m_connection && m_connection->isHasBytes())
+        {
+            boost::container::vector<uint8_t> bytes = m_connection->collectBytesAndClear();
+            BOOST_LOG_TRIVIAL(info) << "READ DATA SIZE " << bytes.size();
+            if (!bytes.empty())
+            {
+                m_protocol->onReceived(bytes);
+            }
+        }
+        usleep(10000);
     }
-    for (auto p : m_protos)
-    {
-        p->onReceived(data);
-    }
-}
-
-void ConnectionRouter::onReceive(const QByteArray &data)
-{
-    if (m_protocol)
-        return;
-    QMutexLocker lock(&_mutex);
-    for (int i = 0; i < data.size(); i++)
-        m_buffer.push_back(data.at(i));
 }
 }
 }

@@ -18,32 +18,30 @@
 #define CONNECTION_H
 
 #include "UavProtocol.h"
-#include <QObject>
-#include <QThread>
-#include <QTimer>
+#include <boost/container/vector.hpp>
 #include <memory.h>
 
 namespace sgcs
 {
 namespace connection
 {
-class Connection : public QObject
+class Connection
 {
-    Q_OBJECT
 public:
     explicit Connection();
     virtual ~Connection();
 
-public slots:
-    /*!
-     * \brief inittializeObjects create objects
-     */
-    virtual void inittializeObjects()               = 0;
-    virtual void onTransmit(const QByteArray &data) = 0;
+    virtual void onTransmit(const boost::container::vector<uint8_t> &data) = 0;
 
-signals:
+    virtual boost::container::vector<uint8_t> collectBytesAndClear() = 0;
 
-    void onReceive(const QByteArray &data);
+    bool isHasBytes() const;
+
+protected:
+    void setHasBytes(bool l);
+
+private:
+    std::atomic_bool m_hasBytes;
 };
 }
 }

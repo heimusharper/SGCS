@@ -18,24 +18,28 @@
 #define UAVPROTOCOL_H
 
 #include "UavMessage.h"
-#include <QObject>
+#include <atomic>
+#include <boost/container/vector.hpp>
 
 namespace uav
 {
-class UavProtocol : public QObject
+class UavProtocol
 {
-    Q_OBJECT
 public:
-    explicit UavProtocol(QObject *parent = nullptr);
-    virtual ~UavProtocol();
-    virtual QByteArray hello() const;
+    explicit UavProtocol();
+    virtual ~UavProtocol() = default;
+    virtual boost::container::vector<uint8_t> hello() const;
 
-    virtual QString name() const                    = 0;
-    virtual void onReceived(const QByteArray &data) = 0;
+    virtual std::string name() const                                       = 0;
+    virtual void onReceived(const boost::container::vector<uint8_t> &data) = 0;
 
-signals:
+    bool isHasData() const;
 
-    void onReadyData();
+protected:
+    void setIsHasData(bool l);
+
+private:
+    std::atomic_bool _hasData;
 };
 }
 #endif // UAVPROTOCOL_H

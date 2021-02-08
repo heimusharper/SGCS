@@ -24,20 +24,18 @@ namespace sgcs
 {
 namespace connection
 {
-class ConnectionThread : public QObject
+class ConnectionThread
 {
-    Q_OBJECT
 public:
-    ConnectionThread(QObject *parent = nullptr);
+    ConnectionThread();
     ~ConnectionThread();
 
-    void create(Connection *connection, const QList<plugin::ProtocolPlugin *> &protos);
+    void create(Connection *connection, const boost::container::vector<plugin::ProtocolPlugin *> &protos);
 
     ConnectionRouter *router() const;
 
 private:
     ConnectionRouter *_router = nullptr;
-    QThread *_thread          = nullptr;
 };
 }
 }

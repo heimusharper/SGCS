@@ -110,10 +110,10 @@ int main(int argc, char *argv[])
     {
         BOOST_LOG_TRIVIAL(debug) << "DS" << datasource;
         auto dss = loader.datasources();
-        if (!dss.isEmpty())
+        if (!dss.empty())
         {
             BOOST_LOG_TRIVIAL(debug) << "DS" << datasource;
-            thr.create(dss.first()->instance(), loader.protocols());
+            thr.create(dss.front()->instance(), loader.protocols());
         }
     }
     RunConfiguration::instance().forceSave();

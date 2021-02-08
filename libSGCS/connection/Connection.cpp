@@ -20,12 +20,22 @@ namespace sgcs
 {
 namespace connection
 {
-Connection::Connection() : QObject()
+Connection::Connection()
 {
 }
 
 Connection::~Connection()
 {
+}
+
+bool Connection::isHasBytes() const
+{
+    return m_hasBytes.load();
+}
+
+void Connection::setHasBytes(bool l)
+{
+    m_hasBytes.store(l);
 }
 }
 }

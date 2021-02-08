@@ -21,21 +21,23 @@
 #include <QSerialPort>
 #include <boost/log/trivial.hpp>
 #include <connection/Connection.h>
+#include <queue>
 
-class SerialConnection : public sgcs::connection::Connection
+class SerialConnection : public QObject, public sgcs::connection::Connection
 {
     Q_OBJECT
 public:
     explicit SerialConnection();
     virtual ~SerialConnection();
+    virtual void onTransmit(const boost::container::vector<uint8_t> &data) override final;
+    virtual boost::container::vector<uint8_t> collectBytesAndClear() override final;
+
 signals:
 
     void connectToPort(const QString &portName, int baudRate);
     void disconnectFromPort();
 
 protected slots:
-    virtual void inittializeObjects() override final;
-    virtual void onTransmit(const QByteArray &data) override final;
 
 private slots:
 
@@ -53,7 +55,10 @@ private:
     QString m_portName;
     uint16_t m_baudRate       = 0;
     const int MAX_BUFFER_SIZE = 1024;
-    QByteArray _writeBuffer;
+
+    std::queue<uint8_t> _writeBuffer;
+    std::queue<uint8_t> _readBuffer;
+
     QSerialPort *_serial = nullptr;
 };
 

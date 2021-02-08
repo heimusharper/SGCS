@@ -22,6 +22,7 @@
 #include <QDir>
 #include <QObject>
 #include <QPluginLoader>
+#include <boost/container/vector.hpp>
 
 namespace sgcs
 {
@@ -35,13 +36,13 @@ public:
 
     bool load(const QDir &pluginsDir);
 
-    QList<ProtocolPlugin *> protocols() const;
+    boost::container::vector<ProtocolPlugin *> protocols() const;
 
-    QList<DataSourcePlugin *> datasources() const;
+    boost::container::vector<DataSourcePlugin *> datasources() const;
 
 private:
-    QList<ProtocolPlugin *> _protocol;
-    QList<DataSourcePlugin *> _datasources;
+    boost::container::vector<ProtocolPlugin *> _protocol;
+    boost::container::vector<DataSourcePlugin *> _datasources;
 
 signals:
 };

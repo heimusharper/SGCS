@@ -37,11 +37,11 @@ bool PluginsLoader::load(const QDir &pluginsDir)
             DataSourcePlugin *datasourcePlugin = qobject_cast<DataSourcePlugin *>(plugin);
             if (protocolPlugin)
             {
-                _protocol.append(protocolPlugin);
+                _protocol.push_back(protocolPlugin);
             }
             else if (datasourcePlugin)
             {
-                _datasources.append(datasourcePlugin);
+                _datasources.push_back(datasourcePlugin);
             }
             else
                 pluginLoader.unload();
@@ -54,12 +54,12 @@ bool PluginsLoader::load(const QDir &pluginsDir)
     return true;
 }
 
-QList<ProtocolPlugin *> PluginsLoader::protocols() const
+boost::container::vector<ProtocolPlugin *> PluginsLoader::protocols() const
 {
     return _protocol;
 }
 
-QList<DataSourcePlugin *> PluginsLoader::datasources() const
+boost::container::vector<DataSourcePlugin *> PluginsLoader::datasources() const
 {
     return _datasources;
 }
