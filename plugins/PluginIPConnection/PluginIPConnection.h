@@ -14,28 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "Connection.h"
+#ifndef PLUGINSERIALCONNECTION_H
+#define PLUGINSERIALCONNECTION_H
 
-namespace sgcs
-{
-namespace connection
-{
-Connection::Connection()
-{
-}
+#include "IPConnection.h"
+#include <QObject>
+#include <plugins/DataSourcePlugin.h>
 
-Connection::~Connection()
+class PluginIPConnection : public sgcs::plugin::DataSourcePlugin
 {
-}
+    Q_OBJECT
+    Q_PLUGIN_METADATA(IID "ru.heimusharper.SGCS.DataSourcePlugin" FILE "meta.json")
+    Q_INTERFACES(sgcs::plugin::DataSourcePlugin)
+public:
+    explicit PluginIPConnection(QObject *parent = nullptr);
+    virtual ~PluginIPConnection() = default;
 
-bool Connection::isHasBytes()
-{
-    return m_hasBytes.load();
-}
+    virtual QString name() const override;
 
-void Connection::setHasBytes(bool l)
-{
-    m_hasBytes.store(l);
-}
-}
-}
+    virtual sgcs::connection::Connection *instance() override;
+signals:
+};
+
+#endif // PLUGINSERIALCONNECTION_H

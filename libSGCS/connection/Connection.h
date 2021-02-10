@@ -35,7 +35,7 @@ public:
 
     virtual boost::container::vector<uint8_t> collectBytesAndClear() = 0;
 
-    bool isHasBytes() const;
+    virtual bool isHasBytes();
 
 protected:
     void setHasBytes(bool l);

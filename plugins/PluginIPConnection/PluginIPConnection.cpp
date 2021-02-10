@@ -14,28 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "Connection.h"
+#include "PluginIPConnection.h"
 
-namespace sgcs
-{
-namespace connection
-{
-Connection::Connection()
+PluginIPConnection::PluginIPConnection(QObject *parent) : sgcs::plugin::DataSourcePlugin(parent)
 {
 }
 
-Connection::~Connection()
+QString PluginIPConnection::name() const
 {
+    return tr("IP connection");
 }
 
-bool Connection::isHasBytes()
+sgcs::connection::Connection *PluginIPConnection::instance()
 {
-    return m_hasBytes.load();
-}
-
-void Connection::setHasBytes(bool l)
-{
-    m_hasBytes.store(l);
-}
-}
+    return new IPConnection();
 }

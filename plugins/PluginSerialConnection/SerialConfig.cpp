@@ -1,6 +1,6 @@
 #include "SerialConfig.h"
 
-SerialConfig::SerialConfig(ConfigInterface *parent) : ConfigInterface(parent), m_baudRate()
+SerialConfig::SerialConfig(ConfigInterface *parent) : ConfigInterface(parent), m_baudRate(0)
 {
 }
 
