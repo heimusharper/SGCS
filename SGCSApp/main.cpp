@@ -99,6 +99,7 @@ int main(int argc, char *argv[])
         auto dss = loader.datasources();
         for (auto ds : dss)
         {
+            BOOST_LOG_TRIVIAL(debug) << "Plugin" << ds->name().toStdString();
             if (ds->name().compare(QString::fromStdString(datasource)) == 0)
             {
                 thr.create(ds->instance(), loader.protocols());
@@ -108,11 +109,9 @@ int main(int argc, char *argv[])
     }
     else if (vm.count("auto"))
     {
-        BOOST_LOG_TRIVIAL(debug) << "DS" << datasource;
         auto dss = loader.datasources();
         if (!dss.empty())
         {
-            BOOST_LOG_TRIVIAL(debug) << "DS" << datasource;
             thr.create(dss.front()->instance(), loader.protocols());
         }
     }

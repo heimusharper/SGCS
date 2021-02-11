@@ -22,7 +22,7 @@ IPConnection::IPConnection()
 , m_port(RunConfiguration::instance().get<IPConfig>()->port())
 {
     // TODO: tempolary onnly UDP client mode
-    m_interface = new IPInterfaceUDPClient();
+    m_interface = new IPInterfaceTCPClient();
     if (!m_hostName.empty() && m_port >= 1024)
     {
         // ready to connect automaticaly
