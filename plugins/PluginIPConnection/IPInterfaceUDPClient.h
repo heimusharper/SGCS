@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <boost/container/vector.hpp>
 #include <boost/log/trivial.hpp>
+#include <cmath>
 #include <mutex>
 #include <netinet/in.h>
 #include <queue>
@@ -44,7 +45,7 @@ private:
 
     std::string m_hostName;
     uint16_t m_port;
-    const int MAX_LINE = 1024;
+    const size_t MAX_LINE = 1024;
 };
 
 #endif // IPINTERFACEUDPCLIENT_H

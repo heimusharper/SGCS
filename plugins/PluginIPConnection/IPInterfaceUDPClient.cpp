@@ -67,7 +67,7 @@ void IPInterfaceUDPClient::run()
 
     while (!m_stopThread.load())
     {
-        char nowState = (char)((socket == 0) ? ConnectionStates::DISCONNECTED : ConnectionStates::CONNECTED);
+        char nowState = (char)((sock == 0) ? ConnectionStates::DISCONNECTED : ConnectionStates::CONNECTED);
         if (nowState != (char)m_targetState.load())
         {
             // state changed
@@ -81,7 +81,7 @@ void IPInterfaceUDPClient::run()
             }
         }
         // m_bufferMutex.lock();
-        if (m_targetState.load() == (char)ConnectionStates::CONNECTED && (nowHostName != m_port || nowPort != m_port))
+        if (m_targetState.load() == (char)ConnectionStates::CONNECTED && (nowHostName != m_hostName || nowPort != m_port))
         {
             // reconnect
             sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -111,19 +111,19 @@ void IPInterfaceUDPClient::run()
         {
             struct sockaddr_in cliaddr;
             memset(&cliaddr, 0, sizeof(cliaddr));
-            int len = sizeof(cliaddr); // len is value/resuslt
+            socklen_t len = sizeof(cliaddr); // len is value/resuslt
 
             char readBuffer[MAX_LINE];
             int n = recvfrom(sock, (char *)readBuffer, MAX_LINE, MSG_WAITALL, (struct sockaddr *)&cliaddr, &len);
 
-            const int WRITE_SIZE = std::min(MAX_LINE, m_writeBuffer.size());
+            const size_t WRITE_SIZE = std::min(MAX_LINE, m_writeBuffer.size());
             char writeBuffer[WRITE_SIZE];
             m_bufferMutex.lock();
             // to readed buffer
             for (int i = 0; i < n; i++)
                 m_readBuffer.push(readBuffer[i]);
             // prepare data to transmit
-            for (int i = 0; i < WRITE_SIZE; i++)
+            for (size_t i = 0; i < WRITE_SIZE; i++)
             {
                 writeBuffer[i] = m_writeBuffer.front();
                 m_writeBuffer.pop();
@@ -133,7 +133,7 @@ void IPInterfaceUDPClient::run()
             {
                 for (sockaddr_in client : clients)
                 {
-                    const l = sizeof(client);
+                    const size_t l = sizeof(client);
                     sendto(sock, (const char *)writeBuffer, WRITE_SIZE, MSG_CONFIRM, (const struct sockaddr *)&client, l);
                 }
             }
@@ -142,7 +142,7 @@ void IPInterfaceUDPClient::run()
             // search exists clients
             bool has = false;
             for (int i = 0; i < clients.size(); i++)
-                if (clients.at(i) == cliaddr)
+                if (clients.at(i).sin_addr.s_addr == cliaddr.sin_addr.s_addr && clients.at(i).sin_port == cliaddr.sin_port)
                     has = true;
             if (!has) // client not found, add
                 clients.push_back(cliaddr);
