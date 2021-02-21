@@ -89,8 +89,8 @@ int main(int argc, char *argv[])
     }
 
     sgcs::plugin::PluginsLoader loader;
-    QDir plugins = QDir(app.applicationDirPath());
-    plugins.cd("plugins");
+    std::filesystem::path plugins = std::filesystem::path(app.applicationDirPath().toStdString());
+    plugins.append("plugins");
     loader.load(plugins);
     sgcs::connection::ConnectionThread thr;
     std::string datasource = RunConfiguration::instance().get<ApplicationConfiguration>()->startDatasource();
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
         auto dss = loader.datasources();
         for (auto ds : dss)
         {
-            if (ds->name().compare(QString::fromStdString(datasource)) == 0)
+            if (ds->name() == datasource)
             {
                 thr.create(ds->instance(), loader.protocols());
                 break;

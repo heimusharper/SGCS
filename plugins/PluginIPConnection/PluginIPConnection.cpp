@@ -16,13 +16,13 @@
  */
 #include "PluginIPConnection.h"
 
-PluginIPConnection::PluginIPConnection(QObject *parent) : sgcs::plugin::DataSourcePlugin(parent)
+PluginIPConnection::PluginIPConnection() : sgcs::plugin::DataSourcePlugin()
 {
 }
 
-QString PluginIPConnection::name() const
+std::string PluginIPConnection::name() const
 {
-    return tr("IP connection");
+    return "IP connection";
 }
 
 sgcs::connection::Connection *PluginIPConnection::instance()

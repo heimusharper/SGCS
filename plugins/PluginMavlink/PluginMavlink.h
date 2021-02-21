@@ -19,22 +19,21 @@
 #define PLUGINMAVLINK_H
 
 #include "MavlinkProtocol.h"
-#include <QObject>
+#include <plugins/DataSourcePlugin.h>
 #include <plugins/ProtocolPlugin.h>
 
 class PluginMavlink : public sgcs::plugin::ProtocolPlugin
 {
-    Q_OBJECT
-    Q_PLUGIN_METADATA(IID "ru.heimusharper.SGCS.ProtocolPlugin" FILE "meta.json")
-    Q_INTERFACES(sgcs::plugin::ProtocolPlugin)
 public:
-    explicit PluginMavlink(QObject *parent = nullptr);
+    PluginMavlink();
     virtual ~PluginMavlink();
 
-    QString name() const override;
+    std::string name() const override;
     virtual uav::UavProtocol *instance() override;
-
-signals:
 };
 
+extern "C" sgcs::plugin::PluginInterface *dlload(void)
+{
+    return new PluginMavlink();
+}
 #endif // PLUGINMAVLINK_H

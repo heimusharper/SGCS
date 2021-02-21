@@ -4,7 +4,7 @@ namespace sgcs
 {
 namespace plugin
 {
-DataSourcePlugin::DataSourcePlugin(QObject *parent) : QObject(parent)
+DataSourcePlugin::DataSourcePlugin() : PluginInterface()
 {
 }
 }

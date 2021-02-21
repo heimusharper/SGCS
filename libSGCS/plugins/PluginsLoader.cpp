@@ -20,36 +20,41 @@ namespace sgcs
 {
 namespace plugin
 {
-PluginsLoader::PluginsLoader(QObject *parent) : QObject(parent)
+PluginsLoader::PluginsLoader()
 {
 }
 
-bool PluginsLoader::load(const QDir &pluginsDir)
+bool PluginsLoader::load(const std::filesystem::path &pluginsDir)
 {
-    const QStringList entries = pluginsDir.entryList(QDir::Files);
-    for (const QString &fileName : entries)
+    for (auto &fileName : std::filesystem::directory_iterator(pluginsDir))
     {
-        QPluginLoader pluginLoader(pluginsDir.absoluteFilePath(fileName));
-        QObject *plugin = pluginLoader.instance();
-        if (plugin)
+        void *handle = dlopen(fileName.path().c_str(), RTLD_LAZY);
+        if (handle == NULL)
         {
-            ProtocolPlugin *protocolPlugin     = qobject_cast<ProtocolPlugin *>(plugin);
-            DataSourcePlugin *datasourcePlugin = qobject_cast<DataSourcePlugin *>(plugin);
-            if (protocolPlugin)
-            {
-                _protocol.push_back(protocolPlugin);
-            }
-            else if (datasourcePlugin)
-            {
-                _datasources.push_back(datasourcePlugin);
-            }
-            else
-                pluginLoader.unload();
+            BOOST_LOG_TRIVIAL(warning) << "Undefined dlload" << fileName.path();
+            continue;
         }
-        else
+        dlerror();
+        PluginInterface *(*plugin_func)();
+        plugin_func = reinterpret_cast<PluginInterface *(*)()>(dlsym(handle, "dlload"));
+        if (plugin_func == NULL)
         {
-            qWarning() << "Failed load plugin " << pluginLoader.errorString();
+            BOOST_LOG_TRIVIAL(warning) << "failed handle dlload fuction from" << fileName.path();
+            dlclose(handle);
+            continue;
         }
+        PluginInterface *plugin = plugin_func();
+
+        ProtocolPlugin *protocolPlugin     = dynamic_cast<ProtocolPlugin *>(plugin);
+        DataSourcePlugin *datasourcePlugin = dynamic_cast<DataSourcePlugin *>(plugin);
+
+        BOOST_LOG_TRIVIAL(info) << "loaded " << fileName.path() << " PROTO " << protocolPlugin << " DATASOURCE " << datasourcePlugin;
+        if (protocolPlugin)
+            _protocol.push_back(protocolPlugin);
+        else if (datasourcePlugin)
+            _datasources.push_back(datasourcePlugin);
+
+        dlclose(handle);
     }
     return true;
 }

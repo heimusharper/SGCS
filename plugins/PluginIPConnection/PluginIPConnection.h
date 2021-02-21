@@ -18,22 +18,22 @@
 #define PLUGINSERIALCONNECTION_H
 
 #include "IPConnection.h"
-#include <QObject>
 #include <plugins/DataSourcePlugin.h>
 
 class PluginIPConnection : public sgcs::plugin::DataSourcePlugin
 {
-    Q_OBJECT
-    Q_PLUGIN_METADATA(IID "ru.heimusharper.SGCS.DataSourcePlugin" FILE "meta.json")
-    Q_INTERFACES(sgcs::plugin::DataSourcePlugin)
 public:
-    explicit PluginIPConnection(QObject *parent = nullptr);
+    PluginIPConnection();
     virtual ~PluginIPConnection() = default;
 
-    virtual QString name() const override;
+    virtual std::string name() const override;
 
     virtual sgcs::connection::Connection *instance() override;
-signals:
 };
+
+extern "C" sgcs::plugin::PluginInterface *dlload(void)
+{
+    return new PluginIPConnection();
+}
 
 #endif // PLUGINSERIALCONNECTION_H

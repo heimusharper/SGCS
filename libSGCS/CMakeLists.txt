@@ -31,6 +31,7 @@ SET(HEADER_LIST
     connection/Connection.h
     connection/ConnectionRouter.h
     connection/ConnectionThread.h
+    plugins/PluginInterface.h
     plugins/ProtocolPlugin.h
     plugins/DataSourcePlugin.h
     plugins/PluginsLoader.h

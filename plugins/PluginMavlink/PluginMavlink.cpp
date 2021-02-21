@@ -16,7 +16,7 @@
  */
 #include "PluginMavlink.h"
 
-PluginMavlink::PluginMavlink(QObject *parent) : sgcs::plugin::ProtocolPlugin(parent)
+PluginMavlink::PluginMavlink() : sgcs::plugin::ProtocolPlugin()
 {
 }
 
@@ -24,9 +24,9 @@ PluginMavlink::~PluginMavlink()
 {
 }
 
-QString PluginMavlink::name() const
+std::string PluginMavlink::name() const
 {
-    return tr("Mavlink");
+    return "Mavlink";
 }
 
 uav::UavProtocol *PluginMavlink::instance()

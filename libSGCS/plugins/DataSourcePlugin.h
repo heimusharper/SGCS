@@ -2,27 +2,21 @@
 #define DATASOURCEPLUGIN_H
 
 #include "../connection/Connection.h"
-#include <QObject>
+#include "PluginInterface.h"
 
 namespace sgcs
 {
 namespace plugin
 {
-class DataSourcePlugin : public QObject
+class DataSourcePlugin : public PluginInterface
 {
-    Q_OBJECT
 public:
-    explicit DataSourcePlugin(QObject *parent = nullptr);
+    DataSourcePlugin();
     virtual ~DataSourcePlugin() = default;
 
-    virtual QString name() const = 0;
-
     virtual sgcs::connection::Connection *instance() = 0;
-signals:
 };
 }
 }
-#define DataSourcePluginInterface_iid "ru.heimusharper.SGCS.DataSourcePluginInterface"
-Q_DECLARE_INTERFACE(sgcs::plugin::DataSourcePlugin, DataSourcePluginInterface_iid)
 
 #endif // DATASOURCEPLUGIN_H

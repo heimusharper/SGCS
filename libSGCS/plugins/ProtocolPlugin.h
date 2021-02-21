@@ -1,27 +1,21 @@
 #ifndef PROTOCOLPLUGIN_H
 #define PROTOCOLPLUGIN_H
 
-#include <QObject>
+#include "PluginInterface.h"
 #include <UavProtocol.h>
 
 namespace sgcs
 {
 namespace plugin
 {
-class ProtocolPlugin : public QObject
+class ProtocolPlugin : public PluginInterface
 {
-    Q_OBJECT
 public:
-    explicit ProtocolPlugin(QObject *parent = nullptr);
+    explicit ProtocolPlugin();
     virtual ~ProtocolPlugin() = default;
-
-    virtual QString name() const = 0;
 
     virtual uav::UavProtocol *instance() = 0;
 };
 }
 }
-#define ProtocolPluginInterface_iid "ru.heimusharper.SGCS.ProtocolPluginInterface"
-Q_DECLARE_INTERFACE(sgcs::plugin::ProtocolPlugin, ProtocolPluginInterface_iid)
-
 #endif // PROTOCOLPLUGIN_H

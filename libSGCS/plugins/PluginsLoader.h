@@ -18,23 +18,23 @@
 #define PLUGINSLOADER_H
 
 #include "DataSourcePlugin.h"
+#include "PluginInterface.h"
 #include "ProtocolPlugin.h"
-#include <QDir>
-#include <QObject>
-#include <QPluginLoader>
 #include <boost/container/vector.hpp>
+#include <boost/log/trivial.hpp>
+#include <dlfcn.h>
+#include <filesystem>
 
 namespace sgcs
 {
 namespace plugin
 {
-class PluginsLoader : public QObject
+class PluginsLoader
 {
-    Q_OBJECT
 public:
-    explicit PluginsLoader(QObject *parent = nullptr);
+    explicit PluginsLoader();
 
-    bool load(const QDir &pluginsDir);
+    bool load(const std::filesystem::path &pluginsDir);
 
     boost::container::vector<ProtocolPlugin *> protocols() const;
 
@@ -43,8 +43,6 @@ public:
 private:
     boost::container::vector<ProtocolPlugin *> _protocol;
     boost::container::vector<DataSourcePlugin *> _datasources;
-
-signals:
 };
 }
 }
