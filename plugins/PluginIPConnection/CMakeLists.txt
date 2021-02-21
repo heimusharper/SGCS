@@ -18,6 +18,7 @@ SET(SRC_LIST
     IPConfig.cpp
     IPInterface.cpp
     IPInterfaceUDPClient.cpp
+    IPInterfaceTCPClient.cpp
     )
 SET(HEADER_LIST
     PluginIPConnection.h
@@ -25,6 +26,7 @@ SET(HEADER_LIST
     IPConfig.h
     IPInterface.h
     IPInterfaceUDPClient.h
+    IPInterfaceTCPClient.h
     )
 SET(OTHER_FILES
     meta.json

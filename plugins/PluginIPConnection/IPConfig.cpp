@@ -6,7 +6,7 @@ IPConfig::IPConfig(ConfigInterface *parent) : ConfigInterface(parent), m_port(0)
 
 std::string IPConfig::name() const
 {
-    return "SerialConnectionConfiguration";
+    return "IPConnectionConfiguration";
 }
 
 YAML::Node IPConfig::toNode(const YAML::Node &file) const

@@ -1,6 +1,6 @@
 #include "IPInterfaceUDPClient.h"
 
-IPInterfaceUDPClient::IPInterfaceUDPClient()
+IPInterfaceUDPClient::IPInterfaceUDPClient() : IPInterface()
 {
     m_stopThread.store(false);
     m_targetState.store((char)ConnectionStates::DISCONNECTED);
@@ -37,6 +37,8 @@ std::queue<uint8_t> IPInterfaceUDPClient::readBuffer()
     {
         m_bufferMutex.lock();
         std::queue<uint8_t> copy(m_readBuffer);
+        while (!m_readBuffer.empty())
+            m_readBuffer.pop();
         m_bufferMutex.unlock();
         return copy;
     }
@@ -99,11 +101,11 @@ void IPInterfaceUDPClient::run()
                 {
                     shutdown(sock, SHUT_RD);
                     sock = -1;
-                    BOOST_LOG_TRIVIAL(info) << "Failed bind UDP connection " << m_hostName << m_port;
+                    BOOST_LOG_TRIVIAL(info) << "Failed bind UDP connection " << m_hostName << ":" << m_port;
                 }
             }
             else
-                BOOST_LOG_TRIVIAL(info) << "Failed to create UDP connection " << m_hostName << m_port;
+                BOOST_LOG_TRIVIAL(info) << "Failed to create UDP connection " << m_hostName << ":" << m_port;
         }
         // m_bufferMutex.unlock();
 

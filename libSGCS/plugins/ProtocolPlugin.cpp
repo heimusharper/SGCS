@@ -4,7 +4,6 @@ namespace sgcs
 {
 namespace plugin
 {
-//
 ProtocolPlugin::ProtocolPlugin() : PluginInterface()
 {
 }
