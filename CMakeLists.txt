@@ -19,6 +19,9 @@ ADD_SUBDIRECTORY(libTools)
 ADD_SUBDIRECTORY(libUAV)
 ADD_SUBDIRECTORY(libSGCS)
 ADD_SUBDIRECTORY(SGCSApp)
-ADD_SUBDIRECTORY(plugins/PluginSerialConnection)
-ADD_SUBDIRECTORY(plugins/PluginIPConnection)
-ADD_SUBDIRECTORY(plugins/PluginMavlink)
+
+# search plugins and add to project
+FILE(GLOB PLUGINS_PATH "plugins/*")
+FOREACH(file ${PLUGINS_PATH})
+    ADD_SUBDIRECTORY(${file})
+ENDFOREACH()
