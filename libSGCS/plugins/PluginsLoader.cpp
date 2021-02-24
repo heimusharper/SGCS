@@ -53,8 +53,6 @@ bool PluginsLoader::load(const std::filesystem::path &pluginsDir)
             _protocol.push_back(protocolPlugin);
         else if (datasourcePlugin)
             _datasources.push_back(datasourcePlugin);
-
-        dlclose(handle);
     }
     return true;
 }
