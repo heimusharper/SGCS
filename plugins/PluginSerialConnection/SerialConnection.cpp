@@ -56,9 +56,9 @@ void SerialConnection::onTransmit(const boost::container::vector<uint8_t> &data)
     }
 }
 
-boost::container::vector<uint8_t> SerialConnection::collectBytesAndClear()
+std::vector<uint8_t> SerialConnection::collectBytesAndClear()
 {
-    boost::container::vector<uint8_t> bytes;
+    std::vector<uint8_t> bytes;
     setHasBytes(false);
     while (!_readBuffer.empty())
     {

@@ -47,14 +47,14 @@ std::string MavlinkProtocol::name() const
     return "Mavlink APM";
 }
 
-boost::container::vector<uint8_t> MavlinkProtocol::hello() const
+std::vector<uint8_t> MavlinkProtocol::hello() const
 {
     mavlink_message_t msg;
     mavlink_msg_ping_pack_chan(0, 0, DIFFERENT_CHANNEL, &msg, 0, 0, 0, 0);
     return packMessage(&msg);
 }
 
-void MavlinkProtocol::onReceived(const boost::container::vector<uint8_t> &data)
+void MavlinkProtocol::onReceived(const std::vector<uint8_t> &data)
 {
     _dataTaskMutex.lock();
     _dataTasks.push(data);
@@ -63,14 +63,14 @@ void MavlinkProtocol::onReceived(const boost::container::vector<uint8_t> &data)
 
 void MavlinkProtocol::runParser()
 {
-    boost::container::vector<uint8_t> buffer;
+    std::vector<uint8_t> buffer;
     while (!_stopThread.load())
     {
         // collect buffers
         while (!_dataTasks.empty())
         {
             _dataTaskMutex.lock();
-            boost::container::vector<uint8_t> data = _dataTasks.front();
+            std::vector<uint8_t> data = _dataTasks.front();
             _dataTasks.pop();
             _dataTaskMutex.unlock();
             for (int i = 0; i < data.size(); i++)
@@ -150,6 +150,10 @@ void MavlinkProtocol::runMessageReader()
     }
 }
 
+void MavlinkProtocol::onSetUAV()
+{
+}
+
 bool MavlinkProtocol::check(char c, mavlink_message_t *msg)
 {
     mavlink_status_t stats;
@@ -176,15 +180,15 @@ bool MavlinkProtocol::check(char c, mavlink_message_t *msg)
     return false;
 }
 
-boost::container::vector<uint8_t> MavlinkProtocol::packMessage(mavlink_message_t *msg)
+std::vector<uint8_t> MavlinkProtocol::packMessage(mavlink_message_t *msg)
 {
-    boost::container::vector<uint8_t> data = boost::container::vector<uint8_t>(MAVLINK_MAX_PACKET_LEN, (uint8_t)0x0);
-    int lenght                             = mavlink_msg_to_send_buffer(data.data(), msg);
+    std::vector<uint8_t> data = std::vector<uint8_t>(MAVLINK_MAX_PACKET_LEN, (uint8_t)0x0);
+    int lenght                = mavlink_msg_to_send_buffer(data.data(), msg);
     if (lenght > 0)
     {
         while (data.size() > lenght)
             data.pop_back();
         return data;
     }
-    return boost::container::vector<uint8_t>();
+    return std::vector<uint8_t>();
 }

@@ -33,18 +33,19 @@ public:
     ~MavlinkProtocol();
 
     virtual std::string name() const override;
-    virtual boost::container::vector<uint8_t> hello() const override;
+    virtual std::vector<uint8_t> hello() const override;
 
-    virtual void onReceived(const boost::container::vector<uint8_t> &data) override;
+    virtual void onReceived(const std::vector<uint8_t> &data) override;
 
 private:
     void runParser();
     void runMessageReader();
 
 private:
+    virtual void onSetUAV() override;
     bool check(char c, mavlink_message_t *msg);
 
-    static boost::container::vector<uint8_t> packMessage(mavlink_message_t *msg);
+    static std::vector<uint8_t> packMessage(mavlink_message_t *msg);
 
     const int DIFFERENT_CHANNEL     = 1;
     std::atomic_bool _isCheckAPM    = false;
@@ -56,7 +57,7 @@ private:
     std::atomic_bool _stopThread;
     std::thread *_dataProcessorThread    = nullptr;
     std::thread *_messageProcessorThread = nullptr;
-    std::queue<boost::container::vector<uint8_t>> _dataTasks;
+    std::queue<std::vector<uint8_t>> _dataTasks;
     std::mutex _dataTaskMutex;
 
     int m_uavID = -1;
