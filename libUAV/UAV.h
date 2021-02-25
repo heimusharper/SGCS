@@ -16,6 +16,7 @@
  */
 #ifndef UAV_H
 #define UAV_H
+#include "AHRS.h"
 #include "UavObject.h"
 
 namespace uav
@@ -38,11 +39,17 @@ public:
 
     int id() const;
 
+    AHRS *ahrs() const;
+
 private:
     void setId(int id);
 
 private:
     int m_id = -1;
+
+    // Objs
+
+    AHRS *m_ahrs = nullptr;
 };
 }
 #endif // SGCS_H

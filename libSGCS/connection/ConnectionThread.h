@@ -17,6 +17,7 @@
 #ifndef CONNECTIONTHREAD_H
 #define CONNECTIONTHREAD_H
 
+#include "../plugins/LeafPlugin.h"
 #include "../plugins/ProtocolPlugin.h"
 #include "ConnectionRouter.h"
 
@@ -30,7 +31,9 @@ public:
     ConnectionThread();
     ~ConnectionThread();
 
-    void create(Connection *connection, const boost::container::vector<plugin::ProtocolPlugin *> &protos);
+    void create(Connection *connection,
+                const std::vector<plugin::ProtocolPlugin *> &protos,
+                const std::vector<plugin::LeafPlugin *> &leafs);
 
     ConnectionRouter *router() const;
 

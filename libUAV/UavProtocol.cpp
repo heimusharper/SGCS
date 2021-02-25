@@ -20,6 +20,7 @@ namespace uav
 {
 UavProtocol::UavProtocol()
 {
+    _hasData.store(false);
 }
 
 boost::container::vector<uint8_t> UavProtocol::hello() const

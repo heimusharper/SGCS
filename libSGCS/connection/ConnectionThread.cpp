@@ -27,16 +27,25 @@ ConnectionThread::~ConnectionThread()
 {
 }
 
-void ConnectionThread::create(Connection *connection, const boost::container::vector<plugin::ProtocolPlugin *> &protos)
+void ConnectionThread::create(Connection *connection,
+                              const std::vector<plugin::ProtocolPlugin *> &protos,
+                              const std::vector<plugin::LeafPlugin *> &leafs)
 {
-    boost::container::vector<uav::UavProtocol *> protosImpl;
+    std::vector<uav::UavProtocol *> protosImpl;
     for (auto x : protos)
     {
         auto inst = x->instance();
         if (inst)
             protosImpl.push_back(inst);
     }
-    _router = new ConnectionRouter(connection, protosImpl);
+    std::vector<gcs::LeafInterface *> leafsImpl;
+    for (auto x : leafs)
+    {
+        auto leaf = x->leaf();
+        if (leaf)
+            leafsImpl.push_back(leaf);
+    }
+    _router = new ConnectionRouter(connection, protosImpl, leafsImpl);
 }
 
 ConnectionRouter *ConnectionThread::router() const

@@ -21,8 +21,10 @@ namespace sgcs
 {
 namespace connection
 {
-ConnectionRouter::ConnectionRouter(Connection *connection, const boost::container::vector<uav::UavProtocol *> &protos)
-: m_connection(connection), m_protos(protos)
+ConnectionRouter::ConnectionRouter(Connection *connection,
+                                   const std::vector<uav::UavProtocol *> &protos,
+                                   const std::vector<gcs::LeafInterface *> &leafs)
+: m_connection(connection), m_protos(protos), m_leafs(leafs)
 {
     m_stopThread.store(false);
     _connectionsThread   = new std::thread(&ConnectionRouter::runConection, this);
@@ -70,22 +72,30 @@ void ConnectionRouter::runConection()
                 bytes.push_back(tmp.front());
                 tmp.pop();
             }
-            for (uav::UavProtocol *p : m_protos)
+            auto iter = std::find_if(m_protos.begin(), m_protos.end(), [bytes](uav::UavProtocol *proto) {
+                proto->onReceived(bytes);
+                return proto->isHasData();
+            });
+
+            if (iter != m_protos.end())
             {
-                p->onReceived(bytes);
-                if (p->isHasData())
+                m_protocol = *iter;
+                BOOST_LOG_TRIVIAL(info) << "Ready " << m_protocol->name() << " protocol";
+                _mutex.lock();
+                m_uav = new uav::UAV();
+                _mutex.unlock();
+                while (m_protos.empty())
                 {
-                    m_protocol = p;
-                    BOOST_LOG_TRIVIAL(info) << "Ready " << m_protocol->name() << " protocol";
-                    _mutex.lock();
-                    m_uav = new uav::UAV();
-                    _mutex.unlock();
-                    while (m_protos.empty())
+                    auto obj = m_protos.back();
+                    if (obj != m_protocol)
+                        delete obj;
+                    m_protos.pop_back();
+                }
+                if (m_uav)
+                {
+                    for (gcs::LeafInterface *l : m_leafs)
                     {
-                        auto obj = m_protos.back();
-                        if (obj != m_protocol)
-                            delete obj;
-                        m_protos.pop_back();
+                        l->setUAV(m_uav);
                     }
                 }
             }

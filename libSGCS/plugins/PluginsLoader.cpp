@@ -47,24 +47,33 @@ bool PluginsLoader::load(const std::filesystem::path &pluginsDir)
 
         ProtocolPlugin *protocolPlugin     = dynamic_cast<ProtocolPlugin *>(plugin);
         DataSourcePlugin *datasourcePlugin = dynamic_cast<DataSourcePlugin *>(plugin);
+        LeafPlugin *leafPlugin             = dynamic_cast<LeafPlugin *>(plugin);
 
-        BOOST_LOG_TRIVIAL(info) << "loaded " << fileName.path() << " PROTO " << protocolPlugin << " DATASOURCE " << datasourcePlugin;
+        BOOST_LOG_TRIVIAL(info) << "loaded " << fileName.path() << " PROTO " << protocolPlugin << " DATASOURCE "
+                                << datasourcePlugin << " LEAF " << leafPlugin;
         if (protocolPlugin)
             _protocol.push_back(protocolPlugin);
         else if (datasourcePlugin)
             _datasources.push_back(datasourcePlugin);
+        else if (leafPlugin)
+            _leafs.push_back(leafPlugin);
     }
     return true;
 }
 
-boost::container::vector<ProtocolPlugin *> PluginsLoader::protocols() const
+std::vector<ProtocolPlugin *> PluginsLoader::protocols() const
 {
     return _protocol;
 }
 
-boost::container::vector<DataSourcePlugin *> PluginsLoader::datasources() const
+std::vector<DataSourcePlugin *> PluginsLoader::datasources() const
 {
     return _datasources;
+}
+
+std::vector<LeafPlugin *> PluginsLoader::leafs() const
+{
+    return _leafs;
 }
 }
 }
