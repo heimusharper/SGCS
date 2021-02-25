@@ -21,10 +21,21 @@
 #include <UAV.h>
 #include <UavMessage.h>
 #include <atomic>
+#include <concepts>
 #include <list>
 #include <mutex>
 #include <thread>
+#include <type_traits>
 #include <vector>
+
+template <class T>
+concept is_UavMessage = requires(T *a)
+{
+    {
+        dynamic_cast<uav::UavMessage *>(a) != nullptr
+    }
+    ->std::convertible_to<bool>;
+};
 
 namespace uav
 {
@@ -47,7 +58,7 @@ protected:
     void setIsHasData(bool l);
     virtual void onSetUAV() = 0;
 
-    template <class T>
+    template <is_UavMessage T>
     void insertMessage(uav::UavMessage *message)
     {
         m_messageStoreMutex.lock();
