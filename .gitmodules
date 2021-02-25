@@ -2,6 +2,3 @@
 	path = thirdparty/mavlink
 	url = https://github.com/mavlink/mavlink.git
 
-[submodule "plugins/sgcspluginkvl"]
-    path = plugins/sgcspluginkvl
-    url = git@10.0.0.77:sheihar/sgcspluginkvl.git
