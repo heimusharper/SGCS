@@ -16,6 +16,37 @@
  */
 #include <UAV.h>
 
-UAV::UAV()
+namespace uav
 {
+UAV::UAV() : UavObject(), m_id(-1)
+{
+}
+
+UAV::~UAV()
+{
+}
+
+void UAV::process(uav::UavMessage *message)
+{
+    UAV::Message *thisMessage = dynamic_cast<UAV::Message *>(message); // TODO: fastef cast
+    if (thisMessage)
+    {
+        if (thisMessage->id.dirty())
+            setId(thisMessage->id.get());
+    }
+}
+int UAV::id() const
+{
+    return m_id;
+}
+
+void UAV::setId(int id)
+{
+    if (m_id == id)
+        return;
+
+    BOOST_LOG_TRIVIAL(info) << "UAV ID" << id;
+
+    m_id = id;
+}
 }

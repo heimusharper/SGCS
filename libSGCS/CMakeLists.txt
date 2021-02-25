@@ -25,6 +25,7 @@ SET(SRC_LIST
     plugins/ProtocolPlugin.cpp
     plugins/DataSourcePlugin.cpp
     plugins/PluginsLoader.cpp
+    plugins/LeafPlugin.cpp
     )
 SET(HEADER_LIST
     config/RunConfiguration.h
@@ -35,6 +36,7 @@ SET(HEADER_LIST
     plugins/ProtocolPlugin.h
     plugins/DataSourcePlugin.h
     plugins/PluginsLoader.h
+    plugins/LeafPlugin.h
     version.h
     )
 

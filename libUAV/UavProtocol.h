@@ -18,8 +18,12 @@
 #define UAVPROTOCOL_H
 
 #include "UavMessage.h"
+#include <UAV.h>
+#include <UavMessage.h>
 #include <atomic>
 #include <boost/container/vector.hpp>
+#include <list>
+#include <mutex>
 
 namespace uav
 {
@@ -34,9 +38,24 @@ public:
     virtual void onReceived(const boost::container::vector<uint8_t> &data) = 0;
 
     bool isHasData() const;
+    uav::UavMessage *message();
 
 protected:
     void setIsHasData(bool l);
+
+    template <class T>
+    void insertMessage(uav::UavMessage *message)
+    {
+        _messageStoreMutex.lock();
+        _messages.remove_if([](uav::UavMessage *msg) { return (dynamic_cast<T *>(msg) != nullptr); });
+        _messages.push_back(message);
+        BOOST_LOG_TRIVIAL(info) << "WRITE MSG " << message;
+        _messageStoreMutex.unlock();
+    }
+
+private:
+    std::list<uav::UavMessage *> _messages;
+    std::mutex _messageStoreMutex;
 
 private:
     std::atomic_bool _hasData;

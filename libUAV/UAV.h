@@ -16,11 +16,33 @@
  */
 #ifndef UAV_H
 #define UAV_H
+#include "UavObject.h"
 
-class UAV
+namespace uav
+{
+class UAV : public UavObject
 {
 public:
-    UAV();
-};
+    class Message : public UavMessage
+    {
+    public:
+        Message() : UavMessage(), id(-1)
+        {
+        }
+        Message::optional<int> id;
+    };
 
+    UAV();
+    virtual ~UAV();
+    void process(uav::UavMessage *message);
+
+    int id() const;
+
+private:
+    void setId(int id);
+
+private:
+    int m_id = -1;
+};
+}
 #endif // SGCS_H

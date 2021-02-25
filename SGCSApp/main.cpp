@@ -15,9 +15,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "iostream"
-#include <QDir>
-#include <QGuiApplication>
-#include <QSerialPortInfo>
 #include <UAV.h>
 #include <config/RunConfiguration.h>
 #include <connection/ConnectionThread.h>
@@ -81,7 +78,6 @@ int main(int argc, char *argv[])
     //
     BOOST_LOG_TRIVIAL(debug) << "processing...";
 
-    QGuiApplication app(argc, argv);
     if (!RunConfiguration::instance().create("default.yaml"))
     {
         RunConfiguration::instance().get<ApplicationConfiguration>()->setProfile("default");
@@ -89,7 +85,7 @@ int main(int argc, char *argv[])
     }
 
     sgcs::plugin::PluginsLoader loader;
-    std::filesystem::path plugins = std::filesystem::path(app.applicationDirPath().toStdString());
+    std::filesystem::path plugins = std::filesystem::current_path();
     plugins.append("plugins");
     loader.load(plugins);
     sgcs::connection::ConnectionThread thr;
@@ -116,5 +112,7 @@ int main(int argc, char *argv[])
         }
     }
     RunConfiguration::instance().forceSave();
-    return app.exec();
+    while (true)
+        usleep(100);
+    return 0;
 }
