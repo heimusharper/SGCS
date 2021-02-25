@@ -27,8 +27,7 @@ ConnectionRouter::ConnectionRouter(Connection *connection,
 : m_connection(connection), m_protos(protos), m_leafs(leafs)
 {
     m_stopThread.store(false);
-    _connectionsThread   = new std::thread(&ConnectionRouter::runConection, this);
-    _messageGetterThread = new std::thread(&ConnectionRouter::runMessages, this);
+    _connectionsThread = new std::thread(&ConnectionRouter::runConection, this);
 }
 
 ConnectionRouter::~ConnectionRouter()
@@ -40,12 +39,6 @@ ConnectionRouter::~ConnectionRouter()
             _connectionsThread->join();
         delete _connectionsThread;
     }
-    if (_messageGetterThread)
-    {
-        if (_messageGetterThread->joinable())
-            _messageGetterThread->join();
-        delete _messageGetterThread;
-    }
 }
 
 void ConnectionRouter::runConection()
@@ -55,7 +48,7 @@ void ConnectionRouter::runConection()
         // collect buffer
         if (!m_protocol && m_connection->isHasBytes())
         {
-            boost::container::vector<uint8_t> bytes = m_connection->collectBytesAndClear();
+            std::vector<uint8_t> bytes = m_connection->collectBytesAndClear();
             for (int i = 0; i < bytes.size(); i++)
                 m_buffer.push(bytes[i]);
             if (m_buffer.size() > MAX_BUFFER_SIZE)
@@ -65,7 +58,7 @@ void ConnectionRouter::runConection()
         // try to create root protocol
         if (!m_protocol)
         {
-            boost::container::vector<uint8_t> bytes;
+            std::vector<uint8_t> bytes;
             std::queue<char> tmp = m_buffer;
             while (!tmp.empty())
             {
@@ -81,9 +74,8 @@ void ConnectionRouter::runConection()
             {
                 m_protocol = *iter;
                 BOOST_LOG_TRIVIAL(info) << "Ready " << m_protocol->name() << " protocol";
-                _mutex.lock();
                 m_uav = new uav::UAV();
-                _mutex.unlock();
+                m_protocol->setUAV(m_uav);
                 while (m_protos.empty())
                 {
                     auto obj = m_protos.back();
@@ -103,31 +95,13 @@ void ConnectionRouter::runConection()
         // bridge
         if (m_protocol && m_connection && m_connection->isHasBytes())
         {
-            boost::container::vector<uint8_t> bytes = m_connection->collectBytesAndClear();
+            std::vector<uint8_t> bytes = m_connection->collectBytesAndClear();
             // BOOST_LOG_TRIVIAL(info) << "READ DATA SIZE " << bytes.size();
             if (!bytes.empty())
             {
                 m_protocol->onReceived(bytes);
             }
         }
-        usleep(10000);
-    }
-}
-
-void ConnectionRouter::runMessages()
-{
-    while (!m_stopThread.load())
-    {
-        _mutex.lock();
-        if (m_uav && m_protocol)
-        {
-            if (m_protocol->isHasData())
-            {
-                uav::UavMessage *message = m_protocol->message();
-                m_uav->process(message);
-            }
-        }
-        _mutex.unlock();
         usleep(10000);
     }
 }

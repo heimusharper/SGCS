@@ -18,8 +18,4 @@
 
 namespace uav
 {
-UavObject::UavObject()
-{
-}
-
 }

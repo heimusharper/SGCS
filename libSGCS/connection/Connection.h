@@ -33,7 +33,7 @@ public:
 
     virtual void onTransmit(const boost::container::vector<uint8_t> &data) = 0;
 
-    virtual boost::container::vector<uint8_t> collectBytesAndClear() = 0;
+    virtual std::vector<uint8_t> collectBytesAndClear() = 0;
 
     virtual bool isHasBytes();
 

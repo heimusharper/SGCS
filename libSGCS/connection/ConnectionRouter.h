@@ -43,7 +43,6 @@ public:
 
 private:
     void runConection();
-    void runMessages();
 
 private:
     uav::UAV *m_uav = nullptr;
@@ -59,9 +58,6 @@ private:
 
     std::thread *_connectionsThread = nullptr;
     std::atomic_bool m_stopThread {false};
-
-    std::thread *_messageGetterThread = nullptr;
-    std::mutex _mutex;
 };
 }
 }
