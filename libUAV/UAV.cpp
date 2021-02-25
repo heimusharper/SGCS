@@ -18,7 +18,7 @@
 
 namespace uav
 {
-UAV::UAV() : UavObject(), m_id(-1)
+UAV::UAV() : UavObject(), m_id(-1), m_ahrs(new AHRS())
 {
 }
 
@@ -28,11 +28,14 @@ UAV::~UAV()
 
 void UAV::process(uav::UavMessage *message)
 {
-    UAV::Message *thisMessage = dynamic_cast<UAV::Message *>(message); // TODO: fastef cast
-    if (thisMessage)
+    if (UAV::Message *uavmessage = dynamic_cast<UAV::Message *>(message))
     {
-        if (thisMessage->id.dirty())
-            setId(thisMessage->id.get());
+        if (uavmessage->id.dirty())
+            setId(uavmessage->id.get());
+    }
+    else if (AHRS::Message *ahrsmsg = dynamic_cast<AHRS::Message *>(message))
+    {
+        m_ahrs->process(ahrsmsg);
     }
 }
 int UAV::id() const
@@ -44,9 +47,12 @@ void UAV::setId(int id)
 {
     if (m_id == id)
         return;
-
     BOOST_LOG_TRIVIAL(info) << "UAV ID" << id;
-
     m_id = id;
+}
+
+AHRS *UAV::ahrs() const
+{
+    return m_ahrs;
 }
 }

@@ -14,12 +14,14 @@ SET(SRC_LIST
     UavProtocol.cpp
     UavMessage.cpp
     UavObject.cpp
+    AHRS.cpp
     )
 SET(HEADER_LIST
     UAV.h
     UavProtocol.h
     UavMessage.h
     UavObject.h
+    AHRS.h
     )
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST})

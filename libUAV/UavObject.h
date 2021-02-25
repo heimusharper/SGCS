@@ -18,7 +18,9 @@
 #define UAVOBJECT_H
 #include "UavMessage.h"
 #include <boost/log/trivial.hpp>
+#include <cmath>
 #include <memory>
+#include <numeric>
 
 namespace uav
 {

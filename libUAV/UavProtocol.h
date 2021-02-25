@@ -49,8 +49,8 @@ protected:
         _messageStoreMutex.lock();
         _messages.remove_if([](uav::UavMessage *msg) { return (dynamic_cast<T *>(msg) != nullptr); });
         _messages.push_back(message);
-        BOOST_LOG_TRIVIAL(info) << "WRITE MSG " << message;
         _messageStoreMutex.unlock();
+        setIsHasData(true);
     }
 
 private:

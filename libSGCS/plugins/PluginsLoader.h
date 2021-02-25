@@ -18,12 +18,13 @@
 #define PLUGINSLOADER_H
 
 #include "DataSourcePlugin.h"
+#include "LeafPlugin.h"
 #include "PluginInterface.h"
 #include "ProtocolPlugin.h"
-#include <boost/container/vector.hpp>
 #include <boost/log/trivial.hpp>
 #include <dlfcn.h>
 #include <filesystem>
+#include <vector>
 
 namespace sgcs
 {
@@ -36,13 +37,14 @@ public:
 
     bool load(const std::filesystem::path &pluginsDir);
 
-    boost::container::vector<ProtocolPlugin *> protocols() const;
-
-    boost::container::vector<DataSourcePlugin *> datasources() const;
+    std::vector<ProtocolPlugin *> protocols() const;
+    std::vector<DataSourcePlugin *> datasources() const;
+    std::vector<LeafPlugin *> leafs() const;
 
 private:
-    boost::container::vector<ProtocolPlugin *> _protocol;
-    boost::container::vector<DataSourcePlugin *> _datasources;
+    std::vector<ProtocolPlugin *> _protocol;
+    std::vector<DataSourcePlugin *> _datasources;
+    std::vector<LeafPlugin *> _leafs;
 };
 }
 }

@@ -17,16 +17,17 @@
 #ifndef CONNECTIONROUTER_H
 #define CONNECTIONROUTER_H
 
+#include "../plugins/LeafInterface.h"
 #include "../plugins/ProtocolPlugin.h"
 #include "Connection.h"
 #include <UAV.h>
 #include <UavProtocol.h>
 #include <atomic>
-#include <boost/container/vector.hpp>
 #include <boost/log/trivial.hpp>
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <vector>
 
 namespace sgcs
 {
@@ -35,7 +36,9 @@ namespace connection
 class ConnectionRouter
 {
 public:
-    ConnectionRouter(Connection *connection, const boost::container::vector<uav::UavProtocol *> &protos);
+    ConnectionRouter(Connection *connection,
+                     const std::vector<uav::UavProtocol *> &protos,
+                     const std::vector<gcs::LeafInterface *> &leafs);
     ~ConnectionRouter();
 
 private:
@@ -46,7 +49,8 @@ private:
     uav::UAV *m_uav = nullptr;
 
     const int MAX_BUFFER_SIZE = 1024;
-    boost::container::vector<uav::UavProtocol *> m_protos;
+    std::vector<uav::UavProtocol *> m_protos;
+    std::vector<gcs::LeafInterface *> m_leafs;
 
     Connection *m_connection     = nullptr;
     uav::UavProtocol *m_protocol = nullptr;

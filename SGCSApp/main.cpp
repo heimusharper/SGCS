@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
             BOOST_LOG_TRIVIAL(debug) << "Plugin" << ds->name();
             if (ds->name() == datasource)
             {
-                thr.create(ds->instance(), loader.protocols());
+                thr.create(ds->instance(), loader.protocols(), loader.leafs());
                 break;
             }
         }
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
         auto dss = loader.datasources();
         if (!dss.empty())
         {
-            thr.create(dss.front()->instance(), loader.protocols());
+            thr.create(dss.front()->instance(), loader.protocols(), loader.leafs());
         }
     }
     RunConfiguration::instance().forceSave();

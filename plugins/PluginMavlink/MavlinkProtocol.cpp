@@ -128,8 +128,18 @@ void MavlinkProtocol::runMessageReader()
                         uav::UAV::Message *m = new uav::UAV::Message();
                         m->id                = message.sysid;
                         insertMessage<uav::UAV::Message>(m);
-                        setIsHasData(true);
                     }
+                    break;
+                }
+                case MAVLINK_MSG_ID_ATTITUDE:
+                {
+                    mavlink_attitude_t att;
+                    mavlink_msg_attitude_decode(&message, &att);
+                    uav::AHRS::Message *ahrs = new uav::AHRS::Message();
+                    ahrs->pitch              = static_cast<float>(att.pitch / M_PI * 180.);
+                    ahrs->roll               = static_cast<float>(att.roll / M_PI * 180.);
+                    ahrs->yaw                = static_cast<float>(att.yaw / M_PI * 180.);
+                    insertMessage<uav::AHRS::Message>(ahrs);
                     break;
                 }
                 default:
