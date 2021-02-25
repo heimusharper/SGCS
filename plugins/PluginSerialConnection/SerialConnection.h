@@ -30,7 +30,7 @@ public:
     explicit SerialConnection();
     virtual ~SerialConnection();
     virtual void onTransmit(const boost::container::vector<uint8_t> &data) override final;
-    virtual boost::container::vector<uint8_t> collectBytesAndClear() override final;
+    virtual std::vector<uint8_t> collectBytesAndClear() override final;
 
 signals:
 

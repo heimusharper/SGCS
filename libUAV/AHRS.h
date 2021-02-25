@@ -20,7 +20,7 @@
 
 namespace uav
 {
-class AHRS : public UavObject
+class AHRS : public UavObject<uint16_t>
 {
 public:
     class Message : public UavMessage

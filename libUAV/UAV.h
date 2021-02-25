@@ -21,7 +21,7 @@
 
 namespace uav
 {
-class UAV : public UavObject
+class UAV : public UavObject<uint8_t>
 {
 public:
     class Message : public UavMessage

@@ -24,10 +24,29 @@
 
 namespace uav
 {
+template <class T>
 class UavObject
 {
 public:
-    explicit UavObject();
+    explicit UavObject() : m_has(0)
+    {
+    }
+
+    bool has(T h) const
+    {
+        return m_has & h;
+    }
+    void setHas(T h)
+    {
+        m_has |= h;
+    }
+    void rmHas(T h)
+    {
+        m_has = m_has & ~h;
+    }
+
+protected:
+    T m_has = 0;
 };
 }
 #endif // UAVOBJECT_H

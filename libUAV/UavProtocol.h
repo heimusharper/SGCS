@@ -21,9 +21,10 @@
 #include <UAV.h>
 #include <UavMessage.h>
 #include <atomic>
-#include <boost/container/vector.hpp>
 #include <list>
 #include <mutex>
+#include <thread>
+#include <vector>
 
 namespace uav
 {
@@ -31,34 +32,45 @@ class UavProtocol
 {
 public:
     explicit UavProtocol();
-    virtual ~UavProtocol() = default;
-    virtual boost::container::vector<uint8_t> hello() const;
+    virtual ~UavProtocol();
+    virtual std::vector<uint8_t> hello() const;
 
-    virtual std::string name() const                                       = 0;
-    virtual void onReceived(const boost::container::vector<uint8_t> &data) = 0;
+    virtual std::string name() const                          = 0;
+    virtual void onReceived(const std::vector<uint8_t> &data) = 0;
 
     bool isHasData() const;
     uav::UavMessage *message();
 
+    void setUAV(uav::UAV *uav);
+
 protected:
     void setIsHasData(bool l);
+    virtual void onSetUAV() = 0;
 
     template <class T>
     void insertMessage(uav::UavMessage *message)
     {
-        _messageStoreMutex.lock();
-        _messages.remove_if([](uav::UavMessage *msg) { return (dynamic_cast<T *>(msg) != nullptr); });
-        _messages.push_back(message);
-        _messageStoreMutex.unlock();
+        m_messageStoreMutex.lock();
+        m_messages.remove_if([](uav::UavMessage *msg) { return (dynamic_cast<T *>(msg) != nullptr); });
+        m_messages.push_back(message);
+        m_messageStoreMutex.unlock();
         setIsHasData(true);
     }
 
-private:
-    std::list<uav::UavMessage *> _messages;
-    std::mutex _messageStoreMutex;
+    uav::UAV *m_uav = nullptr;
+
+    std::thread *m_messageGetterThread = nullptr;
+    std::mutex m_mutex;
 
 private:
-    std::atomic_bool _hasData;
+    std::list<uav::UavMessage *> m_messages;
+    std::mutex m_messageStoreMutex;
+    std::atomic_bool m_stopThread;
+
+    void run();
+
+private:
+    std::atomic_bool m_hasData;
 };
 }
 #endif // UAVPROTOCOL_H

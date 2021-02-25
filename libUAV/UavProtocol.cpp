@@ -20,32 +20,71 @@ namespace uav
 {
 UavProtocol::UavProtocol()
 {
-    _hasData.store(false);
+    m_stopThread.store(false);
+    m_hasData.store(false);
 }
 
-boost::container::vector<uint8_t> UavProtocol::hello() const
+UavProtocol::~UavProtocol()
 {
-    return boost::container::vector<uint8_t>();
+    m_stopThread.store(true);
+    if (m_messageGetterThread)
+    {
+        if (m_messageGetterThread->joinable())
+            m_messageGetterThread->join();
+        delete m_messageGetterThread;
+    }
+}
+
+std::vector<uint8_t> UavProtocol::hello() const
+{
+    return std::vector<uint8_t>();
 }
 
 void UavProtocol::setIsHasData(bool l)
 {
-    _hasData.store(l);
+    m_hasData.store(l);
+}
+
+void UavProtocol::run()
+{
+    while (!m_stopThread.load())
+    {
+        m_mutex.lock();
+        if (m_uav)
+        {
+            if (isHasData())
+            {
+                uav::UavMessage *n = message();
+                m_uav->process(n);
+            }
+        }
+        m_mutex.unlock();
+        usleep(10000);
+    }
 }
 
 bool UavProtocol::isHasData() const
 {
-    return _hasData.load();
+    return m_hasData.load();
 }
 uav::UavMessage *UavProtocol::message()
 {
-    _messageStoreMutex.lock();
-    uav::UavMessage *obj = _messages.front();
-    _messages.pop_front();
-    if (_messages.empty())
+    m_messageStoreMutex.lock();
+    uav::UavMessage *obj = m_messages.front();
+    m_messages.pop_front();
+    if (m_messages.empty())
         setIsHasData(false);
-    _messageStoreMutex.unlock();
+    m_messageStoreMutex.unlock();
     return obj;
+}
+
+void UavProtocol::setUAV(UAV *uav)
+{
+    if (m_uav)
+        return;
+    m_uav                 = uav;
+    m_messageGetterThread = new std::thread(&UavProtocol::run, this);
+    onSetUAV();
 }
 
 }

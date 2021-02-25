@@ -30,7 +30,7 @@ public:
     explicit IPConnection();
     virtual ~IPConnection();
     virtual void onTransmit(const boost::container::vector<uint8_t> &data) override final;
-    virtual boost::container::vector<uint8_t> collectBytesAndClear() override final;
+    virtual std::vector<uint8_t> collectBytesAndClear() override final;
 
     virtual bool isHasBytes() override final;
     void doConnectToPort(const std::string &hostName, uint16_t port);

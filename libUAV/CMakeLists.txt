@@ -15,6 +15,7 @@ SET(SRC_LIST
     UavMessage.cpp
     UavObject.cpp
     AHRS.cpp
+    GPS.cpp
     )
 SET(HEADER_LIST
     UAV.h
@@ -22,6 +23,7 @@ SET(HEADER_LIST
     UavMessage.h
     UavObject.h
     AHRS.h
+    GPS.h
     )
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST})
