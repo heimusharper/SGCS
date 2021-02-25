@@ -19,10 +19,10 @@
 #define MAVLINKPROTOCOL_H
 
 #include "ardupilotmega/mavlink.h"
+#include "mavlink_types.h"
 #include <UavProtocol.h>
 #include <atomic>
 #include <boost/log/trivial.hpp>
-#include <mutex>
 #include <queue>
 #include <thread>
 
@@ -38,7 +38,8 @@ public:
     virtual void onReceived(const boost::container::vector<uint8_t> &data) override;
 
 private:
-    void run();
+    void runParser();
+    void runMessageReader();
 
 private:
     bool check(char c, mavlink_message_t *msg);
@@ -53,9 +54,12 @@ private:
     std::mutex _mavlinkStoreMutex;
 
     std::atomic_bool _stopThread;
-    std::thread *_dataProcessorThread = nullptr;
+    std::thread *_dataProcessorThread    = nullptr;
+    std::thread *_messageProcessorThread = nullptr;
     std::queue<boost::container::vector<uint8_t>> _dataTasks;
     std::mutex _dataTaskMutex;
+
+    int m_uavID = -1;
 };
 
 #endif // MAVLINKPROTOCOL_H

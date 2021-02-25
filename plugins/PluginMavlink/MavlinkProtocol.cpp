@@ -21,7 +21,8 @@ MavlinkProtocol::MavlinkProtocol() : uav::UavProtocol()
     _isCheckAPM.store(false);
     _waitForSignal.store(true);
     _stopThread.store(false);
-    _dataProcessorThread = new std::thread(&MavlinkProtocol::run, this);
+    _dataProcessorThread    = new std::thread(&MavlinkProtocol::runParser, this);
+    _messageProcessorThread = new std::thread(&MavlinkProtocol::runMessageReader, this);
 }
 
 MavlinkProtocol::~MavlinkProtocol()
@@ -32,6 +33,12 @@ MavlinkProtocol::~MavlinkProtocol()
         if (_dataProcessorThread->joinable())
             _dataProcessorThread->join();
         delete _dataProcessorThread;
+    }
+    if (_messageProcessorThread)
+    {
+        if (_messageProcessorThread->joinable())
+            _messageProcessorThread->join();
+        delete _messageProcessorThread;
     }
 }
 
@@ -54,7 +61,7 @@ void MavlinkProtocol::onReceived(const boost::container::vector<uint8_t> &data)
     _dataTaskMutex.unlock();
 }
 
-void MavlinkProtocol::run()
+void MavlinkProtocol::runParser()
 {
     boost::container::vector<uint8_t> buffer;
     while (!_stopThread.load())
@@ -78,16 +85,15 @@ void MavlinkProtocol::run()
             {
                 if (check((char)buffer[i], &msg))
                 {
-                    if (_isCheckAPM.load())
+                    if (_isCheckAPM.load() && msg.sysid == m_uavID)
                     {
                         _mavlinkStoreMutex.lock();
                         _mavlinkMessages.push(msg);
                         _mavlinkStoreMutex.unlock();
-                        BOOST_LOG_TRIVIAL(info) << "MSG ID" << msg.msgid;
+                        // BOOST_LOG_TRIVIAL(info) << "MSG ID" << msg.msgid;
                         if (_waitForSignal.load())
                         {
                             _waitForSignal.store(false);
-                            setIsHasData(true);
                         }
                     }
                 }
@@ -95,6 +101,41 @@ void MavlinkProtocol::run()
             buffer.clear();
         }
 
+        usleep(10000);
+    }
+}
+
+void MavlinkProtocol::runMessageReader()
+{
+    bool isSetID = false;
+    while (!_stopThread.load())
+    {
+        while (!_mavlinkMessages.empty())
+        {
+            _mavlinkStoreMutex.lock();
+            mavlink_message_t message = _mavlinkMessages.front();
+            _mavlinkMessages.pop();
+            _mavlinkStoreMutex.unlock();
+            // BOOST_LOG_TRIVIAL(info) << "MSG ID" << message.msgid;
+
+            switch (message.msgid)
+            {
+                case MAVLINK_MSG_ID_HEARTBEAT:
+                {
+                    if (!isSetID)
+                    {
+                        isSetID              = true;
+                        uav::UAV::Message *m = new uav::UAV::Message();
+                        m->id                = message.sysid;
+                        insertMessage<uav::UAV::Message>(m);
+                        setIsHasData(true);
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
         usleep(10000);
     }
 }
@@ -113,6 +154,7 @@ bool MavlinkProtocol::check(char c, mavlink_message_t *msg)
                 mavlink_msg_heartbeat_decode(msg, &hrt);
                 if (hrt.autopilot == MAV_AUTOPILOT_ARDUPILOTMEGA)
                 {
+                    m_uavID = msg->sysid;
                     _isCheckAPM.store(true);
                     return true;
                 }

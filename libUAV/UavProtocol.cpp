@@ -36,4 +36,15 @@ bool UavProtocol::isHasData() const
 {
     return _hasData.load();
 }
+uav::UavMessage *UavProtocol::message()
+{
+    _messageStoreMutex.lock();
+    uav::UavMessage *obj = _messages.front();
+    _messages.pop_front();
+    if (_messages.empty())
+        setIsHasData(false);
+    _messageStoreMutex.unlock();
+    return obj;
+}
+
 }

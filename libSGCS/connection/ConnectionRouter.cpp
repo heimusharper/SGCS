@@ -24,23 +24,31 @@ namespace connection
 ConnectionRouter::ConnectionRouter(Connection *connection, const boost::container::vector<uav::UavProtocol *> &protos)
 : m_connection(connection), m_protos(protos)
 {
-    _stopThread.store(false);
-    _thread = new std::thread(&ConnectionRouter::run, this);
+    m_stopThread.store(false);
+    _connectionsThread   = new std::thread(&ConnectionRouter::runConection, this);
+    _messageGetterThread = new std::thread(&ConnectionRouter::runMessages, this);
 }
 
 ConnectionRouter::~ConnectionRouter()
 {
-    _stopThread.store(false);
-    if (_thread)
+    m_stopThread.store(false);
+    if (_connectionsThread)
     {
-        _thread->join();
-        delete _thread;
+        if (_connectionsThread->joinable())
+            _connectionsThread->join();
+        delete _connectionsThread;
+    }
+    if (_messageGetterThread)
+    {
+        if (_messageGetterThread->joinable())
+            _messageGetterThread->join();
+        delete _messageGetterThread;
     }
 }
 
-void ConnectionRouter::run()
+void ConnectionRouter::runConection()
 {
-    while (!_stopThread.load())
+    while (!m_stopThread.load())
     {
         // collect buffer
         if (!m_protocol && m_connection->isHasBytes())
@@ -69,7 +77,9 @@ void ConnectionRouter::run()
                 {
                     m_protocol = p;
                     BOOST_LOG_TRIVIAL(info) << "Ready " << m_protocol->name() << " protocol";
-
+                    _mutex.lock();
+                    m_uav = new uav::UAV();
+                    _mutex.unlock();
                     while (m_protos.empty())
                     {
                         auto obj = m_protos.back();
@@ -84,12 +94,30 @@ void ConnectionRouter::run()
         if (m_protocol && m_connection && m_connection->isHasBytes())
         {
             boost::container::vector<uint8_t> bytes = m_connection->collectBytesAndClear();
-            BOOST_LOG_TRIVIAL(info) << "READ DATA SIZE " << bytes.size();
+            // BOOST_LOG_TRIVIAL(info) << "READ DATA SIZE " << bytes.size();
             if (!bytes.empty())
             {
                 m_protocol->onReceived(bytes);
             }
         }
+        usleep(10000);
+    }
+}
+
+void ConnectionRouter::runMessages()
+{
+    while (!m_stopThread.load())
+    {
+        _mutex.lock();
+        if (m_uav && m_protocol)
+        {
+            if (m_protocol->isHasData())
+            {
+                uav::UavMessage *message = m_protocol->message();
+                m_uav->process(message);
+            }
+        }
+        _mutex.unlock();
         usleep(10000);
     }
 }

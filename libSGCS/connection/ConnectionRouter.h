@@ -19,10 +19,12 @@
 
 #include "../plugins/ProtocolPlugin.h"
 #include "Connection.h"
+#include <UAV.h>
 #include <UavProtocol.h>
 #include <atomic>
 #include <boost/container/vector.hpp>
 #include <boost/log/trivial.hpp>
+#include <mutex>
 #include <queue>
 #include <thread>
 
@@ -37,9 +39,12 @@ public:
     ~ConnectionRouter();
 
 private:
-    void run();
+    void runConection();
+    void runMessages();
 
 private:
+    uav::UAV *m_uav = nullptr;
+
     const int MAX_BUFFER_SIZE = 1024;
     boost::container::vector<uav::UavProtocol *> m_protos;
 
@@ -48,8 +53,11 @@ private:
 
     std::queue<char> m_buffer;
 
-    std::thread *_thread = nullptr;
-    std::atomic_bool _stopThread {false};
+    std::thread *_connectionsThread = nullptr;
+    std::atomic_bool m_stopThread {false};
+
+    std::thread *_messageGetterThread = nullptr;
+    std::mutex _mutex;
 };
 }
 }

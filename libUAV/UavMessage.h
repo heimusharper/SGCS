@@ -22,7 +22,37 @@ namespace uav
 class UavMessage
 {
 public:
+    template <class T>
+    class optional
+    {
+    public:
+        optional(T def) : m_dirty(false), m_value(def)
+        {
+        }
+
+        T &get()
+        {
+            m_dirty = true;
+            return m_value;
+        }
+        bool dirty()
+        {
+            return m_dirty;
+        }
+
+        optional<T> &operator=(const T &other) noexcept
+        {
+            get() = other;
+            return *this;
+        }
+
+    private:
+        bool m_dirty = false;
+        T m_value;
+    };
+
     UavMessage();
+    virtual ~UavMessage() = default;
 };
 }
 
