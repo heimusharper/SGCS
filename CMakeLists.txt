@@ -25,3 +25,8 @@ FILE(GLOB PLUGINS_PATH "plugins/*")
 FOREACH(file ${PLUGINS_PATH})
     ADD_SUBDIRECTORY(${file})
 ENDFOREACH()
+# search plugins_contrib and add to project
+FILE(GLOB PLUGINS_CONTRIB_PATH "plugins_contrib/*")
+FOREACH(file ${PLUGINS_CONTRIB_PATH})
+    ADD_SUBDIRECTORY(${file})
+ENDFOREACH()
