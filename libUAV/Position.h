@@ -14,52 +14,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef UAV_H
-#define UAV_H
-#include "AHRS.h"
-#include "GPS.h"
-#include "Position.h"
+#ifndef UAVPOSITION_H
+#define UAVPOSITION_H
 #include "UavObject.h"
+#include <geo/Coords3D.h>
 
 namespace uav
 {
-class UAV : public UavObject<uint8_t>
+class Position : public UavObject<uint16_t>
 {
 public:
-    class Message : public UavMessage
+    enum HAS : uint16_t
     {
-    public:
-        Message() : UavMessage(), id(-1)
-        {
-        }
-        UavMessage::optional<int> id;
+        HAS_SOURCE_GPS = 0b1 << 0,
     };
 
-    UAV();
-    virtual ~UAV();
-    void process(uav::UavMessage *message);
+    class MessageGPS : public UavMessage
+    {
+    public:
+        MessageGPS() : UavMessage(), lat(0.), lon(0.), alt(0.)
+        {
+        }
+        UavMessage::optional<double> lat;
+        UavMessage::optional<double> lon;
+        UavMessage::optional<double> alt;
+    };
 
-    int id() const;
+    Position();
+    virtual ~Position();
 
-    AHRS *ahrs() const;
+    void process(Position::MessageGPS *message);
 
-    GPS *gps() const;
+    geo::Coords3D<double> gps() const;
 
-    Position *position() const;
+protected:
+    void setGps(const geo::Coords3D<double> &gps);
 
 private:
-    void setId(int id);
-
-private:
-    int m_id = -1;
-
-    // Objs
-
-    AHRS *m_ahrs = nullptr;
-
-    GPS *m_gps = nullptr;
-
-    Position *m_position = nullptr;
+    geo::Coords3D<double> _gps;
 };
 }
-#endif // SGCS_H
+
+#endif // POSITION_H

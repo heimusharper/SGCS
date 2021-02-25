@@ -142,6 +142,30 @@ void MavlinkProtocol::runMessageReader()
                     insertMessage<uav::AHRS::Message>(ahrs);
                     break;
                 }
+                case MAVLINK_MSG_ID_GPS_RAW_INT:
+                {
+                    mavlink_gps_raw_int_t gps;
+                    mavlink_msg_gps_raw_int_decode(&message, &gps);
+                    uav::GPS::Message *gpsm = new uav::GPS::Message();
+                    gpsm->satelitesGPS      = gps.satellites_visible;
+                    gpsm->hdop              = gps.h_acc;
+                    gpsm->vdop              = gps.v_acc;
+                    insertMessage<uav::GPS::Message>(gpsm);
+
+                    uav::Position::MessageGPS *pos = new uav::Position::MessageGPS;
+                    pos->lat                       = ((double)gps.lat) / 1.E7;
+                    pos->lon                       = ((double)gps.lon) / 1.E7;
+                    pos->alt                       = ((double)gps.alt) / 1000.;
+                    insertMessage<uav::Position::MessageGPS>(pos);
+                    break;
+                }
+                case MAVLINK_MSG_ID_GPS_STATUS:
+                {
+                    mavlink_gps_status_t gps;
+                    mavlink_msg_gps_status_decode(&message, &gps);
+
+                    break;
+                }
                 default:
                     break;
             }
@@ -152,6 +176,8 @@ void MavlinkProtocol::runMessageReader()
 
 void MavlinkProtocol::onSetUAV()
 {
+    m_uav->gps()->setHas(uav::GPS::HAS::HAS_HV_DOP | uav::GPS::HAS::HAS_PROVIDER_GPS);
+    m_uav->position()->setHas(uav::Position::HAS::HAS_SOURCE_GPS);
 }
 
 bool MavlinkProtocol::check(char c, mavlink_message_t *msg)

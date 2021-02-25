@@ -12,8 +12,10 @@ FIND_PACKAGE(Qt5 COMPONENTS Location REQUIRED)
 
 # add srcs
 SET(SRC_LIST
+    geo/Coords3D.cpp
     )
 SET(HEADER_LIST
+    geo/Coords3D.h
     )
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST})

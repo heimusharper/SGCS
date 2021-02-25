@@ -14,8 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef AHRS_H
-#define AHRS_H
+#ifndef UAVAHRS_H
+#define UAVAHRS_H
 #include "UavObject.h"
 
 namespace uav
@@ -29,9 +29,9 @@ public:
         Message() : UavMessage(), roll(0.f), pitch(0.f), yaw(0.f)
         {
         }
-        Message::optional<float> roll;
-        Message::optional<float> pitch;
-        Message::optional<float> yaw;
+        UavMessage::optional<float> roll;
+        UavMessage::optional<float> pitch;
+        UavMessage::optional<float> yaw;
     };
 
     AHRS();
@@ -52,4 +52,4 @@ private:
     float m_yaw   = 0;
 };
 }
-#endif // AHRS_H
+#endif // UAVAHRS_H

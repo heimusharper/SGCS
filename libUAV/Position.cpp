@@ -14,52 +14,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef UAV_H
-#define UAV_H
-#include "AHRS.h"
-#include "GPS.h"
 #include "Position.h"
-#include "UavObject.h"
 
 namespace uav
 {
-class UAV : public UavObject<uint8_t>
+Position::Position() : UavObject()
 {
-public:
-    class Message : public UavMessage
-    {
-    public:
-        Message() : UavMessage(), id(-1)
-        {
-        }
-        UavMessage::optional<int> id;
-    };
-
-    UAV();
-    virtual ~UAV();
-    void process(uav::UavMessage *message);
-
-    int id() const;
-
-    AHRS *ahrs() const;
-
-    GPS *gps() const;
-
-    Position *position() const;
-
-private:
-    void setId(int id);
-
-private:
-    int m_id = -1;
-
-    // Objs
-
-    AHRS *m_ahrs = nullptr;
-
-    GPS *m_gps = nullptr;
-
-    Position *m_position = nullptr;
-};
 }
-#endif // SGCS_H
+
+Position::~Position()
+{
+}
+
+void Position::process(Position::MessageGPS *message)
+{
+    if (has(uav::Position::HAS::HAS_SOURCE_GPS))
+    {
+        if (message->lat.dirty() || message->lon.dirty() || message->alt.dirty())
+        {
+            geo::Coords3D c3d(message->lat.get(), message->lon.get(), message->alt.get());
+            setGps(c3d);
+        }
+    }
+}
+
+geo::Coords3D<double> Position::gps() const
+{
+    return _gps;
+}
+
+void Position::setGps(const geo::Coords3D<double> &gps)
+{
+    if (_gps == gps)
+        return;
+    _gps = gps;
+    BOOST_LOG_TRIVIAL(info) << "GPS POS {" << _gps.lat() << "; " << _gps.lon() << "; " << _gps.alt() << "}";
+}
+
+}

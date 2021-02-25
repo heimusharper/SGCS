@@ -18,12 +18,15 @@
 
 namespace uav
 {
-UAV::UAV() : UavObject(), m_id(-1), m_ahrs(new AHRS())
+UAV::UAV() : UavObject(), m_id(-1), m_ahrs(new AHRS()), m_gps(new GPS()), m_position(new Position())
 {
 }
 
 UAV::~UAV()
 {
+    delete m_ahrs;
+    delete m_gps;
+    delete m_position;
 }
 
 void UAV::process(uav::UavMessage *message)
@@ -34,9 +37,11 @@ void UAV::process(uav::UavMessage *message)
             setId(uavmessage->id.get());
     }
     else if (AHRS::Message *ahrsmsg = dynamic_cast<AHRS::Message *>(message))
-    {
         m_ahrs->process(ahrsmsg);
-    }
+    else if (GPS::Message *gpsmsg = dynamic_cast<GPS::Message *>(message))
+        m_gps->process(gpsmsg);
+    else if (Position::MessageGPS *posgpsmsg = dynamic_cast<Position::MessageGPS *>(message))
+        m_position->process(posgpsmsg);
 }
 int UAV::id() const
 {
@@ -49,6 +54,16 @@ void UAV::setId(int id)
         return;
     BOOST_LOG_TRIVIAL(info) << "UAV ID" << id;
     m_id = id;
+}
+
+Position *UAV::position() const
+{
+    return m_position;
+}
+
+GPS *UAV::gps() const
+{
+    return m_gps;
 }
 
 AHRS *UAV::ahrs() const
