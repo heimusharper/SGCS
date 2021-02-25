@@ -1,3 +1,4 @@
 *.user
 libSGCS/version.h
 thirdparty/*
+plugins_contrib/*
