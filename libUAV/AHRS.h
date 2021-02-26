@@ -29,9 +29,9 @@ public:
         Message() : UavTask(), roll(0.f), pitch(0.f), yaw(0.f)
         {
         }
-        UavTask::optional<float> roll;
-        UavTask::optional<float> pitch;
-        UavTask::optional<float> yaw;
+        tools::optional<float> roll;
+        tools::optional<float> pitch;
+        tools::optional<float> yaw;
     };
 
     AHRS();

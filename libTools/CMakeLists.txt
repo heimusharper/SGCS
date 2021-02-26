@@ -16,6 +16,7 @@ SET(SRC_LIST
     )
 SET(HEADER_LIST
     geo/Coords3D.h
+    Optional.h
     )
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST})

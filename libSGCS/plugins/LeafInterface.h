@@ -21,10 +21,11 @@
 
 namespace gcs
 {
-class LeafInterface : public sgcs::plugin::PluginInterface
+class LeafInterface
 {
 public:
     LeafInterface();
+    virtual ~LeafInterface() = default;
 
     virtual void setUAV(uav::UAV *uav) final;
 

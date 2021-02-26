@@ -46,9 +46,9 @@ public:
         MessageGPS() : UavTask(), lat(0.), lon(0.), alt(0.)
         {
         }
-        UavTask::optional<double> lat;
-        UavTask::optional<double> lon;
-        UavTask::optional<double> alt;
+        tools::optional<double> lat;
+        tools::optional<double> lon;
+        tools::optional<double> alt;
     };
 
     Position();

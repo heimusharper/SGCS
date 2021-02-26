@@ -32,7 +32,7 @@ public:
         Message() : UavTask(), id(-1)
         {
         }
-        UavTask::optional<int> id;
+        tools::optional<int> id;
     };
 
     UAV();

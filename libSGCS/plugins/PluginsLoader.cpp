@@ -31,7 +31,7 @@ bool PluginsLoader::load(const std::filesystem::path &pluginsDir)
         void *handle = dlopen(fileName.path().c_str(), RTLD_LAZY);
         if (handle == NULL)
         {
-            BOOST_LOG_TRIVIAL(warning) << "Undefined dlload" << fileName.path();
+            BOOST_LOG_TRIVIAL(warning) << "Undefined dlopen " << fileName.path() << " error " << dlerror();
             continue;
         }
         dlerror();
@@ -39,7 +39,7 @@ bool PluginsLoader::load(const std::filesystem::path &pluginsDir)
         plugin_func = reinterpret_cast<PluginInterface *(*)()>(dlsym(handle, "dlload"));
         if (plugin_func == NULL)
         {
-            BOOST_LOG_TRIVIAL(warning) << "failed handle dlload fuction from" << fileName.path();
+            BOOST_LOG_TRIVIAL(warning) << "undefined dlload fuction from " << fileName.path() << " error " << dlerror();
             dlclose(handle);
             continue;
         }

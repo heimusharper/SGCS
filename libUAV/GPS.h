@@ -36,10 +36,10 @@ public:
         Message() : UavTask(), satelitesGPS(0), satelitesGLONASS(0), hdop(255), vdop(255)
         {
         }
-        UavTask::optional<uint8_t> satelitesGPS;
-        UavTask::optional<uint8_t> satelitesGLONASS;
-        UavTask::optional<uint8_t> hdop;
-        UavTask::optional<uint8_t> vdop;
+        tools::optional<uint8_t> satelitesGPS;
+        tools::optional<uint8_t> satelitesGLONASS;
+        tools::optional<uint8_t> hdop;
+        tools::optional<uint8_t> vdop;
     };
 
     GPS();

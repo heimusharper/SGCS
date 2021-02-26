@@ -18,7 +18,7 @@
 
 namespace gcs
 {
-LeafInterface::LeafInterface() : sgcs::plugin::PluginInterface()
+LeafInterface::LeafInterface()
 {
 }
 
