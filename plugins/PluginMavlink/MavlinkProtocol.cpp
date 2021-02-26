@@ -178,7 +178,7 @@ void MavlinkProtocol::onSetUAV()
 {
     m_uav->gps()->setHas(uav::GPS::HAS::HAS_HV_DOP | uav::GPS::HAS::HAS_PROVIDER_GPS);
     m_uav->position()->setHas(uav::Position::HAS::HAS_SOURCE_GPS);
-    _uavPositionControl = new MavlinkPositionControl();
+    _uavPositionControl = new MavlinkPositionControl(this, 0);
     m_uav->position()->setControl(_uavPositionControl);
 }
 

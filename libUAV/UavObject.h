@@ -22,15 +22,13 @@
 #include <concepts>
 #include <memory>
 #include <numeric>
-#include <type_traits>
-
-template <class T>
-concept integral = std::is_integral<T>::value;
 
 namespace uav
 {
 template <class T>
-requires integral<T> class UavObject
+requires std::integral<T>
+
+class UavObject
 {
 public:
     explicit UavObject() : m_has(0)

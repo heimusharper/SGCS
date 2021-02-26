@@ -1,10 +1,12 @@
 #ifndef COORDS3D_H
 #define COORDS3D_H
 #include <cmath>
-
+#include <concepts>
 namespace geo
 {
 template <class T>
+requires std::floating_point<T>
+
 class Coords3D
 {
 public:
