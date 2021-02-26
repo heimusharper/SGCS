@@ -37,7 +37,7 @@ public:
 
     UAV();
     virtual ~UAV();
-    void process(uav::UavTask *message);
+    void process(std::unique_ptr<uav::UavTask> message);
 
     int id() const;
 

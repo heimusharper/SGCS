@@ -29,18 +29,19 @@ UAV::~UAV()
     delete m_position;
 }
 
-void UAV::process(uav::UavTask *message)
+void UAV::process(std::unique_ptr<UavTask> message)
 {
-    if (UAV::Message *uavmessage = dynamic_cast<UAV::Message *>(message))
+    UavTask *task = message.get();
+    if (UAV::Message *uavmessage = dynamic_cast<UAV::Message *>(task))
     {
         if (uavmessage->id.dirty())
             setId(uavmessage->id.get());
     }
-    else if (AHRS::Message *ahrsmsg = dynamic_cast<AHRS::Message *>(message))
+    else if (AHRS::Message *ahrsmsg = dynamic_cast<AHRS::Message *>(task))
         m_ahrs->process(ahrsmsg);
-    else if (GPS::Message *gpsmsg = dynamic_cast<GPS::Message *>(message))
+    else if (GPS::Message *gpsmsg = dynamic_cast<GPS::Message *>(task))
         m_gps->process(gpsmsg);
-    else if (Position::MessageGPS *posgpsmsg = dynamic_cast<Position::MessageGPS *>(message))
+    else if (Position::MessageGPS *posgpsmsg = dynamic_cast<Position::MessageGPS *>(task))
         m_position->process(posgpsmsg);
 }
 int UAV::id() const

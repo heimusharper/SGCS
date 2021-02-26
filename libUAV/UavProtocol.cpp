@@ -55,7 +55,7 @@ void UavProtocol::runTasks()
             if (isHasData())
             {
                 uav::UavTask *n = message();
-                m_uav->process(n);
+                m_uav->process(std::unique_ptr<uav::UavTask>(std::move(n)));
             }
         }
         m_mutex.unlock();
