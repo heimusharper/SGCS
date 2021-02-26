@@ -178,6 +178,8 @@ void MavlinkProtocol::onSetUAV()
 {
     m_uav->gps()->setHas(uav::GPS::HAS::HAS_HV_DOP | uav::GPS::HAS::HAS_PROVIDER_GPS);
     m_uav->position()->setHas(uav::Position::HAS::HAS_SOURCE_GPS);
+    _uavPositionControl = new MavlinkPositionControl();
+    m_uav->position()->setControl(_uavPositionControl);
 }
 
 bool MavlinkProtocol::check(char c, mavlink_message_t *msg)
@@ -217,4 +219,40 @@ std::vector<uint8_t> MavlinkProtocol::packMessage(mavlink_message_t *msg)
         return data;
     }
     return std::vector<uint8_t>();
+}
+
+bool MavlinkPositionControl::goTo(const geo::Coords3D<double> &target)
+{
+    if (m_proto)
+    {
+        mavlink_message_t message;
+        mavlink_msg_mission_item_pack_chan(m_id,
+                                           0,
+                                           0,
+                                           &message,
+                                           0,
+                                           0,
+                                           0,
+                                           MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                                           MAV_CMD_NAV_WAYPOINT,
+                                           2,
+                                           1,
+                                           0,
+                                           0,
+                                           0,
+                                           NAN,
+                                           (float)target.lat(),
+                                           (float)target.lon(),
+                                           (float)target.alt(),
+                                           MAV_MISSION_TYPE_MISSION);
+        MavlinkMessageType *msg = new MavlinkMessageType(message);
+        m_proto->sendMessage(msg);
+        return true;
+    }
+    return false;
+}
+
+mavlink_message_t MavlinkMessageType::mavlink() const
+{
+    return m_mavlink;
 }

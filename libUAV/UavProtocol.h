@@ -39,21 +39,23 @@ public:
     virtual void onReceived(const std::vector<uint8_t> &data) = 0;
 
     bool isHasData() const;
-    uav::UavMessage *message();
+    uav::UavTask *message();
 
     void setUAV(uav::UAV *uav);
+
+    void sendMessage(uav::UavSendMessage *message);
 
 protected:
     void setIsHasData(bool l);
     virtual void onSetUAV() = 0;
 
     template <class T>
-    void insertMessage(uav::UavMessage *message)
+    void insertMessage(uav::UavTask *message)
     {
-        m_messageStoreMutex.lock();
-        m_messages.remove_if([](uav::UavMessage *msg) { return (dynamic_cast<T *>(msg) != nullptr); });
-        m_messages.push_back(message);
-        m_messageStoreMutex.unlock();
+        m_tasksStoreMutex.lock();
+        m_tasks.remove_if([](uav::UavTask *msg) { return (dynamic_cast<T *>(msg) != nullptr); });
+        m_tasks.push_back(message);
+        m_tasksStoreMutex.unlock();
         setIsHasData(true);
     }
 
@@ -63,11 +65,16 @@ protected:
     std::mutex m_mutex;
 
 private:
-    std::list<uav::UavMessage *> m_messages;
-    std::mutex m_messageStoreMutex;
+    std::list<uav::UavTask *> m_tasks;
+    std::mutex m_tasksStoreMutex;
     std::atomic_bool m_stopThread;
+    void runTasks();
 
-    void run();
+    // send
+    std::list<uav::UavSendMessage *> m_send;
+    std::thread *m_sendThread = nullptr;
+    std::mutex m_sendMutex;
+    void runSender();
 
 private:
     std::atomic_bool m_hasData;

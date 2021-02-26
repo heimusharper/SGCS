@@ -51,4 +51,18 @@ void Position::setGps(const geo::Coords3D<double> &gps)
     BOOST_LOG_TRIVIAL(info) << "GPS POS {" << _gps.lat() << "; " << _gps.lon() << "; " << _gps.alt() << "}";
 }
 
+void Position::setControl(PositionControlInterface *control)
+{
+    if (_control)
+        setHas(uav::Position::HAS::HAS_POSITION_CONTROL);
+    else
+        rmHas(uav::Position::HAS::HAS_POSITION_CONTROL);
+    _control = control;
+}
+void Position::goTo(const geo::Coords3D<double> &target)
+{
+    if (_control && has(uav::Position::HAS::HAS_POSITION_CONTROL))
+        _control->goTo(target);
+}
+
 }

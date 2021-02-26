@@ -19,7 +19,7 @@
 
 namespace uav
 {
-class UavMessage
+class UavTask
 {
 public:
     template <class T>
@@ -51,8 +51,13 @@ public:
         T m_value;
     };
 
-    UavMessage();
-    virtual ~UavMessage() = default;
+    UavTask();
+    virtual ~UavTask() = default;
+};
+class UavSendMessage
+{
+public:
+    UavSendMessage();
 };
 }
 

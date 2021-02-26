@@ -48,7 +48,7 @@ void AHRS::setRoll(float roll)
     if (fabs(m_roll - roll) < 0.1)
         return;
     m_roll = roll;
-    BOOST_LOG_TRIVIAL(info) << "ROLL " << m_roll;
+    // BOOST_LOG_TRIVIAL(info) << "ROLL " << m_roll;
 }
 
 void AHRS::setPitch(float pitch)
@@ -56,7 +56,7 @@ void AHRS::setPitch(float pitch)
     if (fabs(m_pitch - pitch) < 0.1)
         return;
     m_pitch = pitch;
-    BOOST_LOG_TRIVIAL(info) << "PITCH " << m_pitch;
+    // BOOST_LOG_TRIVIAL(info) << "PITCH " << m_pitch;
 }
 
 void AHRS::setYaw(float yaw)
@@ -64,7 +64,7 @@ void AHRS::setYaw(float yaw)
     if (fabs(m_yaw - yaw) < 0.1)
         return;
     m_yaw = yaw;
-    BOOST_LOG_TRIVIAL(info) << "YAW " << m_yaw;
+    // BOOST_LOG_TRIVIAL(info) << "YAW " << m_yaw;
 }
 
 }

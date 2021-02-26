@@ -23,15 +23,15 @@ namespace uav
 class AHRS : public UavObject<uint16_t>
 {
 public:
-    class Message : public UavMessage
+    class Message : public UavTask
     {
     public:
-        Message() : UavMessage(), roll(0.f), pitch(0.f), yaw(0.f)
+        Message() : UavTask(), roll(0.f), pitch(0.f), yaw(0.f)
         {
         }
-        UavMessage::optional<float> roll;
-        UavMessage::optional<float> pitch;
-        UavMessage::optional<float> yaw;
+        UavTask::optional<float> roll;
+        UavTask::optional<float> pitch;
+        UavTask::optional<float> yaw;
     };
 
     AHRS();

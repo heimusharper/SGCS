@@ -26,18 +26,29 @@ class Position : public UavObject<uint16_t>
 public:
     enum HAS : uint16_t
     {
-        HAS_SOURCE_GPS = 0b1 << 0,
+        HAS_SOURCE_GPS       = 0b1 << 0,
+        HAS_POSITION_CONTROL = 0b1 << 1
     };
 
-    class MessageGPS : public UavMessage
+    class PositionControlInterface
     {
     public:
-        MessageGPS() : UavMessage(), lat(0.), lon(0.), alt(0.)
+        PositionControlInterface()
         {
         }
-        UavMessage::optional<double> lat;
-        UavMessage::optional<double> lon;
-        UavMessage::optional<double> alt;
+
+        virtual bool goTo(const geo::Coords3D<double> &target) = 0;
+    };
+
+    class MessageGPS : public UavTask
+    {
+    public:
+        MessageGPS() : UavTask(), lat(0.), lon(0.), alt(0.)
+        {
+        }
+        UavTask::optional<double> lat;
+        UavTask::optional<double> lon;
+        UavTask::optional<double> alt;
     };
 
     Position();
@@ -47,11 +58,17 @@ public:
 
     geo::Coords3D<double> gps() const;
 
+    // control
+    void setControl(PositionControlInterface *control);
+    void goTo(const geo::Coords3D<double> &target);
+
 protected:
     void setGps(const geo::Coords3D<double> &gps);
 
 private:
     geo::Coords3D<double> _gps;
+
+    PositionControlInterface *_control = nullptr;
 };
 }
 

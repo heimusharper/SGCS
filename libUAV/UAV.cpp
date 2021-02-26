@@ -29,7 +29,7 @@ UAV::~UAV()
     delete m_position;
 }
 
-void UAV::process(uav::UavMessage *message)
+void UAV::process(uav::UavTask *message)
 {
     if (UAV::Message *uavmessage = dynamic_cast<UAV::Message *>(message))
     {

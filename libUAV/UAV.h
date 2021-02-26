@@ -26,18 +26,18 @@ namespace uav
 class UAV : public UavObject<uint8_t>
 {
 public:
-    class Message : public UavMessage
+    class Message : public UavTask
     {
     public:
-        Message() : UavMessage(), id(-1)
+        Message() : UavTask(), id(-1)
         {
         }
-        UavMessage::optional<int> id;
+        UavTask::optional<int> id;
     };
 
     UAV();
     virtual ~UAV();
-    void process(uav::UavMessage *message);
+    void process(uav::UavTask *message);
 
     int id() const;
 

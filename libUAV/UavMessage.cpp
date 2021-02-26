@@ -18,7 +18,12 @@
 
 namespace uav
 {
-UavMessage::UavMessage()
+UavTask::UavTask()
 {
 }
+
+UavSendMessage::UavSendMessage()
+{
+}
+
 }

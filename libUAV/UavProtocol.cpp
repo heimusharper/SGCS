@@ -45,7 +45,7 @@ void UavProtocol::setIsHasData(bool l)
     m_hasData.store(l);
 }
 
-void UavProtocol::run()
+void UavProtocol::runTasks()
 {
     while (!m_stopThread.load())
     {
@@ -54,7 +54,7 @@ void UavProtocol::run()
         {
             if (isHasData())
             {
-                uav::UavMessage *n = message();
+                uav::UavTask *n = message();
                 m_uav->process(n);
             }
         }
@@ -63,18 +63,32 @@ void UavProtocol::run()
     }
 }
 
+void UavProtocol::runSender()
+{
+    while (!m_stopThread.load())
+    {
+        m_sendMutex.lock();
+        if (m_uav)
+        {
+            // send
+        }
+        m_sendMutex.unlock();
+        usleep(10000);
+    }
+}
+
 bool UavProtocol::isHasData() const
 {
     return m_hasData.load();
 }
-uav::UavMessage *UavProtocol::message()
+uav::UavTask *UavProtocol::message()
 {
-    m_messageStoreMutex.lock();
-    uav::UavMessage *obj = m_messages.front();
-    m_messages.pop_front();
-    if (m_messages.empty())
+    m_tasksStoreMutex.lock();
+    uav::UavTask *obj = m_tasks.front();
+    m_tasks.pop_front();
+    if (m_tasks.empty())
         setIsHasData(false);
-    m_messageStoreMutex.unlock();
+    m_tasksStoreMutex.unlock();
     return obj;
 }
 
@@ -83,8 +97,16 @@ void UavProtocol::setUAV(UAV *uav)
     if (m_uav)
         return;
     m_uav                 = uav;
-    m_messageGetterThread = new std::thread(&UavProtocol::run, this);
+    m_messageGetterThread = new std::thread(&UavProtocol::runTasks, this);
+    m_sendThread          = new std::thread(&UavProtocol::runSender, this);
     onSetUAV();
+}
+
+void UavProtocol::sendMessage(UavSendMessage *message)
+{
+    m_sendMutex.lock();
+    m_send.push_back(message);
+    m_sendMutex.unlock();
 }
 
 }

@@ -26,6 +26,32 @@
 #include <queue>
 #include <thread>
 
+class MavlinkMessageType : public uav::UavSendMessage
+{
+public:
+    MavlinkMessageType(const mavlink_message_t &mavlink) : m_mavlink(mavlink)
+    {
+    }
+
+    mavlink_message_t mavlink() const;
+
+private:
+    mavlink_message_t m_mavlink;
+};
+
+class MavlinkPositionControl : public uav::Position::PositionControlInterface
+{
+public:
+    MavlinkPositionControl(uav::UavProtocol *proto, uint8_t id) : m_proto(proto), m_id(id)
+    {
+    }
+    virtual bool goTo(const geo::Coords3D<double> &target) override final;
+
+private:
+    uav::UavProtocol *m_proto = nullptr;
+    uint8_t m_id              = 0;
+};
+
 class MavlinkProtocol : public uav::UavProtocol
 {
 public:
@@ -61,6 +87,8 @@ private:
     std::mutex _dataTaskMutex;
 
     int m_uavID = -1;
+    // uav
+    MavlinkPositionControl *_uavPositionControl = nullptr;
 };
 
 #endif // MAVLINKPROTOCOL_H

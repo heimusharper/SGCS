@@ -30,16 +30,16 @@ public:
         HAS_HV_DOP           = 0b1 << 2
     };
 
-    class Message : public UavMessage
+    class Message : public UavTask
     {
     public:
-        Message() : UavMessage(), satelitesGPS(0), satelitesGLONASS(0), hdop(255), vdop(255)
+        Message() : UavTask(), satelitesGPS(0), satelitesGLONASS(0), hdop(255), vdop(255)
         {
         }
-        UavMessage::optional<uint8_t> satelitesGPS;
-        UavMessage::optional<uint8_t> satelitesGLONASS;
-        UavMessage::optional<uint8_t> hdop;
-        UavMessage::optional<uint8_t> vdop;
+        UavTask::optional<uint8_t> satelitesGPS;
+        UavTask::optional<uint8_t> satelitesGLONASS;
+        UavTask::optional<uint8_t> hdop;
+        UavTask::optional<uint8_t> vdop;
     };
 
     GPS();
