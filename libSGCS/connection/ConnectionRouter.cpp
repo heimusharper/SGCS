@@ -24,20 +24,21 @@ namespace connection
 ConnectionRouter::ConnectionRouter(Connection *connection,
                                    const std::vector<uav::UavProtocol *> &protos,
                                    const std::vector<gcs::LeafInterface *> &leafs)
-: m_connection(connection), m_protos(protos), m_leafs(leafs)
+: MAX_BUFFER_SIZE(2048), m_connection(connection), m_protos(protos), m_leafs(leafs)
 {
     m_stopThread.store(false);
-    _connectionsThread = new std::thread(&ConnectionRouter::runConection, this);
+    m_connectionsThread = new std::thread(&ConnectionRouter::runConection, this);
+    m_uavCreateHnadler  = new UavCreateHandler(m_leafs);
 }
 
 ConnectionRouter::~ConnectionRouter()
 {
     m_stopThread.store(false);
-    if (_connectionsThread)
+    if (m_connectionsThread)
     {
-        if (_connectionsThread->joinable())
-            _connectionsThread->join();
-        delete _connectionsThread;
+        if (m_connectionsThread->joinable())
+            m_connectionsThread->join();
+        delete m_connectionsThread;
     }
 }
 
@@ -49,7 +50,7 @@ void ConnectionRouter::runConection()
         if (!m_protocol && m_connection->isHasBytes())
         {
             std::vector<uint8_t> bytes = m_connection->collectBytesAndClear();
-            for (int i = 0; i < bytes.size(); i++)
+            for (std::size_t i = 0; i < bytes.size(); i++)
                 m_buffer.push(bytes[i]);
             if (m_buffer.size() > MAX_BUFFER_SIZE)
                 while (m_buffer.size() > MAX_BUFFER_SIZE - MAX_BUFFER_SIZE / 4)
@@ -74,8 +75,6 @@ void ConnectionRouter::runConection()
             {
                 m_protocol = *iter;
                 BOOST_LOG_TRIVIAL(info) << "Ready " << m_protocol->name() << " protocol";
-                m_uav = new uav::UAV();
-                m_protocol->setUAV(m_uav);
                 while (m_protos.empty())
                 {
                     auto obj = m_protos.back();
@@ -83,13 +82,7 @@ void ConnectionRouter::runConection()
                         delete obj;
                     m_protos.pop_back();
                 }
-                if (m_uav)
-                {
-                    for (gcs::LeafInterface *l : m_leafs)
-                    {
-                        l->setUAV(m_uav);
-                    }
-                }
+                m_protocol->addUavCreateHandler(m_uavCreateHnadler);
             }
         }
         // bridge
@@ -105,5 +98,13 @@ void ConnectionRouter::runConection()
         usleep(10000);
     }
 }
+
+void ConnectionRouter::UavCreateHandler::onCreateUav(uav::UAV *uav)
+{
+    if (uav)
+        for (gcs::LeafInterface *l : m_leafs)
+            l->setUAV(uav);
+}
+
 }
 }

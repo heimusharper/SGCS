@@ -25,6 +25,8 @@ class UavTask
 public:
     UavTask();
     virtual ~UavTask() = default;
+
+    int targetID = 0;
 };
 class UavSendMessage
 {

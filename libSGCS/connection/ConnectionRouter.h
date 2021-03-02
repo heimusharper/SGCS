@@ -44,19 +44,32 @@ public:
 private:
     void runConection();
 
-private:
-    uav::UAV *m_uav = nullptr;
+    class UavCreateHandler : public uav::UavProtocol::UavCreateHandler
+    {
+    public:
+        UavCreateHandler(const std::vector<gcs::LeafInterface *> &leafs) : m_leafs(leafs)
+        {
+        }
+        virtual ~UavCreateHandler() = default;
+        virtual void onCreateUav(uav::UAV *uav) override;
 
-    const int MAX_BUFFER_SIZE = 1024;
+    private:
+        std::vector<gcs::LeafInterface *> m_leafs;
+    };
+
+private:
+    const std::size_t MAX_BUFFER_SIZE;
+    Connection *m_connection = nullptr;
     std::vector<uav::UavProtocol *> m_protos;
     std::vector<gcs::LeafInterface *> m_leafs;
 
-    Connection *m_connection     = nullptr;
+    UavCreateHandler *m_uavCreateHnadler = nullptr;
+
     uav::UavProtocol *m_protocol = nullptr;
 
     std::queue<char> m_buffer;
 
-    std::thread *_connectionsThread = nullptr;
+    std::thread *m_connectionsThread = nullptr;
     std::atomic_bool m_stopThread {false};
 };
 }

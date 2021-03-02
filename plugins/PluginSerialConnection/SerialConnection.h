@@ -17,49 +17,56 @@
 #ifndef SERIALCONNECTION_H
 #define SERIALCONNECTION_H
 #include "SerialConfig.h"
-#include <QObject>
-#include <QSerialPort>
 #include <boost/log/trivial.hpp>
 #include <connection/Connection.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <queue>
+#include <termios.h>
+#include <thread>
+#include <unistd.h>
 
-class SerialConnection : public QObject, public sgcs::connection::Connection
+typedef int SerialDescriptor;
+
+class SerialConnection : public sgcs::connection::Connection
 {
-    Q_OBJECT
 public:
     explicit SerialConnection();
     virtual ~SerialConnection();
+
     virtual void onTransmit(const boost::container::vector<uint8_t> &data) override final;
     virtual std::vector<uint8_t> collectBytesAndClear() override final;
 
-signals:
-
-    void connectToPort(const QString &portName, int baudRate);
+    void connectToPort(const std::string &portName, int baudRate);
     void disconnectFromPort();
 
-protected slots:
-
-private slots:
-
-    void onError(QSerialPort::SerialPortError error);
-    void doConnectToPort(const QString &portName, int baudRate);
-    void doDisconnectFromPort();
-    void readyRead();
-
-signals:
-
-    void onConnected(const QString &portName, int baudRate);
-    void onDisconnected(const QString &error);
+private:
+    void run();
 
 private:
-    QString m_portName;
-    uint16_t m_baudRate       = 0;
-    const int MAX_BUFFER_SIZE = 1024;
+    std::string m_portName;
+    uint16_t m_baudRate = 0;
+    const size_t MAX_BUFFER_SIZE;
+    const size_t MAX_READ_BYTES_SIZE;
 
-    std::queue<uint8_t> _writeBuffer;
-    std::queue<uint8_t> _readBuffer;
+    struct CharMap
+    {
+        ~CharMap()
+        {
+            if (size > 0)
+                delete[] data;
+        }
+        char *data;
+        size_t size = 0;
+    };
 
-    QSerialPort *_serial = nullptr;
+    std::queue<CharMap> m_writeBuffer;
+    std::queue<CharMap> m_readBuffer;
+
+    std::atomic_bool m_stop;
+    std::atomic_bool m_isDirty;
+    std::mutex m_mutex;
+    std::thread *m_thread = nullptr;
 };
 
 #endif // SERIALCONNECTION_H

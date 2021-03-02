@@ -63,19 +63,19 @@ public:
 
     virtual void onReceived(const std::vector<uint8_t> &data) override;
 
+protected:
+    virtual void setUAV(int id, uav::UAV *uav) override final;
+
 private:
     void runParser();
     void runMessageReader();
 
 private:
-    virtual void onSetUAV() override;
     bool check(char c, mavlink_message_t *msg);
 
     static std::vector<uint8_t> packMessage(mavlink_message_t *msg);
 
-    const int DIFFERENT_CHANNEL     = 1;
-    std::atomic_bool _isCheckAPM    = false;
-    std::atomic_bool _waitForSignal = true;
+    const int DIFFERENT_CHANNEL = 1;
 
     std::queue<mavlink_message_t> _mavlinkMessages;
     std::mutex _mavlinkStoreMutex;
@@ -85,10 +85,6 @@ private:
     std::thread *_messageProcessorThread = nullptr;
     std::queue<std::vector<uint8_t>> _dataTasks;
     std::mutex _dataTaskMutex;
-
-    int m_uavID = -1;
-    // uav
-    MavlinkPositionControl *_uavPositionControl = nullptr;
 };
 
 #endif // MAVLINKPROTOCOL_H

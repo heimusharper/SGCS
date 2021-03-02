@@ -29,7 +29,6 @@ public:
     virtual std::string name() const override;
 
     virtual sgcs::connection::Connection *instance() override;
-signals:
 };
 
 extern "C" sgcs::plugin::PluginInterface *dlload(void)

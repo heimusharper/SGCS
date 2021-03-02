@@ -17,115 +17,191 @@
 #include "SerialConnection.h"
 
 SerialConnection::SerialConnection()
-: QObject()
-, sgcs::connection::Connection()
-, m_portName(QString::fromStdString(RunConfiguration::instance().get<SerialConfig>()->portName()))
+: sgcs::connection::Connection()
+, m_portName(RunConfiguration::instance().get<SerialConfig>()->portName())
 , m_baudRate(RunConfiguration::instance().get<SerialConfig>()->baudRate())
+, MAX_BUFFER_SIZE(50)
+, MAX_READ_BYTES_SIZE(256)
 {
-    connect(this, &SerialConnection::connectToPort, this, &SerialConnection::doConnectToPort);
-    connect(this, &SerialConnection::disconnectFromPort, this, &SerialConnection::doDisconnectFromPort);
-
-    _serial = new QSerialPort();
-    connect(_serial, &QSerialPort::readyRead, this, &SerialConnection::readyRead);
-    connect(_serial, &QSerialPort::errorOccurred, this, &SerialConnection::onError);
-
-    if (!m_portName.isEmpty() && m_baudRate >= 9600)
+    m_stop.store(false);
+    m_isDirty.store(false);
+    if (!m_portName.empty() && m_baudRate >= 9600)
     {
         // ready to connect automaticaly
-        doConnectToPort(m_portName, m_baudRate);
+        connectToPort(m_portName, m_baudRate);
     }
+    m_thread = new std::thread(&SerialConnection::run, this);
 }
 
 SerialConnection::~SerialConnection()
 {
-    _serial->deleteLater();
+    m_stop.store(true);
+    if (m_thread)
+    {
+        if (m_thread->joinable())
+            m_thread->join();
+        delete m_thread;
+    }
 }
 
 void SerialConnection::onTransmit(const boost::container::vector<uint8_t> &data)
 {
     BOOST_LOG_TRIVIAL(debug) << "WRITE SIZE" << data.size();
-    if (_serial->isOpen())
-        _serial->write((char *)data.data(), data.size());
-    else
+    m_mutex.lock();
+    for (int i = 0; i < data.size(); i++)
     {
-        for (int i = 0; i < data.size(); i++)
-            _writeBuffer.push(data[i]);
-        if (_writeBuffer.size() > MAX_BUFFER_SIZE)
-            while (_writeBuffer.size() > MAX_BUFFER_SIZE - MAX_BUFFER_SIZE / 4)
-                _writeBuffer.pop();
+        CharMap cm;
+        cm.data = new char[data.size()];
+        memcpy(cm.data, data.data(), data.size());
+        cm.size = data.size();
+        m_writeBuffer.push(cm);
     }
+    while (m_writeBuffer.size() >= MAX_BUFFER_SIZE)
+        m_writeBuffer.pop();
+    m_mutex.unlock();
 }
 
 std::vector<uint8_t> SerialConnection::collectBytesAndClear()
 {
     std::vector<uint8_t> bytes;
     setHasBytes(false);
-    while (!_readBuffer.empty())
+    m_mutex.lock();
+    while (!m_readBuffer.empty())
     {
-        bytes.push_back(_readBuffer.front());
-        _readBuffer.pop();
+        CharMap cm = m_readBuffer.front();
+        m_readBuffer.pop();
+
+        for (size_t i = 0; i < cm.size; i++)
+            bytes.push_back(cm.data[i]);
     }
+    m_mutex.unlock();
     return bytes;
 }
 
-void SerialConnection::onError(QSerialPort::SerialPortError error)
+void SerialConnection::connectToPort(const std::string &portName, int baudRate)
 {
-    if (error == QSerialPort::SerialPortError::NoError)
-        return;
-    QString err = _serial->errorString();
-    BOOST_LOG_TRIVIAL(warning) << err.toStdString();
-    emit onDisconnected(err);
-}
-
-void SerialConnection::doConnectToPort(const QString &portName, int baudRate)
-{
+    m_mutex.lock();
     m_portName = portName;
     m_baudRate = baudRate;
+    m_isDirty.store(true);
+    m_mutex.unlock();
+}
 
-    _serial->setPortName(portName);
-    _serial->setBaudRate(baudRate);
-    _serial->setDataBits(QSerialPort::Data8);
-    _serial->setFlowControl(QSerialPort::NoFlowControl);
-    _serial->setParity(QSerialPort::NoParity);
-    _serial->setStopBits(QSerialPort::OneStop);
-    if (_serial->open(QIODevice::ReadWrite))
+void SerialConnection::disconnectFromPort()
+{
+    connectToPort("", 0);
+}
+
+void SerialConnection::run()
+{
+    SerialDescriptor serialDsc = -1;
+    struct termios tty;
+    char read_buf[MAX_READ_BYTES_SIZE];
+
+    while (!m_stop.load())
     {
-        BOOST_LOG_TRIVIAL(info) << "Serial connected " << m_portName.toStdString() << m_baudRate;
-        if (!_writeBuffer.empty())
+        if (serialDsc >= 0)
         {
-            QByteArray data;
-            while (!_writeBuffer.empty())
+            // done
+            if (m_isDirty.load())
             {
-                data.append(_writeBuffer.front());
-                _writeBuffer.pop();
+                // disconnect
+                close(serialDsc);
+                serialDsc = -1;
             }
-            _serial->write(data);
+            else
+            {
+                // write
+                if (!m_writeBuffer.empty())
+                {
+                    m_mutex.lock();
+                    CharMap cm = m_writeBuffer.front();
+                    m_writeBuffer.pop();
+                    m_mutex.unlock();
+                    write(serialDsc, cm.data, cm.size);
+                }
+                // read
+                {
+                    int n = read(serialDsc, &read_buf, MAX_READ_BYTES_SIZE);
+                    CharMap cm;
+                    cm.data = new char[n];
+                    memcpy(cm.data, &read_buf, n);
+                    m_mutex.lock();
+                    m_readBuffer.push(cm);
+                    m_mutex.unlock();
+                    if (cm.size > 0)
+                        setHasBytes(true);
+                }
+            }
         }
-        emit onConnected(portName, baudRate);
+        else if (!m_portName.empty() && m_baudRate > 0)
+        {
+            m_mutex.lock();
+            serialDsc = open(m_portName.c_str(), O_RDWR);
+            if (serialDsc < 0)
+                BOOST_LOG_TRIVIAL(warning)
+                << "Failed open serial device" << m_portName << " " << m_baudRate << " " << strerror(errno);
+            else
+            {
+                tty.c_cflag &= ~PARENB;
+                tty.c_cflag &= ~CSTOPB;
+                tty.c_cflag |= CS8;
+                tty.c_cflag &= ~CRTSCTS;
+                tty.c_cflag |= CREAD | CLOCAL;
+                tty.c_lflag &= ~ICANON;
+                tty.c_lflag &= ~ISIG;
+                tty.c_iflag &= ~(IXON | IXOFF | IXANY);
+                tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);
+                // tty.c_oflag &= ~OPOST;
+                // tty.c_oflag &= ~ONLCR;
+                tty.c_cc[VTIME] = 10;
+                tty.c_cc[VMIN]  = 0;
+                speed_t baudrate;
+                switch (m_baudRate)
+                {
+                    case 4800:
+                        baudrate = B4800;
+                        break;
+                    case 9600:
+                        baudrate = B9600;
+                        break;
+                    case 19200:
+                        baudrate = B19200;
+                        break;
+                    case 38400:
+                        baudrate = B38400;
+                        break;
+                    case 115200:
+                        baudrate = B115200;
+                        break;
+                    case 57600:
+                    default:
+                        baudrate = B57600;
+                        break;
+                }
+                cfsetispeed(&tty, baudrate);
+                cfsetospeed(&tty, baudrate);
+
+                if (tcgetattr(serialDsc, &tty) != 0)
+                {
+                    BOOST_LOG_TRIVIAL(warning)
+                    << "Failed tcgetattr " << m_portName << " " << m_baudRate << " " << strerror(errno);
+                    close(serialDsc);
+                    serialDsc = -1;
+                }
+                else
+                {
+                    m_isDirty.store(false);
+                }
+            }
+            m_mutex.unlock();
+        }
+        usleep((serialDsc < 0) ? 1000000 : 1000);
     }
-    else
+
+    if (serialDsc >= 0)
     {
-        QString err = _serial->errorString();
-        BOOST_LOG_TRIVIAL(warning) << err.toStdString() << portName.toStdString() << baudRate;
-        emit onDisconnected(err);
+        close(serialDsc);
+        serialDsc = -1;
     }
-}
-
-void SerialConnection::doDisconnectFromPort()
-{
-    _serial->close();
-    emit onDisconnected(QString());
-}
-
-void SerialConnection::readyRead()
-{
-    auto data = _serial->readAll();
-    for (int i = 0; i < data.size(); i++)
-        _readBuffer.push(data.at(i));
-
-    if (_readBuffer.size() > MAX_BUFFER_SIZE)
-        while (_readBuffer.size() > MAX_BUFFER_SIZE - MAX_BUFFER_SIZE / 4)
-            _readBuffer.pop();
-
-    setHasBytes(!_readBuffer.empty());
 }

@@ -23,6 +23,7 @@
 #include <atomic>
 #include <concepts>
 #include <list>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -43,6 +44,16 @@ namespace uav
 class UavProtocol
 {
 public:
+    class UavCreateHandler
+    {
+    public:
+        UavCreateHandler()
+        {
+        }
+        virtual ~UavCreateHandler() = default;
+
+        virtual void onCreateUav(uav::UAV *uav) = 0;
+    };
     explicit UavProtocol();
     virtual ~UavProtocol();
     virtual std::vector<uint8_t> hello() const;
@@ -53,13 +64,14 @@ public:
     bool isHasData() const;
     uav::UavTask *message();
 
-    void setUAV(uav::UAV *uav);
-
     void sendMessage(uav::UavSendMessage *message);
 
+    void addUavCreateHandler(uav::UavProtocol::UavCreateHandler *handler);
+
 protected:
+    virtual void setUAV(int id, uav::UAV *uav);
+
     void setIsHasData(bool l);
-    virtual void onSetUAV() = 0;
 
     template <is_UavMessage T>
     void insertMessage(uav::UavTask *message)
@@ -71,12 +83,14 @@ protected:
         setIsHasData(true);
     }
 
-    uav::UAV *m_uav = nullptr;
+    std::map<int, uav::UAV *> m_uavs;
 
     std::thread *m_messageGetterThread = nullptr;
     std::mutex m_mutex;
 
 private:
+    std::list<UavCreateHandler *> _uavCreateHandlers;
+
     std::list<uav::UavTask *> m_tasks;
     std::mutex m_tasksStoreMutex;
     std::atomic_bool m_stopThread;

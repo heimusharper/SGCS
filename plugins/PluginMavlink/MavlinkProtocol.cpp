@@ -18,8 +18,6 @@
 
 MavlinkProtocol::MavlinkProtocol() : uav::UavProtocol()
 {
-    _isCheckAPM.store(false);
-    _waitForSignal.store(true);
     _stopThread.store(false);
     _dataProcessorThread    = new std::thread(&MavlinkProtocol::runParser, this);
     _messageProcessorThread = new std::thread(&MavlinkProtocol::runMessageReader, this);
@@ -85,17 +83,9 @@ void MavlinkProtocol::runParser()
             {
                 if (check((char)buffer[i], &msg))
                 {
-                    if (_isCheckAPM.load() && msg.sysid == m_uavID)
-                    {
-                        _mavlinkStoreMutex.lock();
-                        _mavlinkMessages.push(msg);
-                        _mavlinkStoreMutex.unlock();
-                        // BOOST_LOG_TRIVIAL(info) << "MSG ID" << msg.msgid;
-                        if (_waitForSignal.load())
-                        {
-                            _waitForSignal.store(false);
-                        }
-                    }
+                    _mavlinkStoreMutex.lock();
+                    _mavlinkMessages.push(msg);
+                    _mavlinkStoreMutex.unlock();
                 }
             }
             buffer.clear();
@@ -116,7 +106,6 @@ void MavlinkProtocol::runMessageReader()
             mavlink_message_t message = _mavlinkMessages.front();
             _mavlinkMessages.pop();
             _mavlinkStoreMutex.unlock();
-            // BOOST_LOG_TRIVIAL(info) << "MSG ID" << message.msgid;
 
             switch (message.msgid)
             {
@@ -174,38 +163,20 @@ void MavlinkProtocol::runMessageReader()
     }
 }
 
-void MavlinkProtocol::onSetUAV()
+void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
 {
-    m_uav->gps()->setHas(uav::GPS::HAS::HAS_HV_DOP | uav::GPS::HAS::HAS_PROVIDER_GPS);
-    m_uav->position()->setHas(uav::Position::HAS::HAS_SOURCE_GPS);
-    _uavPositionControl = new MavlinkPositionControl(this, 0);
-    m_uav->position()->setControl(_uavPositionControl);
+    uav->gps()->setHas(uav::GPS::HAS::HAS_HV_DOP | uav::GPS::HAS::HAS_PROVIDER_GPS);
+    uav->position()->setHas(uav::Position::HAS::HAS_SOURCE_GPS);
+    MavlinkPositionControl *uavPositionControl = new MavlinkPositionControl(this, 0);
+    uav->position()->setControl(uavPositionControl);
+    UavProtocol::setUAV(id, uav);
 }
 
 bool MavlinkProtocol::check(char c, mavlink_message_t *msg)
 {
     mavlink_status_t stats;
     uint8_t i = mavlink_parse_char(DIFFERENT_CHANNEL, c, msg, &stats);
-    if (i != 0)
-    {
-        if (!_isCheckAPM.load())
-        {
-            if (msg->msgid == MAVLINK_MSG_ID_HEARTBEAT)
-            {
-                mavlink_heartbeat_t hrt;
-                mavlink_msg_heartbeat_decode(msg, &hrt);
-                if (hrt.autopilot == MAV_AUTOPILOT_ARDUPILOTMEGA)
-                {
-                    m_uavID = msg->sysid;
-                    _isCheckAPM.store(true);
-                    return true;
-                }
-            }
-            return false;
-        }
-        return true;
-    }
-    return false;
+    return i != 0;
 }
 
 std::vector<uint8_t> MavlinkProtocol::packMessage(mavlink_message_t *msg)
