@@ -1,28 +1,28 @@
-#include "IPInterfaceUDPClient.h"
+#include "IPInterfaceUDPServer.h"
 
-IPInterfaceUDPClient::IPInterfaceUDPClient() : IPInterface()
+IPInterfaceUDPServer::IPInterfaceUDPServer() : IPInterface()
 {
     m_stopThread.store(false);
     m_targetState.store((char)ConnectionStates::DISCONNECTED);
 
-    m_thread = new std::thread(&IPInterfaceUDPClient::run, this);
+    m_thread = new std::thread(&IPInterfaceUDPServer::run, this);
 }
 
-IPInterfaceUDPClient::~IPInterfaceUDPClient()
+IPInterfaceUDPServer::~IPInterfaceUDPServer()
 {
     m_stopThread.store(true);
     m_thread->join();
     delete m_thread;
 }
 
-void IPInterfaceUDPClient::close()
+void IPInterfaceUDPServer::close()
 {
     m_bufferMutex.lock();
     m_targetState.store((char)ConnectionStates::DISCONNECTED);
     m_bufferMutex.unlock();
 }
 
-void IPInterfaceUDPClient::doConnect(const std::string &host, uint16_t port)
+void IPInterfaceUDPServer::doConnect(const std::string &host, uint16_t port)
 {
     m_bufferMutex.lock();
     m_hostName = host;
@@ -31,7 +31,7 @@ void IPInterfaceUDPClient::doConnect(const std::string &host, uint16_t port)
     m_bufferMutex.unlock();
 }
 
-std::queue<uint8_t> IPInterfaceUDPClient::readBuffer()
+std::queue<uint8_t> IPInterfaceUDPServer::readBuffer()
 {
     if (!m_readBuffer.empty())
     {
@@ -45,7 +45,7 @@ std::queue<uint8_t> IPInterfaceUDPClient::readBuffer()
     return std::queue<uint8_t>();
 }
 
-void IPInterfaceUDPClient::writeBuffer(std::queue<uint8_t> &data)
+void IPInterfaceUDPServer::writeBuffer(std::queue<uint8_t> &data)
 {
     if (!data.empty())
     {
@@ -59,12 +59,11 @@ void IPInterfaceUDPClient::writeBuffer(std::queue<uint8_t> &data)
     }
 }
 
-void IPInterfaceUDPClient::run()
+void IPInterfaceUDPServer::run()
 {
     UDPSocket sock = -1;
     std::string nowHostName;
     uint16_t nowPort = 0;
-    struct sockaddr_in clientaddr;
 
     boost::container::vector<struct sockaddr_in> clients;
 
@@ -90,36 +89,17 @@ void IPInterfaceUDPClient::run()
             sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
             if (sock > 0)
             {
-                // listen
                 struct sockaddr_in servaddr;
                 memset(&servaddr, 0, sizeof(servaddr));
                 servaddr.sin_family      = AF_INET; // IPv4
                 servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-                servaddr.sin_port        = htons(14400);
+                servaddr.sin_port        = htons(m_port);
                 if (bind(sock, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
                 {
                     shutdown(sock, SHUT_RD);
                     sock = -1;
-                    BOOST_LOG_TRIVIAL(info) << "Failed bind UDP listen connection " << m_hostName << ":" << m_port;
+                    BOOST_LOG_TRIVIAL(info) << "Failed bind UDP connection " << m_hostName << ":" << m_port;
                 }
-                BOOST_LOG_TRIVIAL(info) << "Listen on " << m_hostName << ":" << m_port;
-
-                memset(&clientaddr, 0, sizeof(servaddr));
-                clientaddr.sin_family      = AF_INET; // IPv4
-                clientaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-                clientaddr.sin_port        = htons(m_port);
-                if (inet_aton(m_hostName.c_str(), &clientaddr.sin_addr) == 0)
-                {
-                    shutdown(sock, SHUT_RD);
-                    sock = -1;
-                    BOOST_LOG_TRIVIAL(info) << "Failed bind UDP client connection " << m_hostName << ":" << m_port;
-                }
-                m_writeBuffer.push('h');
-                m_writeBuffer.push('e');
-                m_writeBuffer.push('l');
-                m_writeBuffer.push('l');
-                m_writeBuffer.push('o');
-                m_writeBuffer.push('\n');
             }
             else
                 BOOST_LOG_TRIVIAL(info) << "Failed to create UDP connection " << m_hostName << ":" << m_port;
@@ -150,9 +130,11 @@ void IPInterfaceUDPClient::run()
             m_bufferMutex.unlock();
             if (WRITE_SIZE > 0)
             {
-                const size_t l = sizeof(clientaddr);
-                BOOST_LOG_TRIVIAL(info) << "::::>" << writeBuffer;
-                sendto(sock, (const char *)writeBuffer, WRITE_SIZE, 0, (const struct sockaddr *)&clientaddr, l);
+                for (sockaddr_in client : clients)
+                {
+                    const size_t l = sizeof(client);
+                    sendto(sock, (const char *)writeBuffer, WRITE_SIZE, MSG_CONFIRM, (const struct sockaddr *)&client, l);
+                }
             }
 
             // service

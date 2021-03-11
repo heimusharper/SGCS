@@ -21,6 +21,7 @@
 #include <UAV.h>
 #include <UavMessage.h>
 #include <atomic>
+#include <boost/log/trivial.hpp>
 #include <concepts>
 #include <list>
 #include <map>

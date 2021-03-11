@@ -4,7 +4,7 @@
 
 namespace tools
 {
-template <class T>
+template <typename T>
 class optional
 {
 public:
@@ -17,7 +17,7 @@ public:
         m_dirty = true;
         return m_value;
     }
-    bool dirty()
+    bool dirty() const
     {
         return m_dirty;
     }
@@ -28,12 +28,21 @@ public:
         return *this;
     }
 
+    bool operator==(const T &t) const
+    {
+        return get() == t;
+    }
+    bool operator==(const optional<T> &t) const
+    {
+        return get() == t.get();
+    }
+
 private:
     bool m_dirty = false;
     T m_value;
 };
 
-template <class T>
+template <typename T>
 class optional_safe
 {
 public:
@@ -41,7 +50,7 @@ public:
     {
     }
 
-    T get()
+    T get() const
     {
         return m_value;
     }
@@ -54,10 +63,11 @@ public:
         m_mutex.unlock();
     }
 
-    bool dirty()
+    bool dirty() const
     {
         return m_dirty;
     }
+
     void reset()
     {
         m_mutex.lock();
@@ -69,6 +79,15 @@ public:
     {
         set(other);
         return *this;
+    }
+
+    bool operator==(const T &t) const
+    {
+        return get() == t;
+    }
+    bool operator==(const optional_safe<T> &t) const
+    {
+        return get() == t.get();
     }
 
 private:
