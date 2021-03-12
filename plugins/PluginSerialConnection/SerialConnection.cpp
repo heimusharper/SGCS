@@ -202,7 +202,7 @@ void SerialConnection::run()
             }
             m_mutex.unlock();
         }
-        usleep((serialDsc < 0) ? 1000000 : 10000);
+        usleep((serialDsc < 0) ? 1000000 : 1000);
     }
 
     if (serialDsc >= 0)

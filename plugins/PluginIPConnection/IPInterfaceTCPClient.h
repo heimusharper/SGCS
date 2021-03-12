@@ -2,7 +2,6 @@
 #define IPINTERFACETCPCLIENT_H
 #include "IPInterface.h"
 #include <arpa/inet.h>
-#include <boost/container/vector.hpp>
 #include <boost/log/trivial.hpp>
 #include <cmath>
 #include <mutex>
@@ -12,9 +11,10 @@
 #include <sys/types.h>
 #include <thread>
 
-typedef int TCPSocket;
 class IPInterfaceTCPClient : public IPInterface
 {
+    typedef int TCPSocket;
+
 public:
     IPInterfaceTCPClient();
     virtual ~IPInterfaceTCPClient();
