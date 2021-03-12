@@ -26,7 +26,7 @@ public:
     class Message : public UavTask
     {
     public:
-        Message() : UavTask(), roll(0.f), pitch(0.f), yaw(0.f)
+        Message(int target) : UavTask(target), roll(0.f), pitch(0.f), yaw(0.f)
         {
         }
         tools::optional<float> roll;

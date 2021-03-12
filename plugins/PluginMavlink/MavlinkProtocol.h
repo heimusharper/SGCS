@@ -23,6 +23,7 @@
 #include <UavProtocol.h>
 #include <atomic>
 #include <boost/log/trivial.hpp>
+#include <chrono>
 #include <queue>
 #include <thread>
 
@@ -75,7 +76,8 @@ private:
 
     static std::vector<uint8_t> packMessage(mavlink_message_t *msg);
 
-    const int DIFFERENT_CHANNEL = 1;
+    const int DIFFERENT_CHANNEL;
+    const std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> _bootTime;
 
     std::queue<mavlink_message_t> _mavlinkMessages;
     std::mutex _mavlinkStoreMutex;

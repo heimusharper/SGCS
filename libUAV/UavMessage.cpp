@@ -18,7 +18,7 @@
 
 namespace uav
 {
-UavTask::UavTask()
+UavTask::UavTask(int target) : targetID(target)
 {
 }
 

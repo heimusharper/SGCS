@@ -44,16 +44,16 @@ SerialConnection::~SerialConnection()
     }
 }
 
-void SerialConnection::onTransmit(const boost::container::vector<uint8_t> &data)
+void SerialConnection::onTransmit(const std::vector<uint8_t> &data)
 {
-    BOOST_LOG_TRIVIAL(debug) << "WRITE SIZE" << data.size();
+    // BOOST_LOG_TRIVIAL(debug) << "WRITE SIZE " << data.size();
     m_mutex.lock();
     for (int i = 0; i < data.size(); i++)
     {
-        CharMap cm;
-        cm.data = new char[data.size()];
-        memcpy(cm.data, data.data(), data.size());
-        cm.size = data.size();
+        CharMap *cm = new CharMap;
+        cm->data    = new char[data.size()];
+        memcpy(cm->data, data.data(), data.size());
+        cm->size = data.size();
         m_writeBuffer.push(cm);
     }
     while (m_writeBuffer.size() >= MAX_BUFFER_SIZE)
@@ -68,11 +68,12 @@ std::vector<uint8_t> SerialConnection::collectBytesAndClear()
     m_mutex.lock();
     while (!m_readBuffer.empty())
     {
-        CharMap cm = m_readBuffer.front();
+        CharMap *cm = m_readBuffer.front();
         m_readBuffer.pop();
 
-        for (size_t i = 0; i < cm.size; i++)
-            bytes.push_back(cm.data[i]);
+        for (size_t i = 0; i < cm->size; i++)
+            bytes.push_back(cm->data[i]);
+        delete cm;
     }
     m_mutex.unlock();
     return bytes;
@@ -115,47 +116,52 @@ void SerialConnection::run()
                 if (!m_writeBuffer.empty())
                 {
                     m_mutex.lock();
-                    CharMap cm = m_writeBuffer.front();
+                    CharMap *cm = m_writeBuffer.front();
                     m_writeBuffer.pop();
                     m_mutex.unlock();
-                    write(serialDsc, cm.data, cm.size);
+                    write(serialDsc, cm->data, cm->size);
+                    delete cm;
                 }
                 // read
                 {
                     int n = read(serialDsc, &read_buf, MAX_READ_BYTES_SIZE);
-                    CharMap cm;
-                    cm.data = new char[n];
-                    memcpy(cm.data, &read_buf, n);
-                    m_mutex.lock();
-                    m_readBuffer.push(cm);
-                    m_mutex.unlock();
-                    if (cm.size > 0)
+                    if (n > 0)
+                    {
+                        CharMap *cm = new CharMap;
+                        cm->data    = new char[n];
+                        cm->size    = n;
+                        memcpy(cm->data, &read_buf, n);
+                        m_mutex.lock();
+                        m_readBuffer.push(cm);
+                        m_mutex.unlock();
                         setHasBytes(true);
+                        if (cm->size > 0)
+                            setHasBytes(true);
+                    }
                 }
             }
         }
         else if (!m_portName.empty() && m_baudRate > 0)
         {
             m_mutex.lock();
-            serialDsc = open(m_portName.c_str(), O_RDWR);
+            serialDsc = open(m_portName.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);
             if (serialDsc < 0)
                 BOOST_LOG_TRIVIAL(warning)
                 << "Failed open serial device" << m_portName << " " << m_baudRate << " " << strerror(errno);
             else
             {
-                tty.c_cflag &= ~PARENB;
-                tty.c_cflag &= ~CSTOPB;
-                tty.c_cflag |= CS8;
-                tty.c_cflag &= ~CRTSCTS;
-                tty.c_cflag |= CREAD | CLOCAL;
-                tty.c_lflag &= ~ICANON;
-                tty.c_lflag &= ~ISIG;
-                tty.c_iflag &= ~(IXON | IXOFF | IXANY);
-                tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);
+                fcntl(serialDsc, F_SETFL, FNDELAY);
+                tcgetattr(serialDsc, &tty);
+
+                tty.c_cflag &= ~(PARENB | CSTOPB | CSIZE);
+                tty.c_cflag |= (CREAD | CLOCAL | CS8);
+                tty.c_lflag &= ~(ICANON | ISIG);
+                tty.c_iflag &= ~(IXON | IXOFF | IXANY); // disable software flow control
+                // tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);
                 // tty.c_oflag &= ~OPOST;
                 // tty.c_oflag &= ~ONLCR;
                 tty.c_cc[VTIME] = 10;
-                tty.c_cc[VMIN]  = 0;
+                tty.c_cc[VMIN]  = 10;
                 speed_t baudrate;
                 switch (m_baudRate)
                 {
@@ -196,12 +202,11 @@ void SerialConnection::run()
             }
             m_mutex.unlock();
         }
-        usleep((serialDsc < 0) ? 1000000 : 1000);
+        usleep((serialDsc < 0) ? 1000000 : 10000);
     }
 
     if (serialDsc >= 0)
     {
         close(serialDsc);
-        serialDsc = -1;
     }
 }

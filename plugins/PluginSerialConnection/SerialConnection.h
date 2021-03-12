@@ -34,7 +34,7 @@ public:
     explicit SerialConnection();
     virtual ~SerialConnection();
 
-    virtual void onTransmit(const boost::container::vector<uint8_t> &data) override final;
+    virtual void onTransmit(const std::vector<uint8_t> &data) override final;
     virtual std::vector<uint8_t> collectBytesAndClear() override final;
 
     void connectToPort(const std::string &portName, int baudRate);
@@ -51,17 +51,20 @@ private:
 
     struct CharMap
     {
+        CharMap()                = default;
+        CharMap(const CharMap &) = delete;
+        CharMap(CharMap *)       = delete;
         ~CharMap()
         {
             if (size > 0)
                 delete[] data;
         }
-        char *data;
+        char *data  = nullptr;
         size_t size = 0;
     };
 
-    std::queue<CharMap> m_writeBuffer;
-    std::queue<CharMap> m_readBuffer;
+    std::queue<CharMap *> m_writeBuffer;
+    std::queue<CharMap *> m_readBuffer;
 
     std::atomic_bool m_stop;
     std::atomic_bool m_isDirty;

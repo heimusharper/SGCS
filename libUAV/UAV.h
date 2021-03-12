@@ -29,7 +29,7 @@ public:
     class Message : public UavTask
     {
     public:
-        Message() : UavTask(), id(-1)
+        Message(int target) : UavTask(target), id(-1)
         {
         }
         tools::optional<int> id;

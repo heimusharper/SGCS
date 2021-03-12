@@ -16,7 +16,8 @@
  */
 #include "MavlinkProtocol.h"
 
-MavlinkProtocol::MavlinkProtocol() : uav::UavProtocol()
+MavlinkProtocol::MavlinkProtocol()
+: uav::UavProtocol(), DIFFERENT_CHANNEL(1), _bootTime(std::chrono::_V2::system_clock::now())
 {
     _stopThread.store(false);
     _dataProcessorThread    = new std::thread(&MavlinkProtocol::runParser, this);
@@ -47,8 +48,12 @@ std::string MavlinkProtocol::name() const
 
 std::vector<uint8_t> MavlinkProtocol::hello() const
 {
+    std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> now =
+    std::chrono::_V2::system_clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::microseconds>(now - _bootTime);
     mavlink_message_t msg;
-    mavlink_msg_ping_pack_chan(0, 0, DIFFERENT_CHANNEL, &msg, 0, 0, 0, 0);
+    // mavlink_msg_heartbeat_pack_chan(255, 0, DIFFERENT_CHANNEL, &msg, MAV_TYPE_GCS, MAV_AUTOPILOT_INVALID, 0, 0, MAV_STATE_ACTIVE);
+    mavlink_msg_ping_pack_chan(255, 0, DIFFERENT_CHANNEL, &msg, ms.count(), 0, 1, 0);
     return packMessage(&msg);
 }
 
@@ -83,6 +88,7 @@ void MavlinkProtocol::runParser()
             {
                 if (check((char)buffer[i], &msg))
                 {
+                    BOOST_LOG_TRIVIAL(debug) << msg.msgid;
                     _mavlinkStoreMutex.lock();
                     _mavlinkMessages.push(msg);
                     _mavlinkStoreMutex.unlock();
@@ -97,7 +103,6 @@ void MavlinkProtocol::runParser()
 
 void MavlinkProtocol::runMessageReader()
 {
-    bool isSetID = false;
     while (!_stopThread.load())
     {
         while (!_mavlinkMessages.empty())
@@ -111,20 +116,16 @@ void MavlinkProtocol::runMessageReader()
             {
                 case MAVLINK_MSG_ID_HEARTBEAT:
                 {
-                    if (!isSetID)
-                    {
-                        isSetID              = true;
-                        uav::UAV::Message *m = new uav::UAV::Message();
-                        m->id                = message.sysid;
-                        insertMessage<uav::UAV::Message>(m);
-                    }
+                    uav::UAV::Message *m = new uav::UAV::Message(message.sysid);
+                    m->id                = message.sysid;
+                    insertMessage<uav::UAV::Message>(m);
                     break;
                 }
                 case MAVLINK_MSG_ID_ATTITUDE:
                 {
                     mavlink_attitude_t att;
                     mavlink_msg_attitude_decode(&message, &att);
-                    uav::AHRS::Message *ahrs = new uav::AHRS::Message();
+                    uav::AHRS::Message *ahrs = new uav::AHRS::Message(message.sysid);
                     ahrs->pitch              = static_cast<float>(att.pitch / M_PI * 180.);
                     ahrs->roll               = static_cast<float>(att.roll / M_PI * 180.);
                     ahrs->yaw                = static_cast<float>(att.yaw / M_PI * 180.);
@@ -135,13 +136,13 @@ void MavlinkProtocol::runMessageReader()
                 {
                     mavlink_gps_raw_int_t gps;
                     mavlink_msg_gps_raw_int_decode(&message, &gps);
-                    uav::GPS::Message *gpsm = new uav::GPS::Message();
+                    uav::GPS::Message *gpsm = new uav::GPS::Message(message.sysid);
                     gpsm->satelitesGPS      = gps.satellites_visible;
                     gpsm->hdop              = gps.h_acc;
                     gpsm->vdop              = gps.v_acc;
                     insertMessage<uav::GPS::Message>(gpsm);
 
-                    uav::Position::MessageGPS *pos = new uav::Position::MessageGPS;
+                    uav::Position::MessageGPS *pos = new uav::Position::MessageGPS(message.sysid);
                     pos->lat                       = ((double)gps.lat) / 1.E7;
                     pos->lon                       = ((double)gps.lon) / 1.E7;
                     pos->alt                       = ((double)gps.alt) / 1000.;

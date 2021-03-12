@@ -18,8 +18,8 @@
 #define CONNECTION_H
 
 #include "UavProtocol.h"
-#include <boost/container/vector.hpp>
 #include <memory.h>
+#include <vector>
 
 namespace sgcs
 {
@@ -31,7 +31,7 @@ public:
     explicit Connection();
     virtual ~Connection();
 
-    virtual void onTransmit(const boost::container::vector<uint8_t> &data) = 0;
+    virtual void onTransmit(const std::vector<uint8_t> &data) = 0;
 
     virtual std::vector<uint8_t> collectBytesAndClear() = 0;
 

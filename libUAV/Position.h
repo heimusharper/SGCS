@@ -43,7 +43,7 @@ public:
     class MessageGPS : public UavTask
     {
     public:
-        MessageGPS() : UavTask(), lat(0.), lon(0.), alt(0.)
+        MessageGPS(int target) : UavTask(target), lat(0.), lon(0.), alt(0.)
         {
         }
         tools::optional<double> lat;

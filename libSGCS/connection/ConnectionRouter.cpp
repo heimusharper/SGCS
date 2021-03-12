@@ -57,7 +57,7 @@ void ConnectionRouter::runConection()
                     m_buffer.pop();
         }
         // try to create root protocol
-        if (!m_protocol)
+        if (!m_protocol && !m_buffer.empty())
         {
             std::vector<uint8_t> bytes;
             std::queue<char> tmp = m_buffer;
@@ -85,6 +85,17 @@ void ConnectionRouter::runConection()
                 m_protocol->addUavCreateHandler(m_uavCreateHnadler);
             }
         }
+
+        if (!m_protocol)
+        {
+            // send HELLO
+            for (const uav::UavProtocol *proto : m_protos)
+            {
+                std::vector<uint8_t> hello = proto->hello();
+                if (!hello.empty())
+                    m_connection->onTransmit(hello);
+            }
+        }
         // bridge
         if (m_protocol && m_connection && m_connection->isHasBytes())
         {
@@ -95,7 +106,7 @@ void ConnectionRouter::runConection()
                 m_protocol->onReceived(bytes);
             }
         }
-        usleep(10000);
+        usleep(100000);
     }
 }
 

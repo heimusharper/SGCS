@@ -33,7 +33,7 @@ public:
     class Message : public UavTask
     {
     public:
-        Message() : UavTask(), satelitesGPS(0), satelitesGLONASS(0), hdop(255), vdop(255)
+        Message(int target) : UavTask(target), satelitesGPS(0), satelitesGLONASS(0), hdop(255), vdop(255)
         {
         }
         tools::optional<uint8_t> satelitesGPS;

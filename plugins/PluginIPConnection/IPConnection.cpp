@@ -37,7 +37,7 @@ IPConnection::~IPConnection()
         delete m_interface;
 }
 
-void IPConnection::onTransmit(const boost::container::vector<uint8_t> &data)
+void IPConnection::onTransmit(const std::vector<uint8_t> &data)
 {
     BOOST_LOG_TRIVIAL(debug) << "WRITE SIZE" << data.size();
     if (m_interface)

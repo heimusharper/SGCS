@@ -23,7 +23,7 @@ namespace uav
 class UavTask
 {
 public:
-    UavTask();
+    UavTask(int target);
     virtual ~UavTask() = default;
 
     int targetID = 0;
