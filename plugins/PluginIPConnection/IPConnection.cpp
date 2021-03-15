@@ -96,7 +96,7 @@ void IPConnection::doConnectToPort(const std::string &hostName, uint16_t port)
     m_port     = port;
     if (m_interface)
     {
-        BOOST_LOG_TRIVIAL(info) << "IP connect " << m_hostName << m_port;
+        BOOST_LOG_TRIVIAL(info) << "IP connect " << m_hostName << ":" << m_port;
         m_interface->doConnect(m_hostName, m_port);
         m_interface->writeBuffer(m_writeBuffer); // already empty
     }

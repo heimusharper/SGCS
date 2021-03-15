@@ -87,6 +87,18 @@ private:
     std::thread *_messageProcessorThread = nullptr;
     std::queue<std::vector<uint8_t>> _dataTasks;
     std::mutex _dataTaskMutex;
+
+    enum class ProcessingMode
+    {
+        UAV,
+        MODEM,
+        ANT,
+        GIMBAL,
+        CAMERA,
+        UNDEFINED
+    };
+
+    std::map<int, ProcessingMode> _modes;
 };
 
 #endif // MAVLINKPROTOCOL_H

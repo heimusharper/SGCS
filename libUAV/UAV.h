@@ -23,16 +23,25 @@
 
 namespace uav
 {
+enum class UAVType
+{
+    PLANE,
+    MULTICOPTER,
+    VTOL,
+    UNDEFINED
+};
+
 class UAV : public UavObject<uint8_t>
 {
 public:
     class Message : public UavTask
     {
     public:
-        Message(int target) : UavTask(target), id(-1)
+        Message(int target) : UavTask(target), id(-1), type(UAVType::UNDEFINED)
         {
         }
         tools::optional<int> id;
+        tools::optional<UAVType> type;
     };
 
     UAV();
@@ -40,6 +49,8 @@ public:
     void process(std::unique_ptr<uav::UavTask> message);
 
     int id() const;
+
+    UAVType type() const;
 
     AHRS *ahrs() const;
 
@@ -50,8 +61,12 @@ public:
 private:
     void setId(int id);
 
+    void setType(UAVType type);
+
 private:
-    int m_id = -1;
+    int m_id;
+
+    UAVType m_type;
 
     // Objs
 

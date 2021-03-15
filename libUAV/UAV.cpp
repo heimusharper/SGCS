@@ -18,7 +18,8 @@
 
 namespace uav
 {
-UAV::UAV() : UavObject(), m_id(-1), m_ahrs(new AHRS()), m_gps(new GPS()), m_position(new Position())
+UAV::UAV()
+: UavObject(), m_id(-1), m_type(UAVType::UNDEFINED), m_ahrs(new AHRS()), m_gps(new GPS()), m_position(new Position())
 {
 }
 
@@ -36,6 +37,8 @@ void UAV::process(std::unique_ptr<UavTask> message)
     {
         if (uavmessage->id.dirty())
             setId(uavmessage->id.get());
+        if (uavmessage->type.dirty())
+            setType(uavmessage->type.get());
     }
     else if (AHRS::Message *ahrsmsg = dynamic_cast<AHRS::Message *>(task))
         m_ahrs->process(ahrsmsg);
@@ -49,12 +52,25 @@ int UAV::id() const
     return m_id;
 }
 
+UAVType UAV::type() const
+{
+    return m_type;
+}
+
 void UAV::setId(int id)
 {
     if (m_id == id)
         return;
     BOOST_LOG_TRIVIAL(info) << "UAV ID" << id;
     m_id = id;
+}
+
+void UAV::setType(UAVType type)
+{
+    if (m_type == type)
+        return;
+    BOOST_LOG_TRIVIAL(info) << "UAV TYPE" << (int)type;
+    m_type = type;
 }
 
 Position *UAV::position() const

@@ -112,52 +112,130 @@ void MavlinkProtocol::runMessageReader()
             _mavlinkMessages.pop();
             _mavlinkStoreMutex.unlock();
 
-            switch (message.msgid)
+            if (!_modes.contains(message.sysid))
             {
-                case MAVLINK_MSG_ID_HEARTBEAT:
+                if (message.msgid == MAVLINK_MSG_ID_HEARTBEAT)
                 {
                     uav::UAV::Message *m = new uav::UAV::Message(message.sysid);
                     m->id                = message.sysid;
+                    m->type              = uav::UAVType::UNDEFINED;
+                    mavlink_heartbeat_t hrt;
+                    mavlink_msg_heartbeat_decode(&message, &hrt);
+                    switch (hrt.type)
+                    {
+                        case MAV_TYPE_VTOL_DUOROTOR:
+                        case MAV_TYPE_VTOL_QUADROTOR:
+                        case MAV_TYPE_VTOL_RESERVED2:
+                        case MAV_TYPE_VTOL_RESERVED3:
+                        case MAV_TYPE_VTOL_RESERVED4:
+                        case MAV_TYPE_VTOL_TILTROTOR:
+                            m->type = uav::UAVType::VTOL;
+                            _modes.insert(std::pair(message.sysid, ProcessingMode::UAV));
+                            break;
+                        case MAV_TYPE_GENERIC:
+                        case MAV_TYPE_FLAPPING_WING:
+                        case MAV_TYPE_FIXED_WING:
+                            m->type = uav::UAVType::PLANE;
+                            _modes.insert(std::pair(message.sysid, ProcessingMode::UAV));
+                            break;
+                        case MAV_TYPE_COAXIAL:
+                        case MAV_TYPE_HELICOPTER:
+                        case MAV_TYPE_HEXAROTOR:
+                        case MAV_TYPE_OCTOROTOR:
+                        case MAV_TYPE_QUADROTOR:
+                        case MAV_TYPE_TRICOPTER:
+                            m->type = uav::UAVType::MULTICOPTER;
+                            _modes.insert(std::pair(message.sysid, ProcessingMode::UAV));
+                            break;
+                        case MAV_TYPE_ANTENNA_TRACKER:
+                            _modes.insert(std::pair(message.sysid, ProcessingMode::ANT));
+                            break;
+                        case MAV_TYPE_GIMBAL:
+                            _modes.insert(std::pair(message.sysid, ProcessingMode::GIMBAL));
+                            break;
+                        case MAV_TYPE_CAMERA:
+                            _modes.insert(std::pair(message.sysid, ProcessingMode::CAMERA));
+                            break;
+                        case MAV_TYPE_FLARM:
+                        case MAV_TYPE_GROUND_ROVER:
+                        case MAV_TYPE_KITE:
+                        case MAV_TYPE_PARAFOIL:
+                        case MAV_TYPE_SUBMARINE:
+                        case MAV_TYPE_SURFACE_BOAT:
+                        case MAV_TYPE_DECAROTOR:
+                        case MAV_TYPE_AIRSHIP:
+                        case MAV_TYPE_FREE_BALLOON:
+                        case MAV_TYPE_CHARGING_STATION:
+                        case MAV_TYPE_GCS:
+                        case MAV_TYPE_ODID:
+                        case MAV_TYPE_ONBOARD_CONTROLLER:
+                        case MAV_TYPE_ROCKET:
+                        case MAV_TYPE_ADSB:
+                        case MAV_TYPE_SERVO:
+                        default:
+                            _modes.insert(std::pair(message.sysid, ProcessingMode::UNDEFINED));
+                            break;
+                    }
                     insertMessage<uav::UAV::Message>(m);
-                    break;
                 }
-                case MAVLINK_MSG_ID_ATTITUDE:
-                {
-                    mavlink_attitude_t att;
-                    mavlink_msg_attitude_decode(&message, &att);
-                    uav::AHRS::Message *ahrs = new uav::AHRS::Message(message.sysid);
-                    ahrs->pitch              = static_cast<float>(att.pitch / M_PI * 180.);
-                    ahrs->roll               = static_cast<float>(att.roll / M_PI * 180.);
-                    ahrs->yaw                = static_cast<float>(att.yaw / M_PI * 180.);
-                    insertMessage<uav::AHRS::Message>(ahrs);
-                    break;
-                }
-                case MAVLINK_MSG_ID_GPS_RAW_INT:
-                {
-                    mavlink_gps_raw_int_t gps;
-                    mavlink_msg_gps_raw_int_decode(&message, &gps);
-                    uav::GPS::Message *gpsm = new uav::GPS::Message(message.sysid);
-                    gpsm->satelitesGPS      = gps.satellites_visible;
-                    gpsm->hdop              = gps.h_acc;
-                    gpsm->vdop              = gps.v_acc;
-                    insertMessage<uav::GPS::Message>(gpsm);
+            }
+            else
+            {
+                ProcessingMode processMode = _modes[message.msgid];
 
-                    uav::Position::MessageGPS *pos = new uav::Position::MessageGPS(message.sysid);
-                    pos->lat                       = ((double)gps.lat) / 1.E7;
-                    pos->lon                       = ((double)gps.lon) / 1.E7;
-                    pos->alt                       = ((double)gps.alt) / 1000.;
-                    insertMessage<uav::Position::MessageGPS>(pos);
-                    break;
-                }
-                case MAVLINK_MSG_ID_GPS_STATUS:
+                switch (processMode)
                 {
-                    mavlink_gps_status_t gps;
-                    mavlink_msg_gps_status_decode(&message, &gps);
+                    case ProcessingMode::UAV:
+                    {
+                        switch (message.msgid)
+                        {
+                            case MAVLINK_MSG_ID_HEARTBEAT:
+                            {
+                                break;
+                            }
+                            case MAVLINK_MSG_ID_ATTITUDE:
+                            {
+                                mavlink_attitude_t att;
+                                mavlink_msg_attitude_decode(&message, &att);
+                                uav::AHRS::Message *ahrs = new uav::AHRS::Message(message.sysid);
+                                ahrs->pitch              = static_cast<float>(att.pitch / M_PI * 180.);
+                                ahrs->roll               = static_cast<float>(att.roll / M_PI * 180.);
+                                ahrs->yaw                = static_cast<float>(att.yaw / M_PI * 180.);
+                                insertMessage<uav::AHRS::Message>(ahrs);
+                                break;
+                            }
+                            case MAVLINK_MSG_ID_GPS_RAW_INT:
+                            {
+                                mavlink_gps_raw_int_t gps;
+                                mavlink_msg_gps_raw_int_decode(&message, &gps);
+                                uav::GPS::Message *gpsm = new uav::GPS::Message(message.sysid);
+                                gpsm->satelitesGPS      = gps.satellites_visible;
+                                gpsm->hdop              = gps.h_acc;
+                                gpsm->vdop              = gps.v_acc;
+                                insertMessage<uav::GPS::Message>(gpsm);
 
-                    break;
+                                uav::Position::MessageGPS *pos = new uav::Position::MessageGPS(message.sysid);
+                                pos->lat                       = ((double)gps.lat) / 1.E7;
+                                pos->lon                       = ((double)gps.lon) / 1.E7;
+                                pos->alt                       = ((double)gps.alt) / 1000.;
+                                insertMessage<uav::Position::MessageGPS>(pos);
+                                break;
+                            }
+                            case MAVLINK_MSG_ID_GPS_STATUS:
+                            {
+                                mavlink_gps_status_t gps;
+                                mavlink_msg_gps_status_decode(&message, &gps);
+
+                                break;
+                            }
+                            default:
+                                break;
+                        }
+                        break;
+                    }
+                    default:
+                        break;
                 }
-                default:
-                    break;
             }
         }
         usleep(10000);
