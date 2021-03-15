@@ -32,7 +32,7 @@ public:
 protected:
     virtual void onSetUAV() = 0;
 
-public:
+protected:
     uav::UAV *_uav = nullptr;
 };
 }

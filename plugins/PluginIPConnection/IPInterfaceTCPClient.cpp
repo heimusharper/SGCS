@@ -130,7 +130,6 @@ void IPInterfaceTCPClient::run()
 
             const size_t WRITE_SIZE = std::min(MAX_LINE, m_writeBuffer.size());
             char writeBuffer[WRITE_SIZE];
-
             m_bufferMutex.lock();
             // to readed buffer
             for (int i = 0; i < readBytesCount; i++)

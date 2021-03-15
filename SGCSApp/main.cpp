@@ -51,7 +51,8 @@ void initLogger(bool output, bool trace, const std::string &file)
 int main(int argc, char *argv[])
 {
     boost::program_options::options_description description("SGCS commandline");
-    description.add_options()("help", "produce help message")("output", "debug output")("trace", "trace output")("auto", "autoconnect");
+    description.add_options()("help", "produce help message")("output", "debug output")("trace", "trace output")(
+    "auto", "autoconnect")("log", "write log file");
 
     boost::program_options::variables_map vm;
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, description), vm);

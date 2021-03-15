@@ -2,9 +2,8 @@
 
 IPInterfaceUDPClient::IPInterfaceUDPClient() : IPInterface()
 {
+    m_reconnect.store(true);
     m_stopThread.store(false);
-    m_targetState.store((char)ConnectionStates::DISCONNECTED);
-
     m_thread = new std::thread(&IPInterfaceUDPClient::run, this);
 }
 
@@ -17,9 +16,7 @@ IPInterfaceUDPClient::~IPInterfaceUDPClient()
 
 void IPInterfaceUDPClient::close()
 {
-    m_bufferMutex.lock();
-    m_targetState.store((char)ConnectionStates::DISCONNECTED);
-    m_bufferMutex.unlock();
+    m_reconnect.store(false);
 }
 
 void IPInterfaceUDPClient::doConnect(const std::string &host, uint16_t port)
@@ -27,8 +24,8 @@ void IPInterfaceUDPClient::doConnect(const std::string &host, uint16_t port)
     m_bufferMutex.lock();
     m_hostName = host;
     m_port     = port;
-    m_targetState.store((char)ConnectionStates::CONNECTED);
     m_bufferMutex.unlock();
+    m_reconnect.store(true);
 }
 
 std::queue<uint8_t> IPInterfaceUDPClient::readBuffer()
@@ -61,79 +58,60 @@ void IPInterfaceUDPClient::writeBuffer(std::queue<uint8_t> &data)
 
 void IPInterfaceUDPClient::run()
 {
-    UDPSocket sock = -1;
-    std::string nowHostName;
-    uint16_t nowPort = 0;
+    const uint16_t listenPort = 11250;
+    UDPSocket sock            = -1;
+    struct sockaddr_in servaddr;
+    {
+        memset(&servaddr, 0, sizeof(servaddr));
+        servaddr.sin_family      = AF_INET; // IPv4
+        servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+        servaddr.sin_port        = htons(listenPort);
+    }
     struct sockaddr_in clientaddr;
-
-    boost::container::vector<struct sockaddr_in> clients;
+    {
+        memset(&clientaddr, 0, sizeof(servaddr));
+        clientaddr.sin_family      = AF_INET; // IPv4
+        clientaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+        clientaddr.sin_port        = htons(m_port); // LINUX
+    }
 
     while (!m_stopThread.load())
     {
-        char nowState = (char)((sock == 0) ? ConnectionStates::DISCONNECTED : ConnectionStates::CONNECTED);
-        if (nowState != (char)m_targetState.load())
         {
-            // state changed
-            if (m_targetState.load() == (char)ConnectionStates::DISCONNECTED)
-            {
-                sock = -1;
-            }
-            else
-            {
-                nowPort = 0;
-            }
-        }
-        // m_bufferMutex.lock();
-        if (m_targetState.load() == (char)ConnectionStates::CONNECTED && (nowHostName != m_hostName || nowPort != m_port))
-        {
-            // reconnect
+            // connection
             sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
             if (sock > 0)
             {
-                // listen
-                struct sockaddr_in servaddr;
-                memset(&servaddr, 0, sizeof(servaddr));
-                servaddr.sin_family      = AF_INET; // IPv4
-                servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-                servaddr.sin_port        = htons(14400);
-                if (bind(sock, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
+                // listen1
+                if (bind(sock, (const struct sockaddr *)&clientaddr, sizeof(clientaddr)) < 0)
                 {
                     shutdown(sock, SHUT_RD);
                     sock = -1;
-                    BOOST_LOG_TRIVIAL(info) << "Failed bind UDP listen connection " << m_hostName << ":" << m_port;
+                    BOOST_LOG_TRIVIAL(info) << "Failed bind UDP listen connection " << m_hostName << ":" << listenPort;
                 }
-                BOOST_LOG_TRIVIAL(info) << "Listen on " << m_hostName << ":" << m_port;
+                BOOST_LOG_TRIVIAL(info) << "Listen on " << m_hostName << ":" << listenPort;
 
-                memset(&clientaddr, 0, sizeof(servaddr));
-                clientaddr.sin_family      = AF_INET; // IPv4
-                clientaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-                clientaddr.sin_port        = htons(m_port);
-                if (inet_aton(m_hostName.c_str(), &clientaddr.sin_addr) == 0)
+                if (inet_aton(m_hostName.c_str(), &servaddr.sin_addr) == 0)
                 {
                     shutdown(sock, SHUT_RD);
                     sock = -1;
-                    BOOST_LOG_TRIVIAL(info) << "Failed bind UDP client connection " << m_hostName << ":" << m_port;
+                    BOOST_LOG_TRIVIAL(info) << "Failed aton UDP client connection " << m_hostName << ":" << m_port;
                 }
-                m_writeBuffer.push('h');
-                m_writeBuffer.push('e');
-                m_writeBuffer.push('l');
-                m_writeBuffer.push('l');
-                m_writeBuffer.push('o');
-                m_writeBuffer.push('\n');
+                struct timeval tv;
+                tv.tv_sec  = 1;
+                tv.tv_usec = 0;
+                setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
+                m_reconnect.store(false);
             }
             else
                 BOOST_LOG_TRIVIAL(info) << "Failed to create UDP connection " << m_hostName << ":" << m_port;
         }
-        // m_bufferMutex.unlock();
-
-        if (sock >= 0)
+        while (!m_stopThread.load() && !m_reconnect.load())
         {
-            struct sockaddr_in cliaddr;
-            memset(&cliaddr, 0, sizeof(cliaddr));
-            socklen_t len = sizeof(cliaddr); // len is value/resuslt
-
+            // RW
+            socklen_t len = sizeof(servaddr);
             char readBuffer[MAX_LINE];
-            int n = recvfrom(sock, (char *)readBuffer, MAX_LINE, MSG_WAITALL, (struct sockaddr *)&cliaddr, &len);
+            int n = recvfrom(sock, (char *)readBuffer, MAX_LINE, MSG_WAITALL, (struct sockaddr *)&servaddr, &len);
 
             const size_t WRITE_SIZE = std::min(MAX_LINE, m_writeBuffer.size());
             char writeBuffer[WRITE_SIZE];
@@ -150,20 +128,11 @@ void IPInterfaceUDPClient::run()
             m_bufferMutex.unlock();
             if (WRITE_SIZE > 0)
             {
-                const size_t l = sizeof(clientaddr);
-                BOOST_LOG_TRIVIAL(info) << "::::>" << writeBuffer;
-                sendto(sock, (const char *)writeBuffer, WRITE_SIZE, 0, (const struct sockaddr *)&clientaddr, l);
+                BOOST_LOG_TRIVIAL(info) << "::::>" << WRITE_SIZE << " " << sock;
+                sendto(sock, (const char *)writeBuffer, WRITE_SIZE, 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
             }
-
-            // service
-            // search exists clients
-            bool has = false;
-            for (int i = 0; i < clients.size(); i++)
-                if (clients.at(i).sin_addr.s_addr == cliaddr.sin_addr.s_addr && clients.at(i).sin_port == cliaddr.sin_port)
-                    has = true;
-            if (!has) // client not found, add
-                clients.push_back(cliaddr);
+            usleep(1000);
         }
-        usleep(1000);
+        usleep(100000);
     }
 }

@@ -39,7 +39,7 @@ IPConnection::~IPConnection()
 
 void IPConnection::onTransmit(const std::vector<uint8_t> &data)
 {
-    BOOST_LOG_TRIVIAL(debug) << "WRITE SIZE" << data.size();
+    // BOOST_LOG_TRIVIAL(debug) << "WRITE SIZE" << data.size();
     if (m_interface)
     {
         std::queue<uint8_t> queue;

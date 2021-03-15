@@ -88,7 +88,7 @@ void MavlinkProtocol::runParser()
             {
                 if (check((char)buffer[i], &msg))
                 {
-                    BOOST_LOG_TRIVIAL(debug) << msg.msgid;
+                    // BOOST_LOG_TRIVIAL(debug) << "MAVLINK MSGID " << msg.msgid;
                     _mavlinkStoreMutex.lock();
                     _mavlinkMessages.push(msg);
                     _mavlinkStoreMutex.unlock();
