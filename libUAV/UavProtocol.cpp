@@ -20,6 +20,7 @@ namespace uav
 {
 UavProtocol::UavProtocol()
 {
+    m_readyMessages.store(false);
     m_stopThread.store(false);
     m_hasData.store(false);
     m_messageGetterThread = new std::thread(&UavProtocol::runTasks, this);
@@ -45,6 +46,8 @@ std::vector<uint8_t> UavProtocol::hello() const
 void UavProtocol::setIsHasData(bool l)
 {
     m_hasData.store(l);
+    if (!m_readyMessages.load() && l)
+        m_readyMessages.store(true);
 }
 
 void UavProtocol::runTasks()
@@ -81,6 +84,11 @@ void UavProtocol::runSender()
 bool UavProtocol::isHasData() const
 {
     return m_hasData.load();
+}
+
+bool UavProtocol::isReadyMessages() const
+{
+    return m_readyMessages.load();
 }
 uav::UavTask *UavProtocol::message()
 {

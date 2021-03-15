@@ -68,7 +68,7 @@ void ConnectionRouter::runConection()
             }
             auto iter = std::find_if(m_protos.begin(), m_protos.end(), [bytes](uav::UavProtocol *proto) {
                 proto->onReceived(bytes);
-                return proto->isHasData();
+                return proto->isReadyMessages();
             });
 
             if (iter != m_protos.end())

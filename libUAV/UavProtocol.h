@@ -63,6 +63,7 @@ public:
     virtual void onReceived(const std::vector<uint8_t> &data) = 0;
 
     bool isHasData() const;
+    bool isReadyMessages() const;
     uav::UavTask *message();
 
     void sendMessage(uav::UavSendMessage *message);
@@ -95,6 +96,7 @@ private:
     std::list<uav::UavTask *> m_tasks;
     std::mutex m_tasksStoreMutex;
     std::atomic_bool m_stopThread;
+    std::atomic_bool m_readyMessages;
     void runTasks();
 
     // send

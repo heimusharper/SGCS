@@ -8,6 +8,7 @@
 #include <mutex>
 #include <netinet/in.h>
 #include <queue>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <thread>

@@ -58,14 +58,14 @@ void IPInterfaceUDPClient::writeBuffer(std::queue<uint8_t> &data)
 
 void IPInterfaceUDPClient::run()
 {
-    const uint16_t listenPort = 11250;
-    UDPSocket sock            = -1;
+    UDPSocket sock = -1;
     struct sockaddr_in servaddr;
     {
         memset(&servaddr, 0, sizeof(servaddr));
         servaddr.sin_family      = AF_INET; // IPv4
         servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-        servaddr.sin_port        = htons(listenPort);
+        inet_aton(m_hostName.c_str(), &servaddr.sin_addr);
+        BOOST_LOG_TRIVIAL(info) << "SET HOST " << m_hostName;
     }
     struct sockaddr_in clientaddr;
     {
@@ -79,6 +79,9 @@ void IPInterfaceUDPClient::run()
     {
         {
             // connection
+            const uint16_t listenPort = 11250 + (rand() / RAND_MAX * 1000 - 500);
+            servaddr.sin_port         = htons(listenPort);
+
             sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
             if (sock > 0)
             {
@@ -90,13 +93,6 @@ void IPInterfaceUDPClient::run()
                     BOOST_LOG_TRIVIAL(info) << "Failed bind UDP listen connection " << m_hostName << ":" << listenPort;
                 }
                 BOOST_LOG_TRIVIAL(info) << "Listen on " << m_hostName << ":" << listenPort;
-
-                if (inet_aton(m_hostName.c_str(), &servaddr.sin_addr) == 0)
-                {
-                    shutdown(sock, SHUT_RD);
-                    sock = -1;
-                    BOOST_LOG_TRIVIAL(info) << "Failed aton UDP client connection " << m_hostName << ":" << m_port;
-                }
                 struct timeval tv;
                 tv.tv_sec  = 1;
                 tv.tv_usec = 0;
