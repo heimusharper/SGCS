@@ -43,7 +43,7 @@ MavlinkProtocol::~MavlinkProtocol()
 
 std::string MavlinkProtocol::name() const
 {
-    return "Mavlink APM";
+    return "Mavlink";
 }
 
 std::vector<uint8_t> MavlinkProtocol::hello() const
@@ -114,78 +114,57 @@ void MavlinkProtocol::runMessageReader()
 
             if (!_modes.contains(message.sysid))
             {
-                if (message.msgid == MAVLINK_MSG_ID_HEARTBEAT)
+                switch (message.msgid)
                 {
-                    uav::UAV::Message *m = new uav::UAV::Message(message.sysid);
-                    m->id                = message.sysid;
-                    m->type              = uav::UAVType::UNDEFINED;
-                    mavlink_heartbeat_t hrt;
-                    mavlink_msg_heartbeat_decode(&message, &hrt);
-                    switch (hrt.type)
+                    case MAVLINK_MSG_ID_HEARTBEAT:
                     {
-                        case MAV_TYPE_VTOL_DUOROTOR:
-                        case MAV_TYPE_VTOL_QUADROTOR:
-                        case MAV_TYPE_VTOL_RESERVED2:
-                        case MAV_TYPE_VTOL_RESERVED3:
-                        case MAV_TYPE_VTOL_RESERVED4:
-                        case MAV_TYPE_VTOL_TILTROTOR:
-                            m->type = uav::UAVType::VTOL;
-                            _modes.insert(std::pair(message.sysid, ProcessingMode::UAV));
-                            break;
-                        case MAV_TYPE_GENERIC:
-                        case MAV_TYPE_FLAPPING_WING:
-                        case MAV_TYPE_FIXED_WING:
-                            m->type = uav::UAVType::PLANE;
-                            _modes.insert(std::pair(message.sysid, ProcessingMode::UAV));
-                            break;
-                        case MAV_TYPE_COAXIAL:
-                        case MAV_TYPE_HELICOPTER:
-                        case MAV_TYPE_HEXAROTOR:
-                        case MAV_TYPE_OCTOROTOR:
-                        case MAV_TYPE_QUADROTOR:
-                        case MAV_TYPE_TRICOPTER:
-                            m->type = uav::UAVType::MULTICOPTER;
-                            _modes.insert(std::pair(message.sysid, ProcessingMode::UAV));
-                            break;
-                        case MAV_TYPE_ANTENNA_TRACKER:
-                            _modes.insert(std::pair(message.sysid, ProcessingMode::ANT));
-                            break;
-                        case MAV_TYPE_GIMBAL:
-                            _modes.insert(std::pair(message.sysid, ProcessingMode::GIMBAL));
-                            break;
-                        case MAV_TYPE_CAMERA:
-                            _modes.insert(std::pair(message.sysid, ProcessingMode::CAMERA));
-                            break;
-                        case MAV_TYPE_FLARM:
-                        case MAV_TYPE_GROUND_ROVER:
-                        case MAV_TYPE_KITE:
-                        case MAV_TYPE_PARAFOIL:
-                        case MAV_TYPE_SUBMARINE:
-                        case MAV_TYPE_SURFACE_BOAT:
-                        case MAV_TYPE_DECAROTOR:
-                        case MAV_TYPE_AIRSHIP:
-                        case MAV_TYPE_FREE_BALLOON:
-                        case MAV_TYPE_CHARGING_STATION:
-                        case MAV_TYPE_GCS:
-                        case MAV_TYPE_ODID:
-                        case MAV_TYPE_ONBOARD_CONTROLLER:
-                        case MAV_TYPE_ROCKET:
-                        case MAV_TYPE_ADSB:
-                        case MAV_TYPE_SERVO:
-                        default:
-                            _modes.insert(std::pair(message.sysid, ProcessingMode::UNDEFINED));
-                            break;
+                        uav::UAV::Message *m = new uav::UAV::Message(message.sysid);
+                        m->id                = message.sysid;
+                        m->type              = uav::UAVType::UNDEFINED;
+                        mavlink_heartbeat_t hrt;
+                        mavlink_msg_heartbeat_decode(&message, &hrt);
+                        MavlinkHelper::ProcessingMode type = MavlinkHelper::mavlinkUavType2SGCS((MAV_TYPE)hrt.type);
+                        _modes.insert(std::pair(message.sysid, type));
+                        switch (type)
+                        {
+                            case MavlinkHelper::ProcessingMode::ANT:
+                                break;
+                            case MavlinkHelper::ProcessingMode::CAMERA:
+                                break;
+                            case MavlinkHelper::ProcessingMode::GIMBAL:
+                                break;
+                            case MavlinkHelper::ProcessingMode::MODEM:
+                                break;
+                            case MavlinkHelper::ProcessingMode::UAV_MC:
+                                m->type = uav::UAVType::MULTICOPTER;
+                                break;
+                            case MavlinkHelper::ProcessingMode::UAV_PLANE:
+                                m->type = uav::UAVType::PLANE;
+                                break;
+                            case MavlinkHelper::ProcessingMode::UAV_VTOL:
+                                m->type = uav::UAVType::VTOL;
+                                break;
+                            case MavlinkHelper::ProcessingMode::UNDEFINED:
+                                break;
+                            default:
+                                break;
+                        }
+                        insertMessage<uav::UAV::Message>(m);
+                        break;
                     }
-                    insertMessage<uav::UAV::Message>(m);
+                    default:
+                        break;
                 }
             }
             else
             {
-                ProcessingMode processMode = _modes[message.msgid];
+                MavlinkHelper::ProcessingMode processMode = _modes[message.msgid];
 
                 switch (processMode)
                 {
-                    case ProcessingMode::UAV:
+                    case MavlinkHelper::ProcessingMode::UAV_MC:
+                    case MavlinkHelper::ProcessingMode::UAV_PLANE:
+                    case MavlinkHelper::ProcessingMode::UAV_VTOL:
                     {
                         switch (message.msgid)
                         {
@@ -261,7 +240,7 @@ bool MavlinkProtocol::check(char c, mavlink_message_t *msg)
 std::vector<uint8_t> MavlinkProtocol::packMessage(mavlink_message_t *msg)
 {
     std::vector<uint8_t> data = std::vector<uint8_t>(MAVLINK_MAX_PACKET_LEN, (uint8_t)0x0);
-    int lenght                = mavlink_msg_to_send_buffer(data.data(), msg);
+    uint16_t lenght           = mavlink_msg_to_send_buffer(data.data(), msg);
     if (lenght > 0)
     {
         while (data.size() > lenght)
@@ -295,7 +274,7 @@ bool MavlinkPositionControl::goTo(const geo::Coords3D<double> &target)
                                            (float)target.lon(),
                                            (float)target.alt(),
                                            MAV_MISSION_TYPE_MISSION);
-        MavlinkMessageType *msg = new MavlinkMessageType(message);
+        MavlinkMessageType *msg = new MavlinkMessageType(std::move(message));
         m_proto->sendMessage(msg);
         return true;
     }

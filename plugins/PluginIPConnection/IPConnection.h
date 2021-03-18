@@ -20,6 +20,7 @@
 #include "IPInterface.h"
 #include "IPInterfaceTCPClient.h"
 #include "IPInterfaceUDPClient.h"
+#include "IPInterfaceUDPServer.h"
 #include <boost/log/trivial.hpp>
 #include <connection/Connection.h>
 #include <queue>

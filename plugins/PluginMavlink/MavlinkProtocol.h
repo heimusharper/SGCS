@@ -17,9 +17,7 @@
 
 #ifndef MAVLINKPROTOCOL_H
 #define MAVLINKPROTOCOL_H
-
-#include "ardupilotmega/mavlink.h"
-#include "mavlink_types.h"
+#include "MavlinkHelper.h"
 #include <UavProtocol.h>
 #include <atomic>
 #include <boost/log/trivial.hpp>
@@ -30,7 +28,7 @@
 class MavlinkMessageType : public uav::UavSendMessage
 {
 public:
-    MavlinkMessageType(const mavlink_message_t &mavlink) : m_mavlink(mavlink)
+    MavlinkMessageType(mavlink_message_t &&mavlink) : m_mavlink(mavlink)
     {
     }
 
@@ -88,17 +86,7 @@ private:
     std::queue<std::vector<uint8_t>> _dataTasks;
     std::mutex _dataTaskMutex;
 
-    enum class ProcessingMode
-    {
-        UAV,
-        MODEM,
-        ANT,
-        GIMBAL,
-        CAMERA,
-        UNDEFINED
-    };
-
-    std::map<int, ProcessingMode> _modes;
+    std::map<int, MavlinkHelper::ProcessingMode> _modes;
 };
 
 #endif // MAVLINKPROTOCOL_H

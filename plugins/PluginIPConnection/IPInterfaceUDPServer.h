@@ -29,20 +29,12 @@ protected:
     void run();
 
 private:
-    enum class ConnectionStates : char
-    {
-        DISCONNECTED = 0x0,
-        CONNECTED    = 0x1
-    };
-
     std::mutex m_bufferMutex;
     std::queue<uint8_t> m_readBuffer;
     std::queue<uint8_t> m_writeBuffer;
 
     std::thread *m_thread = nullptr;
     std::atomic_bool m_stopThread;
-    std::atomic_char m_targetState;
-
     std::string m_hostName;
     uint16_t m_port;
     const size_t MAX_LINE = 1024;
