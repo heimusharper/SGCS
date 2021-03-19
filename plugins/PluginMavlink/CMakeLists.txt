@@ -7,21 +7,11 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/../../bin/plugins )
 
 FIND_PACKAGE(Boost)
-# begin mavlink
-FIND_PATH(MAVLINK_INCLUDE_DIR
-    NAMES
-        protocol.h
-    PATHS
-    ${PROJECT_SOURCE_DIR}/../../thirdparty/c_library_v2)
-
-message(${MAVLINK_INCLUDE_DIR})
-
-IF (NOT MAVLINK_INCLUDE_DIR)
-    EXECUTE_PROCESS(COMMAND
-        python2 mavlink/pymavlink/tools/mavgen.py --output c_library_v2 --lang C --wire-protocol 2.0 mavlink/message_definitions/v1.0/all.xml
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/../../thirdparty
-        )
-ENDIF()
+# generate mavlink
+EXECUTE_PROCESS(COMMAND
+    python2 mavlink/pymavlink/tools/mavgen.py --output c_library_v2 --lang C --wire-protocol 2.0 mavlink/message_definitions/v1.0/all.xml
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/../../thirdparty
+    )
 
 FIND_PATH(MAVLINK_INCLUDE_DIR
     NAMES
