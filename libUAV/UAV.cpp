@@ -19,7 +19,7 @@
 namespace uav
 {
 UAV::UAV()
-: UavObject(), m_id(-1), m_type(UAVType::UNDEFINED), m_ahrs(new AHRS()), m_gps(new GPS()), m_position(new Position())
+: UavObject(), m_id(-1), m_type(UAVType::UNDEFINED), m_ahrs(new AHRS()), m_gps(new GPS()), m_position(new Position()), m_home(new Home())
 {
 }
 
@@ -28,6 +28,7 @@ UAV::~UAV()
     delete m_ahrs;
     delete m_gps;
     delete m_position;
+    delete m_home;
 }
 
 void UAV::process(std::unique_ptr<UavTask> message)
@@ -46,6 +47,8 @@ void UAV::process(std::unique_ptr<UavTask> message)
         m_gps->process(gpsmsg);
     else if (Position::MessageGPS *posgpsmsg = dynamic_cast<Position::MessageGPS *>(task))
         m_position->process(posgpsmsg);
+    else if (Home::Message *homemsg = dynamic_cast<Home::Message *>(task))
+        m_home->process(homemsg);
 }
 int UAV::id() const
 {
@@ -71,6 +74,11 @@ void UAV::setType(UAVType type)
         return;
     BOOST_LOG_TRIVIAL(info) << "UAV TYPE " << (int)type;
     m_type = type;
+}
+
+Home *UAV::home() const
+{
+    return m_home;
 }
 
 Position *UAV::position() const

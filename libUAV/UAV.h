@@ -18,6 +18,7 @@
 #define UAV_H
 #include "AHRS.h"
 #include "GPS.h"
+#include "Home.h"
 #include "Position.h"
 #include "UavObject.h"
 
@@ -58,6 +59,8 @@ public:
 
     Position *position() const;
 
+    Home *home() const;
+
 private:
     void setId(int id);
 
@@ -75,6 +78,8 @@ private:
     GPS *m_gps = nullptr;
 
     Position *m_position = nullptr;
+
+    Home *m_home = nullptr;
 };
 }
 #endif // SGCS_H

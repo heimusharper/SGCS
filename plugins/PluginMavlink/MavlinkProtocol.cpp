@@ -22,6 +22,7 @@ MavlinkProtocol::MavlinkProtocol()
     _stopThread.store(false);
     _dataProcessorThread    = new std::thread(&MavlinkProtocol::runParser, this);
     _messageProcessorThread = new std::thread(&MavlinkProtocol::runMessageReader, this);
+    _pingProcessorThread    = new std::thread(&MavlinkProtocol::runPing, this);
 }
 
 MavlinkProtocol::~MavlinkProtocol()
@@ -39,6 +40,12 @@ MavlinkProtocol::~MavlinkProtocol()
             _messageProcessorThread->join();
         delete _messageProcessorThread;
     }
+    if (_pingProcessorThread)
+    {
+        if (_pingProcessorThread->joinable())
+            _pingProcessorThread->join();
+        delete _pingProcessorThread;
+    }
 }
 
 std::string MavlinkProtocol::name() const
@@ -54,7 +61,8 @@ std::vector<uint8_t> MavlinkProtocol::hello() const
     mavlink_message_t msg;
     // mavlink_msg_heartbeat_pack_chan(255, 0, DIFFERENT_CHANNEL, &msg, MAV_TYPE_GCS, MAV_AUTOPILOT_INVALID, 0, 0, MAV_STATE_ACTIVE);
     mavlink_msg_ping_pack_chan(255, 0, DIFFERENT_CHANNEL, &msg, ms.count(), 0, 1, 0);
-    return packMessage(&msg);
+    MavlinkMessageType t(std::move(msg));
+    return t.pack();
 }
 
 void MavlinkProtocol::onReceived(const std::vector<uint8_t> &data)
@@ -97,7 +105,7 @@ void MavlinkProtocol::runParser()
             buffer.clear();
         }
 
-        usleep(10000);
+        usleep(100);
     }
 }
 
@@ -200,6 +208,18 @@ void MavlinkProtocol::runMessageReader()
                                 insertMessage<uav::Position::MessageGPS>(pos);
                                 break;
                             }
+                            case MAVLINK_MSG_ID_HOME_POSITION:
+                            {
+                                mavlink_home_position_t pos;
+                                mavlink_msg_home_position_decode(&message, &pos);
+                                uav::Home::Message *home = new uav::Home::Message(message.sysid);
+                                geo::Coords3D coord(((double)pos.latitude) / 1.E7,
+                                                    ((double)pos.longitude) / 1.E7,
+                                                    ((double)pos.altitude) / 1000.);
+                                home->position = coord;
+                                insertMessage<uav::Home::Message>(home);
+                                break;
+                            }
                             case MAVLINK_MSG_ID_GPS_STATUS:
                             {
                                 mavlink_gps_status_t gps;
@@ -217,7 +237,21 @@ void MavlinkProtocol::runMessageReader()
                 }
             }
         }
-        usleep(10000);
+        usleep(100);
+    }
+}
+
+void MavlinkProtocol::runPing()
+{
+    while (!_stopThread.load())
+    {
+        BOOST_LOG_TRIVIAL(info) << "PING";
+        mavlink_message_t message;
+        mavlink_msg_heartbeat_pack(255, 0, &message, MAV_TYPE_GCS, MAV_AUTOPILOT_GENERIC, 0, 0, 0);
+        MavlinkMessageType *msg = new MavlinkMessageType(std::move(message));
+        sendMessage(msg);
+
+        usleep(1000000);
     }
 }
 
@@ -235,19 +269,6 @@ bool MavlinkProtocol::check(char c, mavlink_message_t *msg)
     mavlink_status_t stats;
     uint8_t i = mavlink_parse_char(DIFFERENT_CHANNEL, c, msg, &stats);
     return i != 0;
-}
-
-std::vector<uint8_t> MavlinkProtocol::packMessage(mavlink_message_t *msg)
-{
-    std::vector<uint8_t> data = std::vector<uint8_t>(MAVLINK_MAX_PACKET_LEN, (uint8_t)0x0);
-    uint16_t lenght           = mavlink_msg_to_send_buffer(data.data(), msg);
-    if (lenght > 0)
-    {
-        while (data.size() > lenght)
-            data.pop_back();
-        return data;
-    }
-    return std::vector<uint8_t>();
 }
 
 bool MavlinkPositionControl::goTo(geo::Coords3D &&target)
@@ -279,6 +300,19 @@ bool MavlinkPositionControl::goTo(geo::Coords3D &&target)
         return true;
     }
     return false;
+}
+
+std::vector<uint8_t> MavlinkMessageType::pack() const
+{
+    std::vector<uint8_t> data = std::vector<uint8_t>(MAVLINK_MAX_PACKET_LEN, (uint8_t)0x0);
+    uint16_t lenght           = mavlink_msg_to_send_buffer(data.data(), &m_mavlink);
+    if (lenght > 0)
+    {
+        while (data.size() > lenght)
+            data.pop_back();
+        return data;
+    }
+    return std::vector<uint8_t>();
 }
 
 mavlink_message_t MavlinkMessageType::mavlink() const

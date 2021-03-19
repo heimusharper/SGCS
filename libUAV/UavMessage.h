@@ -17,6 +17,7 @@
 #ifndef UAVMESSAGE_H
 #define UAVMESSAGE_H
 #include <Optional.h>
+#include <vector>
 
 namespace uav
 {
@@ -32,6 +33,7 @@ class UavSendMessage
 {
 public:
     UavSendMessage();
+    virtual std::vector<uint8_t> pack() const = 0;
 };
 }
 

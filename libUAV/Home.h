@@ -22,7 +22,7 @@ public:
     Home();
     virtual ~Home();
 
-    void process(std::unique_ptr<Home::Message> message);
+    void process(Home::Message *message);
 
     geo::Coords3D position() const;
     void setPosition(geo::Coords3D &&position);

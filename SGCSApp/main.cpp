@@ -114,6 +114,6 @@ int main(int argc, char *argv[])
     }
     RunConfiguration::instance().forceSave();
     while (true)
-        usleep(100);
+        usleep(10);
     return 0;
 }

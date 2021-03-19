@@ -24,7 +24,6 @@ UavProtocol::UavProtocol()
     m_stopThread.store(false);
     m_hasData.store(false);
     m_messageGetterThread = new std::thread(&UavProtocol::runTasks, this);
-    m_sendThread          = new std::thread(&UavProtocol::runSender, this);
 }
 
 UavProtocol::~UavProtocol()
@@ -63,21 +62,7 @@ void UavProtocol::runTasks()
             m_uavs.at(n->targetID)->process(std::unique_ptr<uav::UavTask>(std::move(n)));
         }
         m_mutex.unlock();
-        usleep(10000);
-    }
-}
-
-void UavProtocol::runSender()
-{
-    while (!m_stopThread.load())
-    {
-        m_sendMutex.lock();
-        if (!m_uavs.empty())
-        {
-            // send
-        }
-        m_sendMutex.unlock();
-        usleep(10000);
+        usleep(1000);
     }
 }
 
@@ -121,6 +106,20 @@ void UavProtocol::addUavCreateHandler(UavProtocol::UavCreateHandler *handler)
     for (auto uav : m_uavs)
         handler->onCreateUav(uav.second);
     _uavCreateHandlers.push_back(handler);
+}
+
+UavSendMessage *UavProtocol::next()
+{
+    uav::UavSendMessage *msg = nullptr;
+    m_sendMutex.lock();
+    if (!m_send.empty())
+    {
+        msg = m_send.front();
+        m_send.pop_front();
+        // send
+    }
+    m_sendMutex.unlock();
+    return msg;
 }
 
 }

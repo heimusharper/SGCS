@@ -10,7 +10,7 @@ Home::~Home()
 {
 }
 
-void Home::process(std::unique_ptr<Home::Message> message)
+void Home::process(Message *message)
 {
     if (message->position.dirty() && message->position.get().valid())
         setPosition(std::move(message->position.get()));
@@ -26,7 +26,7 @@ void Home::setPosition(geo::Coords3D &&position)
     if (m_position.get() == position)
         return;
     m_position = position;
-    // BOOST_LOG_TRIVIAL(info)
-    // << "New home position " << m_position.get().lat() << " " << m_position.get().lon() << " " << m_position.get().alt();
+    BOOST_LOG_TRIVIAL(info)
+    << "New home position " << m_position.get().lat() << " " << m_position.get().lon() << " " << m_position.get().alt();
 }
 }

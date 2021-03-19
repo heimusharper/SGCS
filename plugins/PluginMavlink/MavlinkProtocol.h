@@ -32,6 +32,7 @@ public:
     {
     }
 
+    virtual std::vector<uint8_t> pack() const override final;
     mavlink_message_t mavlink() const;
 
 private:
@@ -68,11 +69,10 @@ protected:
 private:
     void runParser();
     void runMessageReader();
+    void runPing();
 
 private:
     bool check(char c, mavlink_message_t *msg);
-
-    static std::vector<uint8_t> packMessage(mavlink_message_t *msg);
 
     const int DIFFERENT_CHANNEL;
     const std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> _bootTime;
@@ -83,6 +83,7 @@ private:
     std::atomic_bool _stopThread;
     std::thread *_dataProcessorThread    = nullptr;
     std::thread *_messageProcessorThread = nullptr;
+    std::thread *_pingProcessorThread    = nullptr;
     std::queue<std::vector<uint8_t>> _dataTasks;
     std::mutex _dataTaskMutex;
 

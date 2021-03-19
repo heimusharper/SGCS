@@ -145,7 +145,7 @@ void IPInterfaceTCPClient::run()
                 send(sock, (const char *)writeBuffer, WRITE_SIZE, MSG_CONFIRM);
         }
         if (sock >= 0)
-            usleep(10000);
+            usleep(100);
         else
             usleep(1000000);
     }

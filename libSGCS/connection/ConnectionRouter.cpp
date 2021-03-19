@@ -106,8 +106,14 @@ void ConnectionRouter::runConection()
             {
                 m_protocol->onReceived(bytes);
             }
+            auto message = m_protocol->next();
+            if (message)
+            {
+                m_connection->onTransmit(message->pack());
+                delete message;
+            }
         }
-        usleep(100000);
+        usleep((!m_protocol) ? 2000000 : 50);
     }
 }
 

@@ -47,9 +47,7 @@ SerialConnection::~SerialConnection()
 
 void SerialConnection::onTransmit(const std::vector<uint8_t> &data)
 {
-    // BOOST_LOG_TRIVIAL(debug) << "WRITE SIZE " << data.size();
     m_mutex.lock();
-    for (int i = 0; i < data.size(); i++)
     {
         CharMap *cm = new CharMap;
         cm->data    = new char[data.size()];
@@ -265,7 +263,7 @@ void SerialConnection::run()
             }
             m_mutex.unlock();
         }
-        usleep((serialDsc < 0) ? 1000000 : 1000);
+        usleep((serialDsc < 0) ? 1000000 : 50);
     }
 
     if (serialDsc >= 0)

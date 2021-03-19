@@ -70,6 +70,8 @@ public:
 
     void addUavCreateHandler(uav::UavProtocol::UavCreateHandler *handler);
 
+    uav::UavSendMessage *next();
+
 protected:
     virtual void setUAV(int id, uav::UAV *uav);
 
@@ -101,9 +103,7 @@ private:
 
     // send
     std::list<uav::UavSendMessage *> m_send;
-    std::thread *m_sendThread = nullptr;
     std::mutex m_sendMutex;
-    void runSender();
 
 private:
     std::atomic_bool m_hasData;

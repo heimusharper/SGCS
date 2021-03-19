@@ -127,7 +127,7 @@ void IPInterfaceUDPClient::run()
                 BOOST_LOG_TRIVIAL(info) << "::::>" << WRITE_SIZE << " " << sock;
                 sendto(sock, (const char *)writeBuffer, WRITE_SIZE, 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
             }
-            usleep(1000);
+            usleep(100);
         }
         usleep(100000);
     }

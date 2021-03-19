@@ -129,6 +129,6 @@ void IPInterfaceUDPServer::run()
                 BOOST_LOG_TRIVIAL(debug) << "NEW User " << (int)cliaddr.sin_port << cliaddr.sin_addr.s_addr;
             }
         }
-        usleep(1000);
+        usleep(100);
     }
 }
