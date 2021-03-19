@@ -29,11 +29,6 @@ protected:
     void run();
 
 private:
-    enum class ConnectionStates : char
-    {
-        DISCONNECTED = 0x0,
-        CONNECTED    = 0x1
-    };
     std::string m_hostName;
     uint16_t m_port;
     const size_t MAX_LINE;
@@ -44,7 +39,6 @@ private:
 
     std::thread *m_thread = nullptr;
     std::atomic_bool m_stopThread;
-    std::atomic_char m_targetState;
 };
 
 #endif // IPINTERFACEUDPSERVER_H

@@ -14,9 +14,11 @@ FIND_PATH(MAVLINK_INCLUDE_DIR
     PATHS
     ${PROJECT_SOURCE_DIR}/../../thirdparty/c_library_v2)
 
+message(${MAVLINK_INCLUDE_DIR})
+
 IF (NOT MAVLINK_INCLUDE_DIR)
     EXECUTE_PROCESS(COMMAND
-        python2 mavlink/pymavlink/tools/mavgen.py --output c_library_v2 --lang C --wire-protocol 2.0 mavlink/message_definitions/v1.0/ardupilotmega.xml
+        python2 mavlink/pymavlink/tools/mavgen.py --output c_library_v2 --lang C --wire-protocol 2.0 mavlink/message_definitions/v1.0/all.xml
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/../../thirdparty
         )
 ENDIF()
@@ -39,6 +41,7 @@ SET(SRC_LIST
     MavlinkProtocol.cpp
     )
 SET(HEADER_LIST
+    MavlinkHelper.h
     PluginMavlink.h
     MavlinkProtocol.h
     )

@@ -3,8 +3,6 @@
 IPInterfaceUDPServer::IPInterfaceUDPServer() : IPInterface(), m_hostName(""), m_port(15760), MAX_LINE(1024)
 {
     m_stopThread.store(false);
-    m_targetState.store((char)ConnectionStates::DISCONNECTED);
-
     m_thread = new std::thread(&IPInterfaceUDPServer::run, this);
 }
 
@@ -18,7 +16,6 @@ IPInterfaceUDPServer::~IPInterfaceUDPServer()
 void IPInterfaceUDPServer::close()
 {
     m_bufferMutex.lock();
-    m_targetState.store((char)ConnectionStates::DISCONNECTED);
     m_bufferMutex.unlock();
 }
 
@@ -27,7 +24,6 @@ void IPInterfaceUDPServer::doConnect(const std::string &host, uint16_t port)
     m_bufferMutex.lock();
     m_hostName = host;
     m_port     = port;
-    m_targetState.store((char)ConnectionStates::CONNECTED);
     m_bufferMutex.unlock();
 }
 
@@ -62,38 +58,24 @@ void IPInterfaceUDPServer::writeBuffer(std::queue<uint8_t> &data)
 void IPInterfaceUDPServer::run()
 {
     UDPSocket sock = -1;
-    std::string nowHostName;
-    uint16_t nowPort = 0;
+    struct sockaddr_in servaddr;
+    memset(&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family      = AF_INET; // IPv4
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     boost::container::vector<struct sockaddr_in> clients;
 
     while (!m_stopThread.load())
     {
-        char nowState = (char)((sock == 0) ? ConnectionStates::DISCONNECTED : ConnectionStates::CONNECTED);
-        if (nowState != (char)m_targetState.load())
-        {
-            // state changed
-            if (m_targetState.load() == (char)ConnectionStates::DISCONNECTED)
-            {
-                sock = -1;
-            }
-            else
-            {
-                nowPort = 0;
-            }
-        }
         // m_bufferMutex.lock();
-        if (m_targetState.load() == (char)ConnectionStates::CONNECTED && (nowHostName != m_hostName || nowPort != m_port))
+        if (sock <= 0)
         {
             // reconnect
             sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
             if (sock > 0)
             {
-                struct sockaddr_in servaddr;
-                memset(&servaddr, 0, sizeof(servaddr));
-                servaddr.sin_family      = AF_INET; // IPv4
-                servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-                servaddr.sin_port        = htons(m_port);
+                servaddr.sin_port = htons(m_port);
                 if (bind(sock, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
                 {
                     shutdown(sock, SHUT_RD);
@@ -104,9 +86,7 @@ void IPInterfaceUDPServer::run()
             else
                 BOOST_LOG_TRIVIAL(info) << "Failed to create UDP connection " << m_hostName << ":" << m_port;
         }
-        // m_bufferMutex.unlock();
-
-        if (sock >= 0)
+        else
         {
             struct sockaddr_in cliaddr;
             memset(&cliaddr, 0, sizeof(cliaddr));
@@ -143,8 +123,11 @@ void IPInterfaceUDPServer::run()
             for (int i = 0; i < clients.size(); i++)
                 if (clients.at(i).sin_addr.s_addr == cliaddr.sin_addr.s_addr && clients.at(i).sin_port == cliaddr.sin_port)
                     has = true;
-            if (!has) // client not found, add
+            if (!has)
+            { // client not found, add
                 clients.push_back(cliaddr);
+                BOOST_LOG_TRIVIAL(debug) << "NEW User " << (int)cliaddr.sin_port << cliaddr.sin_addr.s_addr;
+            }
         }
         usleep(1000);
     }

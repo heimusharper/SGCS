@@ -61,7 +61,7 @@ void UAV::setId(int id)
 {
     if (m_id == id)
         return;
-    BOOST_LOG_TRIVIAL(info) << "UAV ID" << id;
+    BOOST_LOG_TRIVIAL(info) << "UAV ID " << id;
     m_id = id;
 }
 
@@ -69,7 +69,7 @@ void UAV::setType(UAVType type)
 {
     if (m_type == type)
         return;
-    BOOST_LOG_TRIVIAL(info) << "UAV TYPE" << (int)type;
+    BOOST_LOG_TRIVIAL(info) << "UAV TYPE " << (int)type;
     m_type = type;
 }
 
