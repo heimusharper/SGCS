@@ -37,7 +37,7 @@ public:
         {
         }
 
-        virtual bool goTo(const geo::Coords3D<double> &target) = 0;
+        virtual bool goTo(geo::Coords3D &&target) = 0;
     };
 
     class MessageGPS : public UavTask
@@ -56,17 +56,17 @@ public:
 
     void process(Position::MessageGPS *message);
 
-    geo::Coords3D<double> gps() const;
+    geo::Coords3D gps() const;
 
     // control
     void setControl(PositionControlInterface *control);
-    void goTo(const geo::Coords3D<double> &target);
+    bool goTo(geo::Coords3D &&target);
 
 protected:
-    void setGps(const geo::Coords3D<double> &gps);
+    void setGps(geo::Coords3D &&gps);
 
 private:
-    geo::Coords3D<double> _gps;
+    tools::optional<geo::Coords3D> m_gps;
 
     PositionControlInterface *_control = nullptr;
 };

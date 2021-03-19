@@ -250,7 +250,7 @@ std::vector<uint8_t> MavlinkProtocol::packMessage(mavlink_message_t *msg)
     return std::vector<uint8_t>();
 }
 
-bool MavlinkPositionControl::goTo(const geo::Coords3D<double> &target)
+bool MavlinkPositionControl::goTo(geo::Coords3D &&target)
 {
     if (m_proto)
     {

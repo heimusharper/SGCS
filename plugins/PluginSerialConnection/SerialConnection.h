@@ -17,11 +17,14 @@
 #ifndef SERIALCONNECTION_H
 #define SERIALCONNECTION_H
 #include "SerialConfig.h"
+#include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
 #include <connection/Connection.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <linux/serial.h>
 #include <queue>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <thread>
 #include <unistd.h>
@@ -46,6 +49,7 @@ private:
 private:
     std::string m_portName;
     uint32_t m_baudRate;
+    bool m_autoConnect;
     const size_t MAX_BUFFER_SIZE;
     const size_t MAX_READ_BYTES_SIZE;
 
@@ -70,6 +74,8 @@ private:
     std::atomic_bool m_isDirty;
     std::mutex m_mutex;
     std::thread *m_thread = nullptr;
+
+    std::queue<std::string> m_portNames;
 };
 
 #endif // SERIALCONNECTION_H

@@ -39,9 +39,13 @@ public:
     uint32_t baudRate() const;
     void setBaudRate(const uint32_t &baudRate);
 
+    bool autoName() const;
+    void setAutoName(bool autoName);
+
 private:
     std::string m_portName;
     uint32_t m_baudRate;
+    bool m_autoName;
 };
 
 #endif // SERIALCONFIG_H

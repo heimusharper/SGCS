@@ -44,7 +44,7 @@ public:
     MavlinkPositionControl(uav::UavProtocol *proto, uint8_t id) : m_proto(proto), m_id(id)
     {
     }
-    virtual bool goTo(const geo::Coords3D<double> &target) override final;
+    virtual bool goTo(geo::Coords3D &&target) override final;
 
 private:
     uav::UavProtocol *m_proto = nullptr;

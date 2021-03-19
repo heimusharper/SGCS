@@ -2,18 +2,19 @@
 #define COORDS3D_H
 #include <cmath>
 #include <concepts>
+#include <numeric>
 namespace geo
 {
 template <class T>
 requires std::floating_point<T>
 
-class Coords3D
+class Coords
 {
 public:
-    Coords3D() : m_valid(false), m_lat(0), m_lon(0), m_alt(0)
+    Coords() : m_lat(NAN), m_lon(NAN), m_alt(NAN)
     {
     }
-    Coords3D(T lat, T lon, T alt = 0) : m_valid(true), m_lat(lat), m_lon(lon), m_alt(alt)
+    Coords(T lat, T lon, T alt = NAN) : m_lat(lat), m_lon(lon), m_alt(alt)
     {
     }
 
@@ -37,18 +38,26 @@ public:
         return m_alt;
     }
 
-    bool operator==(const Coords3D<T> &coord) const
+    bool operator==(const Coords<T> &coord) const
     {
         return std::abs(coord.lat() - m_lat) < 0.000001 && std::abs(coord.lon() - m_lon) < 0.000001 &&
         std::abs(coord.alt() - m_alt) < 0.01;
     }
 
+    bool valid() const
+    {
+        return (!std::isnan(m_alt) || !std::isnan(m_lat) || !std::isnan(m_lon));
+    }
+
 private:
-    bool m_valid = false;
     T m_lat;
     T m_lon;
     T m_alt;
 };
+
+typedef Coords<double> Coords3D;
+typedef Coords<float> Coords3F;
+
 }
 
 #endif // COORDS3D_H

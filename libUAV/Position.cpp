@@ -18,7 +18,7 @@
 
 namespace uav
 {
-Position::Position() : UavObject()
+Position::Position() : UavObject(), m_gps(geo::Coords3D())
 {
 }
 
@@ -33,36 +33,37 @@ void Position::process(Position::MessageGPS *message)
         if (message->lat.dirty() || message->lon.dirty() || message->alt.dirty())
         {
             geo::Coords3D c3d(message->lat.get(), message->lon.get(), message->alt.get());
-            setGps(c3d);
+            setGps(std::move(c3d));
         }
     }
 }
 
-geo::Coords3D<double> Position::gps() const
+geo::Coords3D Position::gps() const
 {
-    return _gps;
+    return m_gps.get();
 }
 
-void Position::setGps(const geo::Coords3D<double> &gps)
+void Position::setGps(geo::Coords3D &&gps)
 {
-    if (_gps == gps)
+    if (m_gps == gps)
         return;
-    _gps = gps;
-    BOOST_LOG_TRIVIAL(info) << "GPS POS {" << _gps.lat() << "; " << _gps.lon() << "; " << _gps.alt() << "}";
+    m_gps = gps;
+    BOOST_LOG_TRIVIAL(info) << "GPS POS {" << m_gps.get().lat() << "; " << m_gps.get().lon() << "; " << m_gps.get().alt() << "}";
 }
 
 void Position::setControl(PositionControlInterface *control)
 {
+    _control = control;
     if (_control)
         setHas(uav::Position::HAS::HAS_POSITION_CONTROL);
     else
         rmHas(uav::Position::HAS::HAS_POSITION_CONTROL);
-    _control = control;
 }
-void Position::goTo(const geo::Coords3D<double> &target)
+bool Position::goTo(geo::Coords3D &&target)
 {
     if (_control && has(uav::Position::HAS::HAS_POSITION_CONTROL))
-        _control->goTo(target);
+        return _control->goTo(std::move(target));
+    return false;
 }
 
 }

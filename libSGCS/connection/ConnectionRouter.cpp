@@ -26,7 +26,7 @@ ConnectionRouter::ConnectionRouter(Connection *connection,
                                    const std::vector<gcs::LeafInterface *> &leafs)
 : MAX_BUFFER_SIZE(2048), m_connection(connection), m_protos(protos), m_leafs(leafs)
 {
-    assert(m_connection == nullptr);
+    assert(m_connection != nullptr);
     m_stopThread.store(false);
     m_connectionsThread = new std::thread(&ConnectionRouter::runConection, this);
     m_uavCreateHnadler  = new UavCreateHandler(m_leafs);
