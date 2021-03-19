@@ -36,12 +36,12 @@ public:
     std::string portName() const;
     void setPortName(const std::string &portName);
 
-    uint16_t baudRate() const;
-    void setBaudRate(const uint16_t &baudRate);
+    uint32_t baudRate() const;
+    void setBaudRate(const uint32_t &baudRate);
 
 private:
     std::string m_portName;
-    uint16_t m_baudRate;
+    uint32_t m_baudRate;
 };
 
 #endif // SERIALCONFIG_H

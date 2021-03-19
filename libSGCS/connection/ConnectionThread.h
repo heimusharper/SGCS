@@ -35,8 +35,6 @@ public:
                 const std::vector<plugin::ProtocolPlugin *> &protos,
                 const std::vector<plugin::LeafPlugin *> &leafs);
 
-    ConnectionRouter *router() const;
-
 private:
     ConnectionRouter *_router = nullptr;
 };

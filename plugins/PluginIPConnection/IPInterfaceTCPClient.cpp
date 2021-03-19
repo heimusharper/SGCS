@@ -1,6 +1,6 @@
 #include "IPInterfaceTCPClient.h"
 
-IPInterfaceTCPClient::IPInterfaceTCPClient() : IPInterface()
+IPInterfaceTCPClient::IPInterfaceTCPClient() : IPInterface(), m_hostName(""), m_port(5760), MAX_LINE(1024)
 {
     m_stopThread.store(false);
     m_targetState.store((char)ConnectionStates::DISCONNECTED);

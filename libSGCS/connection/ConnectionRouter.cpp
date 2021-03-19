@@ -26,6 +26,7 @@ ConnectionRouter::ConnectionRouter(Connection *connection,
                                    const std::vector<gcs::LeafInterface *> &leafs)
 : MAX_BUFFER_SIZE(2048), m_connection(connection), m_protos(protos), m_leafs(leafs)
 {
+    assert(m_connection == nullptr);
     m_stopThread.store(false);
     m_connectionsThread = new std::thread(&ConnectionRouter::runConection, this);
     m_uavCreateHnadler  = new UavCreateHandler(m_leafs);
@@ -75,7 +76,7 @@ void ConnectionRouter::runConection()
             {
                 m_protocol = *iter;
                 BOOST_LOG_TRIVIAL(info) << "Ready " << m_protocol->name() << " protocol";
-                while (m_protos.empty())
+                while (!m_protos.empty())
                 {
                     auto obj = m_protos.back();
                     if (obj != m_protocol)
@@ -97,7 +98,7 @@ void ConnectionRouter::runConection()
             }
         }
         // bridge
-        if (m_protocol && m_connection && m_connection->isHasBytes())
+        if (m_protocol && m_connection->isHasBytes())
         {
             std::vector<uint8_t> bytes = m_connection->collectBytesAndClear();
             // BOOST_LOG_TRIVIAL(info) << "READ DATA SIZE " << bytes.size();

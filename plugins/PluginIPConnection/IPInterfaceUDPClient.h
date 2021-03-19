@@ -30,6 +30,10 @@ protected:
     void run();
 
 private:
+    std::string m_hostName;
+    uint16_t m_port;
+    const size_t MAX_LINE;
+
     std::atomic_bool m_reconnect;
     std::mutex m_bufferMutex;
     std::queue<uint8_t> m_readBuffer;
@@ -38,10 +42,6 @@ private:
     std::thread *m_thread = nullptr;
     std::atomic_bool m_stopThread;
     std::atomic_char m_targetState;
-
-    std::string m_hostName;
-    uint16_t m_port;
-    const size_t MAX_LINE = 1024;
 };
 
 #endif // IPINTERFACEUDPCLIENT_H

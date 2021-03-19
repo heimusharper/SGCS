@@ -25,6 +25,7 @@ ConnectionThread::ConnectionThread()
 
 ConnectionThread::~ConnectionThread()
 {
+    delete _router;
 }
 
 void ConnectionThread::create(Connection *connection,
@@ -46,11 +47,6 @@ void ConnectionThread::create(Connection *connection,
             leafsImpl.push_back(leaf);
     }
     _router = new ConnectionRouter(connection, protosImpl, leafsImpl);
-}
-
-ConnectionRouter *ConnectionThread::router() const
-{
-    return _router;
 }
 }
 }

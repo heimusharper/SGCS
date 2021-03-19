@@ -34,6 +34,9 @@ private:
         DISCONNECTED = 0x0,
         CONNECTED    = 0x1
     };
+    std::string m_hostName;
+    uint16_t m_port;
+    const size_t MAX_LINE;
 
     std::mutex m_bufferMutex;
     std::queue<uint8_t> m_readBuffer;
@@ -42,10 +45,6 @@ private:
     std::thread *m_thread = nullptr;
     std::atomic_bool m_stopThread;
     std::atomic_char m_targetState;
-
-    std::string m_hostName;
-    uint16_t m_port;
-    const size_t MAX_LINE = 1024;
 };
 
 #endif // IPINTERFACEUDPSERVER_H

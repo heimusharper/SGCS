@@ -1,6 +1,6 @@
 #include "IPInterfaceUDPClient.h"
 
-IPInterfaceUDPClient::IPInterfaceUDPClient() : IPInterface()
+IPInterfaceUDPClient::IPInterfaceUDPClient() : IPInterface(), m_hostName(""), m_port(14560), MAX_LINE(1024)
 {
     m_reconnect.store(true);
     m_stopThread.store(false);

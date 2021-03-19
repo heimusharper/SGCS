@@ -45,7 +45,7 @@ private:
 
 private:
     std::string m_portName;
-    uint16_t m_baudRate = 0;
+    uint32_t m_baudRate;
     const size_t MAX_BUFFER_SIZE;
     const size_t MAX_READ_BYTES_SIZE;
 

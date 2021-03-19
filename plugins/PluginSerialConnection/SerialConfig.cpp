@@ -24,7 +24,7 @@ void SerialConfig::fromNode(const YAML::Node &node)
     else
         m_portName = "";
     if (node["port_baud"])
-        m_baudRate = node["port_baud"].as<uint16_t>();
+        m_baudRate = node["port_baud"].as<uint32_t>();
     else
         m_baudRate = 0;
 }
@@ -39,12 +39,12 @@ void SerialConfig::setPortName(const std::string &portName)
     m_portName = portName;
 }
 
-uint16_t SerialConfig::baudRate() const
+uint32_t SerialConfig::baudRate() const
 {
     return m_baudRate;
 }
 
-void SerialConfig::setBaudRate(const uint16_t &baudRate)
+void SerialConfig::setBaudRate(const uint32_t &baudRate)
 {
     m_baudRate = baudRate;
 }

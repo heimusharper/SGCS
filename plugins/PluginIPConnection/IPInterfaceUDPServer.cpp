@@ -1,6 +1,6 @@
 #include "IPInterfaceUDPServer.h"
 
-IPInterfaceUDPServer::IPInterfaceUDPServer() : IPInterface()
+IPInterfaceUDPServer::IPInterfaceUDPServer() : IPInterface(), m_hostName(""), m_port(15760), MAX_LINE(1024)
 {
     m_stopThread.store(false);
     m_targetState.store((char)ConnectionStates::DISCONNECTED);
