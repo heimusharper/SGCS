@@ -22,70 +22,16 @@ namespace connection
 {
 UavProtocol::UavProtocol()
 {
-    m_readyMessages.store(false);
-    m_stopThread.store(false);
-    m_hasData.store(false);
-    m_messageGetterThread = new std::thread(&UavProtocol::runTasks, this);
+    m_valid.store(false);
 }
 
 UavProtocol::~UavProtocol()
 {
-    m_stopThread.store(true);
-    if (m_messageGetterThread)
-    {
-        if (m_messageGetterThread->joinable())
-            m_messageGetterThread->join();
-        delete m_messageGetterThread;
-    }
 }
 
 tools::CharMap UavProtocol::hello() const
 {
     return tools::CharMap();
-}
-
-void UavProtocol::setIsHasData(bool l)
-{
-    m_hasData.store(l);
-    if (!m_readyMessages.load() && l)
-        m_readyMessages.store(true);
-}
-
-void UavProtocol::runTasks()
-{
-    while (!m_stopThread.load())
-    {
-        m_mutex.lock();
-        if (isHasData())
-        {
-            uav::UavTask *n = message();
-            if (!m_uavs.contains(n->targetID))
-                setUAV(n->targetID, new uav::UAV());
-            m_uavs.at(n->targetID)->process(std::unique_ptr<uav::UavTask>(std::move(n)));
-        }
-        m_mutex.unlock();
-        usleep(1000);
-    }
-}
-
-bool UavProtocol::isHasData() const
-{
-    return m_hasData.load();
-}
-
-bool UavProtocol::isReadyMessages() const
-{
-    return m_readyMessages.load();
-}
-uav::UavTask *UavProtocol::message()
-{
-    m_tasksStoreMutex.lock();
-    uav::UavTask *obj = m_tasks.front();
-    m_tasks.pop_front();
-    if (m_tasks.empty())
-        setIsHasData(false);
-    m_tasksStoreMutex.unlock();
-    return obj;
 }
 
 void UavProtocol::setUAV(int id, uav::UAV *uav)
@@ -94,6 +40,17 @@ void UavProtocol::setUAV(int id, uav::UAV *uav)
     m_uavs.insert({id, uav});
     for (auto handler : _uavCreateHandlers)
         handler->onCreateUav(uav);
+}
+
+void UavProtocol::insertMessage(uav::UavTask *message)
+{
+    m_valid.store(true);
+    m_mutex.lock();
+    if (!m_uavs.contains(message->targetID))
+        setUAV(message->targetID, new uav::UAV());
+
+    m_uavs.at(message->targetID)->process(std::unique_ptr<uav::UavTask>(message));
+    m_mutex.unlock();
 }
 
 void UavProtocol::sendMessage(uav::UavSendMessage *message)
@@ -106,6 +63,11 @@ void UavProtocol::addUavCreateHandler(sgcs::connection::UavProtocol::UavCreateHa
     for (auto uav : m_uavs)
         handler->onCreateUav(uav.second);
     _uavCreateHandlers.push_back(handler);
+}
+
+bool UavProtocol::isValid() const
+{
+    return m_valid.load();
 }
 }
 }

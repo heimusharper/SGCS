@@ -150,7 +150,7 @@ void MavlinkProtocol::runMessageReader()
                             default:
                                 break;
                         }
-                        insertMessage<uav::UAV::Message>(m);
+                        insertMessage(m);
                         break;
                     }
                     default:
@@ -181,7 +181,7 @@ void MavlinkProtocol::runMessageReader()
                                 ahrs->pitch              = static_cast<float>(att.pitch / M_PI * 180.);
                                 ahrs->roll               = static_cast<float>(att.roll / M_PI * 180.);
                                 ahrs->yaw                = static_cast<float>(att.yaw / M_PI * 180.);
-                                insertMessage<uav::AHRS::Message>(ahrs);
+                                insertMessage(ahrs);
                                 break;
                             }
                             case MAVLINK_MSG_ID_GPS_RAW_INT:
@@ -192,13 +192,13 @@ void MavlinkProtocol::runMessageReader()
                                 gpsm->satelitesGPS      = gps.satellites_visible;
                                 gpsm->hdop              = gps.h_acc;
                                 gpsm->vdop              = gps.v_acc;
-                                insertMessage<uav::GPS::Message>(gpsm);
+                                insertMessage(gpsm);
 
                                 uav::Position::MessageGPS *pos = new uav::Position::MessageGPS(message.sysid);
                                 pos->lat                       = ((double)gps.lat) / 1.E7;
                                 pos->lon                       = ((double)gps.lon) / 1.E7;
                                 pos->alt                       = ((double)gps.alt) / 1000.;
-                                insertMessage<uav::Position::MessageGPS>(pos);
+                                insertMessage(pos);
                                 break;
                             }
                             case MAVLINK_MSG_ID_HOME_POSITION:
@@ -210,7 +210,7 @@ void MavlinkProtocol::runMessageReader()
                                                     ((double)pos.longitude) / 1.E7,
                                                     ((double)pos.altitude) / 1000.);
                                 home->position = coord;
-                                insertMessage<uav::Home::Message>(home);
+                                insertMessage(home);
                                 break;
                             }
                             case MAVLINK_MSG_ID_GPS_STATUS:

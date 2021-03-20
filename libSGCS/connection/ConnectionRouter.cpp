@@ -74,7 +74,7 @@ void ConnectionRouter::runConection()
                     continue;
                 auto iter = std::find_if(m_protos.begin(), m_protos.end(), [data](sgcs::connection::UavProtocol *proto) {
                     proto->process(data);
-                    return proto->isReadyMessages();
+                    return proto->isValid();
                 });
                 if (iter != m_protos.end())
                 {

@@ -31,15 +31,6 @@
 #include <type_traits>
 #include <vector>
 
-template <class T>
-concept is_UavMessage = requires(T *a)
-{
-    {
-        dynamic_cast<uav::UavTask *>(a) != nullptr
-    }
-    ->std::convertible_to<bool>;
-};
-
 namespace sgcs
 {
 namespace connection
@@ -60,48 +51,24 @@ public:
     explicit UavProtocol();
     virtual ~UavProtocol();
     virtual tools::CharMap hello() const;
-
     virtual std::string name() const = 0;
-
-    bool isHasData() const;
-    bool isReadyMessages() const;
-    uav::UavTask *message();
 
     void sendMessage(uav::UavSendMessage *message);
 
     void addUavCreateHandler(sgcs::connection::UavProtocol::UavCreateHandler *handler);
 
+    bool isValid() const;
+
 protected:
     virtual void setUAV(int id, uav::UAV *uav);
-
-    void setIsHasData(bool l);
-
-    template <is_UavMessage T>
-    void insertMessage(uav::UavTask *message)
-    {
-        m_tasksStoreMutex.lock();
-        m_tasks.remove_if([](uav::UavTask *msg) { return (dynamic_cast<T *>(msg) != nullptr); });
-        m_tasks.push_back(message);
-        m_tasksStoreMutex.unlock();
-        setIsHasData(true);
-    }
+    void insertMessage(uav::UavTask *message);
 
     std::map<int, uav::UAV *> m_uavs;
-
-    std::thread *m_messageGetterThread = nullptr;
     std::mutex m_mutex;
+    std::atomic_bool m_valid;
 
 private:
     std::list<sgcs::connection::UavProtocol::UavCreateHandler *> _uavCreateHandlers;
-
-    std::list<uav::UavTask *> m_tasks;
-    std::mutex m_tasksStoreMutex;
-    std::atomic_bool m_stopThread;
-    std::atomic_bool m_readyMessages;
-    void runTasks();
-
-private:
-    std::atomic_bool m_hasData;
 };
 }
 }
