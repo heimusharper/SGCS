@@ -17,8 +17,8 @@
 #ifndef PROTOCOLPLUGIN_H
 #define PROTOCOLPLUGIN_H
 
+#include "../connection/UavProtocol.h"
 #include "PluginInterface.h"
-#include <UavProtocol.h>
 
 namespace sgcs
 {
@@ -30,7 +30,7 @@ public:
     explicit ProtocolPlugin();
     virtual ~ProtocolPlugin() = default;
 
-    virtual uav::UavProtocol *instance() = 0;
+    virtual sgcs::connection::UavProtocol *instance() = 0;
 };
 }
 }

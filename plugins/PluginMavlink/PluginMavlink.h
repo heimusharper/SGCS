@@ -29,7 +29,7 @@ public:
     virtual ~PluginMavlink();
 
     std::string name() const override;
-    virtual uav::UavProtocol *instance() override;
+    virtual sgcs::connection::UavProtocol *instance() override;
 };
 
 extern "C" sgcs::plugin::PluginInterface *dlload(void)

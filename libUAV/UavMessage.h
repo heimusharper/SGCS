@@ -16,6 +16,7 @@
  */
 #ifndef UAVMESSAGE_H
 #define UAVMESSAGE_H
+#include <CharMap.h>
 #include <Optional.h>
 #include <vector>
 
@@ -33,7 +34,7 @@ class UavSendMessage
 {
 public:
     UavSendMessage();
-    virtual std::vector<uint8_t> pack() const = 0;
+    virtual tools::CharMap pack() const = 0;
 };
 }
 

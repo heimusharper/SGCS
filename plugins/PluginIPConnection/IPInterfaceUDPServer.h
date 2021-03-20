@@ -22,8 +22,8 @@ public:
     virtual void close() override final;
     virtual void doConnect(const std::string &host, uint16_t port) override final;
     // IO
-    virtual std::queue<uint8_t> readBuffer() override final;
-    virtual void writeBuffer(std::queue<uint8_t> &data) override final;
+    virtual void process(const tools::CharMap &data) override final;
+    virtual void processFromChild(const tools::CharMap &data) override final;
 
 protected:
     void run();
@@ -34,8 +34,8 @@ private:
     const size_t MAX_LINE;
 
     std::mutex m_bufferMutex;
-    std::queue<uint8_t> m_readBuffer;
-    std::queue<uint8_t> m_writeBuffer;
+    std::queue<tools::CharMap> m_readBuffer;
+    std::queue<tools::CharMap> m_writeBuffer;
 
     std::thread *m_thread = nullptr;
     std::atomic_bool m_stopThread;

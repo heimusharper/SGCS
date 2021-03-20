@@ -32,7 +32,18 @@ void IPInterfaceTCPClient::doConnect(const std::string &host, uint16_t port)
     m_bufferMutex.unlock();
 }
 
-std::queue<uint8_t> IPInterfaceTCPClient::readBuffer()
+void IPInterfaceTCPClient::process(const tools::CharMap &data)
+{
+    m_bufferMutex.lock();
+    m_writeBuffer.push(data);
+    m_bufferMutex.unlock();
+}
+
+void IPInterfaceTCPClient::processFromChild(const tools::CharMap &data)
+{
+}
+
+/*std::queue<uint8_t> IPInterfaceTCPClient::readBuffer()
 {
     if (!m_readBuffer.empty())
     {
@@ -45,20 +56,7 @@ std::queue<uint8_t> IPInterfaceTCPClient::readBuffer()
     }
     return std::queue<uint8_t>();
 }
-
-void IPInterfaceTCPClient::writeBuffer(std::queue<uint8_t> &data)
-{
-    if (!data.empty())
-    {
-        m_bufferMutex.lock();
-        while (!data.empty())
-        {
-            m_writeBuffer.push(data.front());
-            data.pop();
-        }
-        m_bufferMutex.unlock();
-    }
-}
+*/
 
 void IPInterfaceTCPClient::run()
 {
@@ -125,24 +123,24 @@ void IPInterfaceTCPClient::run()
 
         if (sock >= 0)
         {
-            char readBuffer[MAX_LINE];
-            int readBytesCount = recv(sock, (char *)readBuffer, MAX_LINE, MSG_DONTWAIT);
-
-            const size_t WRITE_SIZE = std::min(MAX_LINE, m_writeBuffer.size());
-            char writeBuffer[WRITE_SIZE];
+            tools::CharMap readBuffer;
+            readBuffer.data    = new char[MAX_LINE];
+            readBuffer.size    = MAX_LINE;
+            int readBytesCount = recv(sock, (char *)readBuffer.data, MAX_LINE, MSG_DONTWAIT);
             m_bufferMutex.lock();
-            // to readed buffer
-            for (int i = 0; i < readBytesCount; i++)
-                m_readBuffer.push(readBuffer[i]);
-            // prepare data to transmit
-            for (size_t i = 0; i < WRITE_SIZE; i++)
+            if (readBytesCount > 0)
             {
-                writeBuffer[i] = m_writeBuffer.front();
+                readBuffer.size = readBytesCount;
+                m_readBuffer.push(readBuffer);
+            }
+            // prepare data to transmit
+            while (!m_writeBuffer.empty())
+            {
+                tools::CharMap cm = m_writeBuffer.front();
                 m_writeBuffer.pop();
+                send(sock, (const char *)cm.data, cm.size, MSG_CONFIRM);
             }
             m_bufferMutex.unlock();
-            if (WRITE_SIZE > 0)
-                send(sock, (const char *)writeBuffer, WRITE_SIZE, MSG_CONFIRM);
         }
         if (sock >= 0)
             usleep(100);

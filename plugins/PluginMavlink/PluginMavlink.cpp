@@ -29,7 +29,7 @@ std::string PluginMavlink::name() const
     return "Mavlink";
 }
 
-uav::UavProtocol *PluginMavlink::instance()
+sgcs::connection::UavProtocol *PluginMavlink::instance()
 {
     return new MavlinkProtocol();
 }

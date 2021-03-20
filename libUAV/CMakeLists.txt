@@ -11,7 +11,6 @@ FIND_PACKAGE(Boost)
 # add srcs
 SET(SRC_LIST
     UAV.cpp
-    UavProtocol.cpp
     UavMessage.cpp
     UavObject.cpp
     AHRS.cpp
@@ -21,7 +20,6 @@ SET(SRC_LIST
     )
 SET(HEADER_LIST
     UAV.h
-    UavProtocol.h
     UavMessage.h
     UavObject.h
     AHRS.h

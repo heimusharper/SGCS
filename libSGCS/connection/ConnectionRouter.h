@@ -20,10 +20,11 @@
 #include "../plugins/LeafInterface.h"
 #include "../plugins/ProtocolPlugin.h"
 #include "Connection.h"
+#include "UavProtocol.h"
 #include <UAV.h>
-#include <UavProtocol.h>
 #include <atomic>
 #include <boost/log/trivial.hpp>
+#include <iterator>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -33,18 +34,21 @@ namespace sgcs
 {
 namespace connection
 {
-class ConnectionRouter
+class ConnectionRouter : public tools::IOObject
 {
 public:
     ConnectionRouter(Connection *connection,
-                     const std::vector<uav::UavProtocol *> &protos,
+                     const std::vector<sgcs::connection::UavProtocol *> &protos,
                      const std::vector<gcs::LeafInterface *> &leafs);
     ~ConnectionRouter();
+
+    virtual void process(const tools::CharMap &data) override final;
+    virtual void processFromChild(const tools::CharMap &data) override final;
 
 private:
     void runConection();
 
-    class UavCreateHandler : public uav::UavProtocol::UavCreateHandler
+    class UavCreateHandler : public sgcs::connection::UavProtocol::UavCreateHandler
     {
     public:
         UavCreateHandler(const std::vector<gcs::LeafInterface *> &leafs) : m_leafs(leafs)
@@ -60,14 +64,15 @@ private:
 private:
     const std::size_t MAX_BUFFER_SIZE;
     Connection *m_connection = nullptr;
-    std::vector<uav::UavProtocol *> m_protos;
+    std::vector<sgcs::connection::UavProtocol *> m_protos;
     std::vector<gcs::LeafInterface *> m_leafs;
 
     UavCreateHandler *m_uavCreateHnadler = nullptr;
 
-    uav::UavProtocol *m_protocol = nullptr;
+    sgcs::connection::UavProtocol *m_protocol = nullptr;
 
-    std::queue<char> m_buffer;
+    std::mutex m_bufferMutex;
+    std::vector<tools::CharMap> m_buffer;
 
     std::thread *m_connectionsThread = nullptr;
     std::atomic_bool m_stopThread {false};

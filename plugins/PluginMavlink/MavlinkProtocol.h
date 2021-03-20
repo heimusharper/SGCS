@@ -18,10 +18,10 @@
 #ifndef MAVLINKPROTOCOL_H
 #define MAVLINKPROTOCOL_H
 #include "MavlinkHelper.h"
-#include <UavProtocol.h>
 #include <atomic>
 #include <boost/log/trivial.hpp>
 #include <chrono>
+#include <connection/UavProtocol.h>
 #include <queue>
 #include <thread>
 
@@ -32,7 +32,7 @@ public:
     {
     }
 
-    virtual std::vector<uint8_t> pack() const override final;
+    virtual tools::CharMap pack() const override final;
     mavlink_message_t mavlink() const;
 
 private:
@@ -42,26 +42,27 @@ private:
 class MavlinkPositionControl : public uav::Position::PositionControlInterface
 {
 public:
-    MavlinkPositionControl(uav::UavProtocol *proto, uint8_t id) : m_proto(proto), m_id(id)
+    MavlinkPositionControl(sgcs::connection::UavProtocol *proto, uint8_t id) : m_proto(proto), m_id(id)
     {
     }
     virtual bool goTo(geo::Coords3D &&target) override final;
 
 private:
-    uav::UavProtocol *m_proto = nullptr;
-    uint8_t m_id              = 0;
+    sgcs::connection::UavProtocol *m_proto = nullptr;
+    uint8_t m_id                           = 0;
 };
 
-class MavlinkProtocol : public uav::UavProtocol
+class MavlinkProtocol : public sgcs::connection::UavProtocol
 {
 public:
     explicit MavlinkProtocol();
     ~MavlinkProtocol();
 
     virtual std::string name() const override;
-    virtual std::vector<uint8_t> hello() const override;
+    virtual tools::CharMap hello() const override;
 
-    virtual void onReceived(const std::vector<uint8_t> &data) override;
+    virtual void process(const tools::CharMap &data) override final;
+    virtual void processFromChild(const tools::CharMap &data) override final;
 
 protected:
     virtual void setUAV(int id, uav::UAV *uav) override final;
@@ -84,7 +85,7 @@ private:
     std::thread *_dataProcessorThread    = nullptr;
     std::thread *_messageProcessorThread = nullptr;
     std::thread *_pingProcessorThread    = nullptr;
-    std::queue<std::vector<uint8_t>> _dataTasks;
+    std::queue<tools::CharMap> _dataTasks;
     std::mutex _dataTaskMutex;
 
     std::map<int, MavlinkHelper::ProcessingMode> _modes;

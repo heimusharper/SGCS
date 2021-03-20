@@ -18,6 +18,7 @@
 #define CONNECTION_H
 
 #include "UavProtocol.h"
+#include <IOObject.h>
 #include <memory.h>
 #include <vector>
 
@@ -25,23 +26,11 @@ namespace sgcs
 {
 namespace connection
 {
-class Connection
+class Connection : public tools::IOObject
 {
 public:
     explicit Connection();
     virtual ~Connection();
-
-    virtual void onTransmit(const std::vector<uint8_t> &data) = 0;
-
-    virtual std::vector<uint8_t> collectBytesAndClear() = 0;
-
-    virtual bool isHasBytes();
-
-protected:
-    void setHasBytes(bool l);
-
-private:
-    std::atomic_bool m_hasBytes;
 };
 }
 }

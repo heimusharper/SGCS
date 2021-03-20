@@ -16,7 +16,9 @@
  */
 #include "UavProtocol.h"
 
-namespace uav
+namespace sgcs
+{
+namespace connection
 {
 UavProtocol::UavProtocol()
 {
@@ -37,9 +39,9 @@ UavProtocol::~UavProtocol()
     }
 }
 
-std::vector<uint8_t> UavProtocol::hello() const
+tools::CharMap UavProtocol::hello() const
 {
-    return std::vector<uint8_t>();
+    return tools::CharMap();
 }
 
 void UavProtocol::setIsHasData(bool l)
@@ -94,32 +96,16 @@ void UavProtocol::setUAV(int id, uav::UAV *uav)
         handler->onCreateUav(uav);
 }
 
-void UavProtocol::sendMessage(UavSendMessage *message)
+void UavProtocol::sendMessage(uav::UavSendMessage *message)
 {
-    m_sendMutex.lock();
-    m_send.push_back(message);
-    m_sendMutex.unlock();
+    writeToParent(message->pack());
 }
 
-void UavProtocol::addUavCreateHandler(UavProtocol::UavCreateHandler *handler)
+void UavProtocol::addUavCreateHandler(sgcs::connection::UavProtocol::UavCreateHandler *handler)
 {
     for (auto uav : m_uavs)
         handler->onCreateUav(uav.second);
     _uavCreateHandlers.push_back(handler);
 }
-
-UavSendMessage *UavProtocol::next()
-{
-    uav::UavSendMessage *msg = nullptr;
-    m_sendMutex.lock();
-    if (!m_send.empty())
-    {
-        msg = m_send.front();
-        m_send.pop_front();
-        // send
-    }
-    m_sendMutex.unlock();
-    return msg;
 }
-
 }

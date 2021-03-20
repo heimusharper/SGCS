@@ -45,37 +45,17 @@ SerialConnection::~SerialConnection()
     }
 }
 
-void SerialConnection::onTransmit(const std::vector<uint8_t> &data)
+void SerialConnection::process(const tools::CharMap &data)
+{
+}
+
+void SerialConnection::processFromChild(const tools::CharMap &data)
 {
     m_mutex.lock();
-    {
-        CharMap *cm = new CharMap;
-        cm->data    = new char[data.size()];
-        memcpy(cm->data, data.data(), data.size());
-        cm->size = data.size();
-        m_writeBuffer.push(cm);
-    }
+    m_writeBuffer.push(data);
     while (m_writeBuffer.size() >= MAX_BUFFER_SIZE)
         m_writeBuffer.pop();
     m_mutex.unlock();
-}
-
-std::vector<uint8_t> SerialConnection::collectBytesAndClear()
-{
-    std::vector<uint8_t> bytes;
-    setHasBytes(false);
-    m_mutex.lock();
-    while (!m_readBuffer.empty())
-    {
-        CharMap *cm = m_readBuffer.front();
-        m_readBuffer.pop();
-
-        for (size_t i = 0; i < cm->size; i++)
-            bytes.push_back(cm->data[i]);
-        delete cm;
-    }
-    m_mutex.unlock();
-    return bytes;
 }
 
 void SerialConnection::connectToPort(const std::string &portName, int baudRate)
@@ -113,30 +93,25 @@ void SerialConnection::run()
             else
             {
                 // write
-                if (!m_writeBuffer.empty())
+                m_mutex.lock();
+                while (!m_writeBuffer.empty())
                 {
-                    m_mutex.lock();
-                    CharMap *cm = m_writeBuffer.front();
+                    tools::CharMap cm = m_writeBuffer.front();
                     m_writeBuffer.pop();
-                    m_mutex.unlock();
-                    write(serialDsc, cm->data, cm->size);
-                    delete cm;
+                    BOOST_LOG_TRIVIAL(info) << "WRITE";
+                    write(serialDsc, cm.data, cm.size);
                 }
+                m_mutex.unlock();
                 // read
                 {
                     int n = read(serialDsc, &read_buf, MAX_READ_BYTES_SIZE);
                     if (n > 0)
                     {
-                        CharMap *cm = new CharMap;
-                        cm->data    = new char[n];
-                        cm->size    = n;
-                        memcpy(cm->data, &read_buf, n);
-                        m_mutex.lock();
-                        m_readBuffer.push(cm);
-                        m_mutex.unlock();
-                        setHasBytes(true);
-                        if (cm->size > 0)
-                            setHasBytes(true);
+                        tools::CharMap cm;
+                        cm.data = new char[n];
+                        cm.size = n;
+                        memcpy(cm.data, &read_buf, n);
+                        writeToChild(cm);
                     }
                 }
             }

@@ -32,7 +32,7 @@ void ConnectionThread::create(Connection *connection,
                               const std::vector<plugin::ProtocolPlugin *> &protos,
                               const std::vector<plugin::LeafPlugin *> &leafs)
 {
-    std::vector<uav::UavProtocol *> protosImpl;
+    std::vector<sgcs::connection::UavProtocol *> protosImpl;
     for (auto x : protos)
     {
         auto inst = x->instance();

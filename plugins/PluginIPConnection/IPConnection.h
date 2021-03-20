@@ -30,10 +30,9 @@ class IPConnection : public sgcs::connection::Connection
 public:
     explicit IPConnection();
     virtual ~IPConnection();
-    virtual void onTransmit(const std::vector<uint8_t> &data) override final;
-    virtual std::vector<uint8_t> collectBytesAndClear() override final;
+    virtual void process(const tools::CharMap &data) override final;
+    virtual void processFromChild(const tools::CharMap &data) override final;
 
-    virtual bool isHasBytes() override final;
     void doConnectToPort(const std::string &hostName, uint16_t port);
     void doDisconnectFromPort();
 
@@ -42,7 +41,6 @@ private:
     uint16_t m_port           = 0;
     const int MAX_BUFFER_SIZE = 1024 * 10;
 
-    std::queue<uint8_t> m_writeBuffer;
     std::queue<uint8_t> m_readBuffer;
 
     IPInterface *m_interface = nullptr;

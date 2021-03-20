@@ -9,10 +9,13 @@ SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/../bin )
 # add srcs
 SET(SRC_LIST
     geo/Coords3D.cpp
+    CharMap.cpp
     )
 SET(HEADER_LIST
     geo/Coords3D.h
     Optional.h
+    CharMap.h
+    IOObject.h
     )
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST})

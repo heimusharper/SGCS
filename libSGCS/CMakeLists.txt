@@ -17,6 +17,7 @@ SET(SRC_LIST
     connection/Connection.cpp
     connection/ConnectionRouter.cpp
     connection/ConnectionThread.cpp
+    connection/UavProtocol.cpp
     plugins/ProtocolPlugin.cpp
     plugins/DataSourcePlugin.cpp
     plugins/PluginsLoader.cpp
@@ -28,6 +29,7 @@ SET(HEADER_LIST
     connection/Connection.h
     connection/ConnectionRouter.h
     connection/ConnectionThread.h
+    connection/UavProtocol.h
     plugins/PluginInterface.h
     plugins/ProtocolPlugin.h
     plugins/DataSourcePlugin.h

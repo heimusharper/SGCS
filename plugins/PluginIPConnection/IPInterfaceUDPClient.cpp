@@ -28,7 +28,18 @@ void IPInterfaceUDPClient::doConnect(const std::string &host, uint16_t port)
     m_reconnect.store(true);
 }
 
-std::queue<uint8_t> IPInterfaceUDPClient::readBuffer()
+void IPInterfaceUDPClient::process(const tools::CharMap &data)
+{
+    m_bufferMutex.lock();
+    m_writeBuffer.push(data);
+    m_bufferMutex.unlock();
+}
+
+void IPInterfaceUDPClient::processFromChild(const tools::CharMap &data)
+{
+}
+
+/*std::queue<uint8_t> IPInterfaceUDPClient::readBuffer()
 {
     if (!m_readBuffer.empty())
     {
@@ -54,7 +65,7 @@ void IPInterfaceUDPClient::writeBuffer(std::queue<uint8_t> &data)
         }
         m_bufferMutex.unlock();
     }
-}
+}*/
 
 void IPInterfaceUDPClient::run()
 {
@@ -109,24 +120,24 @@ void IPInterfaceUDPClient::run()
             char readBuffer[MAX_LINE];
             int n = recvfrom(sock, (char *)readBuffer, MAX_LINE, MSG_WAITALL, (struct sockaddr *)&servaddr, &len);
 
-            const size_t WRITE_SIZE = std::min(MAX_LINE, m_writeBuffer.size());
-            char writeBuffer[WRITE_SIZE];
             m_bufferMutex.lock();
-            // to readed buffer
-            for (int i = 0; i < n; i++)
-                m_readBuffer.push(readBuffer[i]);
+            tools::CharMap cm;
+            cm.data = new char[n];
+            memcpy(cm.data, readBuffer, n);
+            cm.size = n;
+            m_readBuffer.push(cm);
             // prepare data to transmit
-            for (size_t i = 0; i < WRITE_SIZE; i++)
+            while (!m_writeBuffer.empty())
             {
-                writeBuffer[i] = m_writeBuffer.front();
+                tools::CharMap cm = m_writeBuffer.front();
+                if (cm.size > 0)
+                {
+                    BOOST_LOG_TRIVIAL(info) << "::::>" << cm.size << " " << sock;
+                    sendto(sock, (const char *)cm.data, cm.size, 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+                }
                 m_writeBuffer.pop();
             }
             m_bufferMutex.unlock();
-            if (WRITE_SIZE > 0)
-            {
-                BOOST_LOG_TRIVIAL(info) << "::::>" << WRITE_SIZE << " " << sock;
-                sendto(sock, (const char *)writeBuffer, WRITE_SIZE, 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-            }
             usleep(100);
         }
         usleep(100000);

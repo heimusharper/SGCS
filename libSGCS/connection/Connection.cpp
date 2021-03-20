@@ -27,15 +27,5 @@ Connection::Connection()
 Connection::~Connection()
 {
 }
-
-bool Connection::isHasBytes()
-{
-    return m_hasBytes.load();
-}
-
-void Connection::setHasBytes(bool l)
-{
-    m_hasBytes.store(l);
-}
 }
 }

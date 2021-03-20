@@ -17,7 +17,7 @@
 #ifndef UAVPROTOCOL_H
 #define UAVPROTOCOL_H
 
-#include "UavMessage.h"
+#include <IOObject.h>
 #include <UAV.h>
 #include <UavMessage.h>
 #include <atomic>
@@ -40,9 +40,11 @@ concept is_UavMessage = requires(T *a)
     ->std::convertible_to<bool>;
 };
 
-namespace uav
+namespace sgcs
 {
-class UavProtocol
+namespace connection
+{
+class UavProtocol : public tools::IOObject
 {
 public:
     class UavCreateHandler
@@ -57,10 +59,9 @@ public:
     };
     explicit UavProtocol();
     virtual ~UavProtocol();
-    virtual std::vector<uint8_t> hello() const;
+    virtual tools::CharMap hello() const;
 
-    virtual std::string name() const                          = 0;
-    virtual void onReceived(const std::vector<uint8_t> &data) = 0;
+    virtual std::string name() const = 0;
 
     bool isHasData() const;
     bool isReadyMessages() const;
@@ -68,9 +69,7 @@ public:
 
     void sendMessage(uav::UavSendMessage *message);
 
-    void addUavCreateHandler(uav::UavProtocol::UavCreateHandler *handler);
-
-    uav::UavSendMessage *next();
+    void addUavCreateHandler(sgcs::connection::UavProtocol::UavCreateHandler *handler);
 
 protected:
     virtual void setUAV(int id, uav::UAV *uav);
@@ -93,7 +92,7 @@ protected:
     std::mutex m_mutex;
 
 private:
-    std::list<UavCreateHandler *> _uavCreateHandlers;
+    std::list<sgcs::connection::UavProtocol::UavCreateHandler *> _uavCreateHandlers;
 
     std::list<uav::UavTask *> m_tasks;
     std::mutex m_tasksStoreMutex;
@@ -101,12 +100,9 @@ private:
     std::atomic_bool m_readyMessages;
     void runTasks();
 
-    // send
-    std::list<uav::UavSendMessage *> m_send;
-    std::mutex m_sendMutex;
-
 private:
     std::atomic_bool m_hasData;
 };
+}
 }
 #endif // UAVPROTOCOL_H

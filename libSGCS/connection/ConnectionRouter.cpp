@@ -22,11 +22,13 @@ namespace sgcs
 namespace connection
 {
 ConnectionRouter::ConnectionRouter(Connection *connection,
-                                   const std::vector<uav::UavProtocol *> &protos,
+                                   const std::vector<UavProtocol *> &protos,
                                    const std::vector<gcs::LeafInterface *> &leafs)
 : MAX_BUFFER_SIZE(2048), m_connection(connection), m_protos(protos), m_leafs(leafs)
 {
     assert(m_connection != nullptr);
+    m_connection->addChild(this);
+
     m_stopThread.store(false);
     m_connectionsThread = new std::thread(&ConnectionRouter::runConection, this);
     m_uavCreateHnadler  = new UavCreateHandler(m_leafs);
@@ -43,74 +45,65 @@ ConnectionRouter::~ConnectionRouter()
     }
 }
 
+void ConnectionRouter::process(const tools::CharMap &data)
+{
+    m_bufferMutex.lock();
+    m_buffer.push_back(data);
+    m_bufferMutex.unlock();
+}
+
+void ConnectionRouter::processFromChild(const tools::CharMap &data)
+{
+}
+
 void ConnectionRouter::runConection()
 {
     while (!m_stopThread.load())
     {
-        // collect buffer
-        if (!m_protocol && m_connection->isHasBytes())
-        {
-            std::vector<uint8_t> bytes = m_connection->collectBytesAndClear();
-            for (std::size_t i = 0; i < bytes.size(); i++)
-                m_buffer.push(bytes[i]);
-            if (m_buffer.size() > MAX_BUFFER_SIZE)
-                while (m_buffer.size() > MAX_BUFFER_SIZE - MAX_BUFFER_SIZE / 4)
-                    m_buffer.pop();
-        }
         // try to create root protocol
-        if (!m_protocol && !m_buffer.empty())
+        if (!m_protocol)
         {
-            std::vector<uint8_t> bytes;
-            std::queue<char> tmp = m_buffer;
-            while (!tmp.empty())
+            while (!m_buffer.empty())
             {
-                bytes.push_back(tmp.front());
-                tmp.pop();
-            }
-            auto iter = std::find_if(m_protos.begin(), m_protos.end(), [bytes](uav::UavProtocol *proto) {
-                proto->onReceived(bytes);
-                return proto->isReadyMessages();
-            });
-
-            if (iter != m_protos.end())
-            {
-                m_protocol = *iter;
-                BOOST_LOG_TRIVIAL(info) << "Ready " << m_protocol->name() << " protocol";
-                while (!m_protos.empty())
+                m_bufferMutex.lock();
+                auto data = m_buffer.back();
+                m_buffer.pop_back();
+                m_bufferMutex.unlock();
+                // TODO: tools::CharMap size optimization
+                if (data.size <= 0)
+                    continue;
+                auto iter = std::find_if(m_protos.begin(), m_protos.end(), [data](sgcs::connection::UavProtocol *proto) {
+                    proto->process(data);
+                    return proto->isReadyMessages();
+                });
+                if (iter != m_protos.end())
                 {
-                    auto obj = m_protos.back();
-                    if (obj != m_protocol)
-                        delete obj;
-                    m_protos.pop_back();
+                    m_connection->removeChild(this); // end protocol creation
+                    m_buffer.clear();
+                    m_protocol = *iter;
+                    BOOST_LOG_TRIVIAL(info) << "Ready " << m_protocol->name() << " protocol";
+                    while (!m_protos.empty())
+                    {
+                        auto obj = m_protos.back();
+                        if (obj != m_protocol)
+                            delete obj;
+                        m_protos.pop_back();
+                    }
+                    m_protocol->addUavCreateHandler(m_uavCreateHnadler);
+                    m_connection->addChild(m_protocol);
+                    m_protocol->setParent(m_connection);
                 }
-                m_protocol->addUavCreateHandler(m_uavCreateHnadler);
             }
         }
 
         if (!m_protocol)
         {
             // send HELLO
-            for (const uav::UavProtocol *proto : m_protos)
+            for (const sgcs::connection::UavProtocol *proto : m_protos)
             {
-                std::vector<uint8_t> hello = proto->hello();
-                if (!hello.empty())
-                    m_connection->onTransmit(hello);
-            }
-        }
-        // bridge
-        if (m_protocol && m_connection->isHasBytes())
-        {
-            std::vector<uint8_t> bytes = m_connection->collectBytesAndClear();
-            // BOOST_LOG_TRIVIAL(info) << "READ DATA SIZE " << bytes.size();
-            if (!bytes.empty())
-            {
-                m_protocol->onReceived(bytes);
-            }
-            auto message = m_protocol->next();
-            if (message)
-            {
-                m_connection->onTransmit(message->pack());
-                delete message;
+                tools::CharMap hello = proto->hello();
+                if (hello.size > 0)
+                    m_connection->processFromChild(hello);
             }
         }
         usleep((!m_protocol) ? 2000000 : 50);

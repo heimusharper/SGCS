@@ -17,6 +17,7 @@
 #ifndef SERIALCONNECTION_H
 #define SERIALCONNECTION_H
 #include "SerialConfig.h"
+#include <CharMap.h>
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
 #include <connection/Connection.h>
@@ -37,8 +38,8 @@ public:
     explicit SerialConnection();
     virtual ~SerialConnection();
 
-    virtual void onTransmit(const std::vector<uint8_t> &data) override final;
-    virtual std::vector<uint8_t> collectBytesAndClear() override final;
+    virtual void process(const tools::CharMap &data) override final;
+    virtual void processFromChild(const tools::CharMap &data) override final;
 
     void connectToPort(const std::string &portName, int baudRate);
     void disconnectFromPort();
@@ -53,22 +54,7 @@ private:
     const size_t MAX_BUFFER_SIZE;
     const size_t MAX_READ_BYTES_SIZE;
 
-    struct CharMap
-    {
-        CharMap()                = default;
-        CharMap(const CharMap &) = delete;
-        CharMap(CharMap *)       = delete;
-        ~CharMap()
-        {
-            if (size > 0)
-                delete[] data;
-        }
-        char *data  = nullptr;
-        size_t size = 0;
-    };
-
-    std::queue<CharMap *> m_writeBuffer;
-    std::queue<CharMap *> m_readBuffer;
+    std::queue<tools::CharMap> m_writeBuffer;
 
     std::atomic_bool m_stop;
     std::atomic_bool m_isDirty;

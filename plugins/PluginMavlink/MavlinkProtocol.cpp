@@ -17,7 +17,7 @@
 #include "MavlinkProtocol.h"
 
 MavlinkProtocol::MavlinkProtocol()
-: uav::UavProtocol(), DIFFERENT_CHANNEL(1), _bootTime(std::chrono::_V2::system_clock::now())
+: sgcs::connection::UavProtocol(), DIFFERENT_CHANNEL(1), _bootTime(std::chrono::_V2::system_clock::now())
 {
     _stopThread.store(false);
     _dataProcessorThread    = new std::thread(&MavlinkProtocol::runParser, this);
@@ -53,7 +53,7 @@ std::string MavlinkProtocol::name() const
     return "Mavlink";
 }
 
-std::vector<uint8_t> MavlinkProtocol::hello() const
+tools::CharMap MavlinkProtocol::hello() const
 {
     std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> now =
     std::chrono::_V2::system_clock::now();
@@ -65,46 +65,39 @@ std::vector<uint8_t> MavlinkProtocol::hello() const
     return t.pack();
 }
 
-void MavlinkProtocol::onReceived(const std::vector<uint8_t> &data)
+void MavlinkProtocol::process(const tools::CharMap &data)
 {
     _dataTaskMutex.lock();
     _dataTasks.push(data);
     _dataTaskMutex.unlock();
 }
 
+void MavlinkProtocol::processFromChild(const tools::CharMap &data)
+{
+}
+
 void MavlinkProtocol::runParser()
 {
-    std::vector<uint8_t> buffer;
+    mavlink_message_t msg;
     while (!_stopThread.load())
     {
         // collect buffers
         while (!_dataTasks.empty())
         {
             _dataTaskMutex.lock();
-            std::vector<uint8_t> data = _dataTasks.front();
+            tools::CharMap data = _dataTasks.front();
             _dataTasks.pop();
             _dataTaskMutex.unlock();
-            for (int i = 0; i < data.size(); i++)
-                buffer.push_back(data.at(i));
-        }
-
-        // parser
-        if (!buffer.empty())
-        {
-            mavlink_message_t msg;
-            for (int i = 0; i < buffer.size(); i++)
+            for (int i = 0; i < data.size; i++)
             {
-                if (check((char)buffer[i], &msg))
+                if (check(data.data[i], &msg))
                 {
-                    // BOOST_LOG_TRIVIAL(debug) << "MAVLINK MSGID " << msg.msgid;
                     _mavlinkStoreMutex.lock();
                     _mavlinkMessages.push(msg);
                     _mavlinkStoreMutex.unlock();
                 }
             }
-            buffer.clear();
         }
-
         usleep(100);
     }
 }
@@ -302,17 +295,18 @@ bool MavlinkPositionControl::goTo(geo::Coords3D &&target)
     return false;
 }
 
-std::vector<uint8_t> MavlinkMessageType::pack() const
+tools::CharMap MavlinkMessageType::pack() const
 {
-    std::vector<uint8_t> data = std::vector<uint8_t>(MAVLINK_MAX_PACKET_LEN, (uint8_t)0x0);
-    uint16_t lenght           = mavlink_msg_to_send_buffer(data.data(), &m_mavlink);
+    tools::CharMap cm;
+    cm.data         = new char[MAVLINK_MAX_PACKET_LEN];
+    cm.size         = MAVLINK_MAX_PACKET_LEN;
+    uint16_t lenght = mavlink_msg_to_send_buffer((uint8_t *)cm.data, &m_mavlink);
     if (lenght > 0)
     {
-        while (data.size() > lenght)
-            data.pop_back();
-        return data;
+        cm.size = lenght;
+        return cm;
     }
-    return std::vector<uint8_t>();
+    return tools::CharMap();
 }
 
 mavlink_message_t MavlinkMessageType::mavlink() const

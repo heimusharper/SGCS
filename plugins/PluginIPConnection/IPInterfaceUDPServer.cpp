@@ -27,6 +27,17 @@ void IPInterfaceUDPServer::doConnect(const std::string &host, uint16_t port)
     m_bufferMutex.unlock();
 }
 
+void IPInterfaceUDPServer::process(const tools::CharMap &data)
+{
+    m_bufferMutex.lock();
+    m_writeBuffer.push(data);
+    m_bufferMutex.unlock();
+}
+
+void IPInterfaceUDPServer::processFromChild(const tools::CharMap &data)
+{
+}
+/*
 std::queue<uint8_t> IPInterfaceUDPServer::readBuffer()
 {
     if (!m_readBuffer.empty())
@@ -53,7 +64,7 @@ void IPInterfaceUDPServer::writeBuffer(std::queue<uint8_t> &data)
         }
         m_bufferMutex.unlock();
     }
-}
+}*/
 
 void IPInterfaceUDPServer::run()
 {
@@ -92,35 +103,37 @@ void IPInterfaceUDPServer::run()
             memset(&cliaddr, 0, sizeof(cliaddr));
             socklen_t len = sizeof(cliaddr); // len is value/resuslt
 
-            char readBuffer[MAX_LINE];
-            int n = recvfrom(sock, (char *)readBuffer, MAX_LINE, MSG_WAITALL, (struct sockaddr *)&cliaddr, &len);
-
-            const size_t WRITE_SIZE = std::min(MAX_LINE, m_writeBuffer.size());
-            char writeBuffer[WRITE_SIZE];
+            tools::CharMap readBuffer;
+            readBuffer.data = new char[MAX_LINE];
+            readBuffer.size = MAX_LINE;
+            int n = recvfrom(sock, (char *)readBuffer.data, MAX_LINE, MSG_WAITALL, (struct sockaddr *)&cliaddr, &len);
             m_bufferMutex.lock();
-            // to readed buffer
-            for (int i = 0; i < n; i++)
-                m_readBuffer.push(readBuffer[i]);
-            // prepare data to transmit
-            for (size_t i = 0; i < WRITE_SIZE; i++)
+            if (n > 0)
             {
-                writeBuffer[i] = m_writeBuffer.front();
-                m_writeBuffer.pop();
+                readBuffer.size = n;
+                m_readBuffer.push(readBuffer);
             }
-            m_bufferMutex.unlock();
-            if (WRITE_SIZE > 0)
+            // to readed buffer
+            // prepare data to transmit
+            while (!m_writeBuffer.empty())
             {
-                for (sockaddr_in client : clients)
+                tools::CharMap cm = m_writeBuffer.front();
+                m_writeBuffer.pop();
+                if (cm.size > 0)
                 {
-                    const size_t l = sizeof(client);
-                    sendto(sock, (const char *)writeBuffer, WRITE_SIZE, MSG_CONFIRM, (const struct sockaddr *)&client, l);
+                    for (sockaddr_in client : clients)
+                    {
+                        const size_t l = sizeof(client);
+                        sendto(sock, (const char *)cm.data, cm.size, MSG_CONFIRM, (const struct sockaddr *)&client, l);
+                    }
                 }
             }
+            m_bufferMutex.unlock();
 
             // service
             // search exists clients
             bool has = false;
-            for (int i = 0; i < clients.size(); i++)
+            for (size_t i = 0; i < clients.size(); i++)
                 if (clients.at(i).sin_addr.s_addr == cliaddr.sin_addr.s_addr && clients.at(i).sin_port == cliaddr.sin_port)
                     has = true;
             if (!has)
