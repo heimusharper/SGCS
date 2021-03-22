@@ -2,9 +2,8 @@
 
 IPInterfaceTCPClient::IPInterfaceTCPClient() : IPInterface(), m_hostName(""), m_port(5760), MAX_LINE(1024)
 {
+    m_reconnect.store(true);
     m_stopThread.store(false);
-    m_targetState.store((char)ConnectionStates::DISCONNECTED);
-
     m_thread = new std::thread(&IPInterfaceTCPClient::run, this);
 }
 
@@ -18,9 +17,7 @@ IPInterfaceTCPClient::~IPInterfaceTCPClient()
 
 void IPInterfaceTCPClient::close()
 {
-    m_bufferMutex.lock();
-    m_targetState.store((char)ConnectionStates::DISCONNECTED);
-    m_bufferMutex.unlock();
+    m_reconnect.store(false);
 }
 
 void IPInterfaceTCPClient::doConnect(const std::string &host, uint16_t port)
@@ -28,19 +25,20 @@ void IPInterfaceTCPClient::doConnect(const std::string &host, uint16_t port)
     m_bufferMutex.lock();
     m_hostName = host;
     m_port     = port;
-    m_targetState.store((char)ConnectionStates::CONNECTED);
     m_bufferMutex.unlock();
+    m_reconnect.store(true);
 }
 
-void IPInterfaceTCPClient::process(const tools::CharMap &data)
+void IPInterfaceTCPClient::pipeProcessFromParent(const tools::CharMap &data)
 {
     m_bufferMutex.lock();
     m_writeBuffer.push(data);
     m_bufferMutex.unlock();
 }
 
-void IPInterfaceTCPClient::processFromChild(const tools::CharMap &data)
+void IPInterfaceTCPClient::pipeProcessFromChild(const tools::CharMap &data)
 {
+    pipeWriteToParent(data);
 }
 
 /*std::queue<uint8_t> IPInterfaceTCPClient::readBuffer()
@@ -61,25 +59,16 @@ void IPInterfaceTCPClient::processFromChild(const tools::CharMap &data)
 void IPInterfaceTCPClient::run()
 {
     TCPSocket sock = -1;
-    std::string nowHostName;
-    uint16_t nowPort = 0;
 
     while (!m_stopThread.load())
     {
-        char nowState = (char)((sock == 0) ? ConnectionStates::DISCONNECTED : ConnectionStates::CONNECTED);
-        if (nowState != (char)m_targetState.load())
+        if (m_reconnect.load() && sock >= 0)
         {
-            // state changed
-            if (m_targetState.load() == (char)ConnectionStates::DISCONNECTED)
-            {
-                sock = -1;
-            }
-            else
-            {
-                nowPort = 0;
-            }
+            shutdown(sock, SHUT_RDWR);
+            sock = -1;
+            m_reconnect.store(false);
         }
-        if (m_targetState.load() == (char)ConnectionStates::CONNECTED && (nowHostName != m_hostName || nowPort != m_port))
+        if (sock < 0)
         {
             m_bufferMutex.lock();
             // reconnect
@@ -92,20 +81,11 @@ void IPInterfaceTCPClient::run()
             int ret                  = inet_pton(AF_INET, m_hostName.c_str(), &servaddr.sin_addr);
             if (ret == 1)
             {
-                // reconnect
-                if (sock >= 0)
-                {
-                    shutdown(sock, SHUT_RDWR);
-                }
                 sock = socket(AF_INET, SOCK_STREAM, 0);
                 if (sock >= 0)
                 {
                     if (connect(sock, (const struct sockaddr *)&servaddr, sizeof(servaddr)) >= 0)
-                    {
                         BOOST_LOG_TRIVIAL(info) << "Connected TCP socket " << m_hostName << ":" << m_port;
-                        nowHostName = m_hostName;
-                        nowPort     = m_port;
-                    }
                     else
                     {
                         shutdown(sock, SHUT_RDWR);
@@ -131,7 +111,7 @@ void IPInterfaceTCPClient::run()
             if (readBytesCount > 0)
             {
                 readBuffer.size = readBytesCount;
-                m_readBuffer.push(readBuffer);
+                pipeWriteToParent(readBuffer);
             }
             // prepare data to transmit
             while (!m_writeBuffer.empty())
@@ -146,5 +126,9 @@ void IPInterfaceTCPClient::run()
             usleep(100);
         else
             usleep(1000000);
+    }
+    if (sock > 0)
+    {
+        shutdown(sock, SHUT_RDWR);
     }
 }

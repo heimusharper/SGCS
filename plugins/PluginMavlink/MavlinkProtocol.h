@@ -61,8 +61,8 @@ public:
     virtual std::string name() const override;
     virtual tools::CharMap hello() const override;
 
-    virtual void process(const tools::CharMap &data) override final;
     virtual void processFromChild(const tools::CharMap &data) override final;
+    virtual void processFromParent(const tools::CharMap &data) override final;
 
 protected:
     virtual void setUAV(int id, uav::UAV *uav) override final;

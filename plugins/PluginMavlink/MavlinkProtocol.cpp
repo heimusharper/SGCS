@@ -65,7 +65,7 @@ tools::CharMap MavlinkProtocol::hello() const
     return t.pack();
 }
 
-void MavlinkProtocol::process(const tools::CharMap &data)
+void MavlinkProtocol::processFromParent(const tools::CharMap &data)
 {
     _dataTaskMutex.lock();
     _dataTasks.push(data);
@@ -238,7 +238,6 @@ void MavlinkProtocol::runPing()
 {
     while (!_stopThread.load())
     {
-        BOOST_LOG_TRIVIAL(info) << "PING";
         mavlink_message_t message;
         mavlink_msg_heartbeat_pack(255, 0, &message, MAV_TYPE_GCS, MAV_AUTOPILOT_GENERIC, 0, 0, 0);
         MavlinkMessageType *msg = new MavlinkMessageType(std::move(message));

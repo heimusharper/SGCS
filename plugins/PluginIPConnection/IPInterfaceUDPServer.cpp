@@ -27,14 +27,14 @@ void IPInterfaceUDPServer::doConnect(const std::string &host, uint16_t port)
     m_bufferMutex.unlock();
 }
 
-void IPInterfaceUDPServer::process(const tools::CharMap &data)
+void IPInterfaceUDPServer::pipeProcessFromParent(const tools::CharMap &data)
 {
     m_bufferMutex.lock();
     m_writeBuffer.push(data);
     m_bufferMutex.unlock();
 }
 
-void IPInterfaceUDPServer::processFromChild(const tools::CharMap &data)
+void IPInterfaceUDPServer::pipeProcessFromChild(const tools::CharMap &data)
 {
 }
 /*

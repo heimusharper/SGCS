@@ -10,7 +10,8 @@ IPInterfaceUDPClient::IPInterfaceUDPClient() : IPInterface(), m_hostName(""), m_
 IPInterfaceUDPClient::~IPInterfaceUDPClient()
 {
     m_stopThread.store(true);
-    m_thread->join();
+    if (m_thread->joinable())
+        m_thread->join();
     delete m_thread;
 }
 
@@ -28,14 +29,14 @@ void IPInterfaceUDPClient::doConnect(const std::string &host, uint16_t port)
     m_reconnect.store(true);
 }
 
-void IPInterfaceUDPClient::process(const tools::CharMap &data)
+void IPInterfaceUDPClient::pipeProcessFromParent(const tools::CharMap &data)
 {
     m_bufferMutex.lock();
     m_writeBuffer.push(data);
     m_bufferMutex.unlock();
 }
 
-void IPInterfaceUDPClient::processFromChild(const tools::CharMap &data)
+void IPInterfaceUDPClient::pipeProcessFromChild(const tools::CharMap &data)
 {
 }
 

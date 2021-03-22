@@ -23,8 +23,8 @@ IPConnection::IPConnection()
 {
     // TODO: tempolary onnly UDP client mode
     m_interface = new IPInterfaceTCPClient();
-    m_interface->setParent(this);
-    addChild(m_interface);
+    m_interface->pipeSetParent(this);
+    pipeAddChild(m_interface);
     // m_interface = new IPInterfaceUDPServer();
     // m_interface = new IPInterfaceUDPClient();
     if (!m_hostName.empty() && m_port >= 1024)
@@ -40,9 +40,9 @@ IPConnection::~IPConnection()
         delete m_interface;
 }
 
-void IPConnection::process(const tools::CharMap &data)
+void IPConnection::processFromParent(const tools::CharMap &data)
 {
-    writeToChild(data);
+    // writeToChild(data);
 }
 
 void IPConnection::processFromChild(const tools::CharMap &data)
@@ -52,6 +52,18 @@ void IPConnection::processFromChild(const tools::CharMap &data)
     {
         m_interface->process(data);
     }*/
+    // writeToParent(data);
+    pipewriteToChilds(data);
+}
+
+void IPConnection::pipeProcessFromParent(const tools::CharMap &data)
+{
+    // nope
+}
+
+void IPConnection::pipeProcessFromChild(const tools::CharMap &data)
+{
+    writeToChild(data);
 }
 
 /*std::vector<uint8_t> IPConnection::collectBytesAndClear()

@@ -1,12 +1,12 @@
 #ifndef IPINTERFACE_H
 #define IPINTERFACE_H
-#include "IOObject.h"
+#include "DoublePipe.h"
 #include <CharMap.h>
 #include <atomic>
 #include <queue>
 #include <string>
 
-class IPInterface : public tools::IOObject
+class IPInterface : public DoublePipe
 {
 public:
     IPInterface();

@@ -38,8 +38,8 @@ public:
     explicit SerialConnection();
     virtual ~SerialConnection();
 
-    virtual void process(const tools::CharMap &data) override final;
     virtual void processFromChild(const tools::CharMap &data) override final;
+    virtual void processFromParent(const tools::CharMap &data) override final;
 
     void connectToPort(const std::string &portName, int baudRate);
     void disconnectFromPort();

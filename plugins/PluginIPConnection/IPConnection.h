@@ -25,13 +25,15 @@
 #include <connection/Connection.h>
 #include <queue>
 
-class IPConnection : public sgcs::connection::Connection
+class IPConnection : public sgcs::connection::Connection, public DoublePipe
 {
 public:
     explicit IPConnection();
     virtual ~IPConnection();
-    virtual void process(const tools::CharMap &data) override final;
+    virtual void processFromParent(const tools::CharMap &data) override final;
     virtual void processFromChild(const tools::CharMap &data) override final;
+    virtual void pipeProcessFromParent(const tools::CharMap &data) override final;
+    virtual void pipeProcessFromChild(const tools::CharMap &data) override final;
 
     void doConnectToPort(const std::string &hostName, uint16_t port);
     void doDisconnectFromPort();

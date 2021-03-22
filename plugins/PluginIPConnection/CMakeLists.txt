@@ -10,6 +10,7 @@ FIND_PACKAGE(Boost)
 
 # add srcs
 SET(SRC_LIST
+    DoublePipe.cpp
     PluginIPConnection.cpp
     IPConnection.cpp
     IPConfig.cpp
@@ -19,6 +20,7 @@ SET(SRC_LIST
     IPInterfaceTCPClient.cpp
     )
 SET(HEADER_LIST
+    DoublePipe.h
     PluginIPConnection.h
     IPConnection.h
     IPConfig.h

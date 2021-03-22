@@ -23,8 +23,8 @@ public:
     virtual void close() override final;
     virtual void doConnect(const std::string &host, uint16_t port) override final;
 
-    virtual void process(const tools::CharMap &data) override final;
-    virtual void processFromChild(const tools::CharMap &data) override final;
+    virtual void pipeProcessFromParent(const tools::CharMap &data) override final;
+    virtual void pipeProcessFromChild(const tools::CharMap &data) override final;
 
 protected:
     void run();

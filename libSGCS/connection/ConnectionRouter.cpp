@@ -45,15 +45,15 @@ ConnectionRouter::~ConnectionRouter()
     }
 }
 
-void ConnectionRouter::process(const tools::CharMap &data)
+void ConnectionRouter::processFromChild(const tools::CharMap &data)
+{
+}
+
+void ConnectionRouter::processFromParent(const tools::CharMap &data)
 {
     m_bufferMutex.lock();
     m_buffer.push_back(data);
     m_bufferMutex.unlock();
-}
-
-void ConnectionRouter::processFromChild(const tools::CharMap &data)
-{
 }
 
 void ConnectionRouter::runConection()
@@ -73,7 +73,7 @@ void ConnectionRouter::runConection()
                 if (data.size <= 0)
                     continue;
                 auto iter = std::find_if(m_protos.begin(), m_protos.end(), [data](sgcs::connection::UavProtocol *proto) {
-                    proto->process(data);
+                    proto->processFromParent(data);
                     return proto->isValid();
                 });
                 if (iter != m_protos.end())

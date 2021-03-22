@@ -19,7 +19,7 @@ public:
     void writeToChild(const CharMap &data)
     {
         for (auto c : m_childs)
-            c->process(data);
+            c->processFromParent(data);
     }
     void setParent(IOObject *parent)
     {
@@ -35,12 +35,12 @@ public:
             m_parent->processFromChild(data);
     }
 
-    virtual void process(const CharMap &data)          = 0;
-    virtual void processFromChild(const CharMap &data) = 0;
+    virtual void processFromParent(const CharMap &data) = 0;
+    virtual void processFromChild(const CharMap &data)  = 0;
 
 private:
     std::list<IOObject *> m_childs;
-    IOObject *m_parent;
+    IOObject *m_parent = nullptr;
 };
 }
 

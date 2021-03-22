@@ -45,8 +45,9 @@ SerialConnection::~SerialConnection()
     }
 }
 
-void SerialConnection::process(const tools::CharMap &data)
+void SerialConnection::processFromParent(const tools::CharMap &data)
 {
+    // nope
 }
 
 void SerialConnection::processFromChild(const tools::CharMap &data)
