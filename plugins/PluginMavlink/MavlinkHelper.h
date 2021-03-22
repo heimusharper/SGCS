@@ -17,6 +17,52 @@ struct MavlinkHelper
         CAMERA,
         UNDEFINED
     };
+    enum class Autopilot
+    {
+        APM,
+        PIXHAWK,
+        INVALID
+    };
+
+    struct Processing
+    {
+        ProcessingMode pm;
+        Autopilot ap;
+    };
+
+    static Autopilot mavlinkAutopilot2SGCS(MAV_AUTOPILOT ap)
+    {
+        switch (ap)
+        {
+            case MAV_AUTOPILOT_ARDUPILOTMEGA:
+                return Autopilot::APM;
+                break;
+            case MAV_AUTOPILOT_INVALID:
+                return Autopilot::INVALID;
+            case MAV_AUTOPILOT_GENERIC:
+            case MAV_AUTOPILOT_RESERVED:
+            case MAV_AUTOPILOT_SLUGS:
+            case MAV_AUTOPILOT_OPENPILOT:
+            case MAV_AUTOPILOT_GENERIC_WAYPOINTS_ONLY:
+            case MAV_AUTOPILOT_GENERIC_WAYPOINTS_AND_SIMPLE_NAVIGATION_ONLY:
+            case MAV_AUTOPILOT_GENERIC_MISSION_FULL:
+            case MAV_AUTOPILOT_PPZ:
+            case MAV_AUTOPILOT_UDB:
+            case MAV_AUTOPILOT_FP:
+            case MAV_AUTOPILOT_PX4:
+            case MAV_AUTOPILOT_SMACCMPILOT:
+            case MAV_AUTOPILOT_AUTOQUAD:
+            case MAV_AUTOPILOT_ARMAZILA:
+            case MAV_AUTOPILOT_AEROB:
+            case MAV_AUTOPILOT_ASLUAV:
+            case MAV_AUTOPILOT_SMARTAP:
+            case MAV_AUTOPILOT_AIRRAILS:
+            default:
+                return Autopilot::PIXHAWK;
+        }
+        return Autopilot::INVALID;
+    }
+
     static ProcessingMode mavlinkUavType2SGCS(MAV_TYPE type)
     {
         switch (type)

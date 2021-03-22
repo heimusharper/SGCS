@@ -72,8 +72,12 @@ private:
     void runMessageReader();
     void runPing();
 
+    void doConfigure();
+
 private:
     bool check(char c, mavlink_message_t *msg);
+
+    MavlinkHelper::Autopilot m_autopilot;
 
     const int DIFFERENT_CHANNEL;
     const std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> _bootTime;
@@ -88,7 +92,7 @@ private:
     std::queue<tools::CharMap> _dataTasks;
     std::mutex _dataTaskMutex;
 
-    std::map<int, MavlinkHelper::ProcessingMode> _modes;
+    std::map<int, MavlinkHelper::Processing> _modes;
 };
 
 #endif // MAVLINKPROTOCOL_H

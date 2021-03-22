@@ -17,7 +17,10 @@
 #include "MavlinkProtocol.h"
 
 MavlinkProtocol::MavlinkProtocol()
-: sgcs::connection::UavProtocol(), DIFFERENT_CHANNEL(1), _bootTime(std::chrono::_V2::system_clock::now())
+: sgcs::connection::UavProtocol()
+, m_autopilot(MavlinkHelper::Autopilot::INVALID)
+, DIFFERENT_CHANNEL(1)
+, _bootTime(std::chrono::_V2::system_clock::now())
 {
     _stopThread.store(false);
     _dataProcessorThread    = new std::thread(&MavlinkProtocol::runParser, this);
@@ -124,33 +127,41 @@ void MavlinkProtocol::runMessageReader()
                         m->type              = uav::UAVType::UNDEFINED;
                         mavlink_heartbeat_t hrt;
                         mavlink_msg_heartbeat_decode(&message, &hrt);
-                        MavlinkHelper::ProcessingMode type = MavlinkHelper::mavlinkUavType2SGCS((MAV_TYPE)hrt.type);
-                        _modes.insert(std::pair(message.sysid, type));
-                        switch (type)
+
+                        MavlinkHelper::Autopilot ap = MavlinkHelper::mavlinkAutopilot2SGCS((MAV_AUTOPILOT)hrt.autopilot);
+                        if (ap != MavlinkHelper::Autopilot::INVALID)
                         {
-                            case MavlinkHelper::ProcessingMode::ANT:
-                                break;
-                            case MavlinkHelper::ProcessingMode::CAMERA:
-                                break;
-                            case MavlinkHelper::ProcessingMode::GIMBAL:
-                                break;
-                            case MavlinkHelper::ProcessingMode::MODEM:
-                                break;
-                            case MavlinkHelper::ProcessingMode::UAV_MC:
-                                m->type = uav::UAVType::MULTICOPTER;
-                                break;
-                            case MavlinkHelper::ProcessingMode::UAV_PLANE:
-                                m->type = uav::UAVType::PLANE;
-                                break;
-                            case MavlinkHelper::ProcessingMode::UAV_VTOL:
-                                m->type = uav::UAVType::VTOL;
-                                break;
-                            case MavlinkHelper::ProcessingMode::UNDEFINED:
-                                break;
-                            default:
-                                break;
+                            MavlinkHelper::ProcessingMode type = MavlinkHelper::mavlinkUavType2SGCS((MAV_TYPE)hrt.type);
+                            MavlinkHelper::Processing proc;
+                            proc.ap = ap;
+                            proc.pm = type;
+                            _modes.insert(std::pair(message.sysid, proc));
+                            switch (type)
+                            {
+                                case MavlinkHelper::ProcessingMode::ANT:
+                                    break;
+                                case MavlinkHelper::ProcessingMode::CAMERA:
+                                    break;
+                                case MavlinkHelper::ProcessingMode::GIMBAL:
+                                    break;
+                                case MavlinkHelper::ProcessingMode::MODEM:
+                                    break;
+                                case MavlinkHelper::ProcessingMode::UAV_MC:
+                                    m->type = uav::UAVType::MULTICOPTER;
+                                    break;
+                                case MavlinkHelper::ProcessingMode::UAV_PLANE:
+                                    m->type = uav::UAVType::PLANE;
+                                    break;
+                                case MavlinkHelper::ProcessingMode::UAV_VTOL:
+                                    m->type = uav::UAVType::VTOL;
+                                    break;
+                                case MavlinkHelper::ProcessingMode::UNDEFINED:
+                                    break;
+                                default:
+                                    break;
+                            }
+                            insertMessage(m);
                         }
-                        insertMessage(m);
                         break;
                     }
                     default:
@@ -159,7 +170,8 @@ void MavlinkProtocol::runMessageReader()
             }
             else
             {
-                MavlinkHelper::ProcessingMode processMode = _modes[message.msgid];
+                MavlinkHelper::ProcessingMode processMode = _modes[message.msgid].pm;
+                MavlinkHelper::Autopilot ap               = _modes[message.msgid].ap;
 
                 switch (processMode)
                 {
@@ -245,6 +257,10 @@ void MavlinkProtocol::runPing()
 
         usleep(1000000);
     }
+}
+
+void MavlinkProtocol::doConfigure()
+{
 }
 
 void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
