@@ -54,7 +54,7 @@ tools::CharMap MavlinkProtocol::hello() const
     mavlink_message_t msg;
     // mavlink_msg_heartbeat_pack_chan(255, 0, DIFFERENT_CHANNEL, &msg, MAV_TYPE_GCS, MAV_AUTOPILOT_INVALID, 0, 0, MAV_STATE_ACTIVE);
     mavlink_msg_ping_pack_chan(GCS_ID, 0, DIFFERENT_CHANNEL, &msg, ms.count(), 0, 1, 0);
-    MavlinkMessageType t = MavlinkMessageType(std::move(msg), 1, 0);
+    MavlinkMessageType t = MavlinkMessageType(std::move(msg), 1, 0, uav::UavSendMessage::Priority::LOW);
     return t.pack();
 }
 
@@ -247,7 +247,7 @@ void MavlinkProtocol::runPing()
 {
     mavlink_message_t message;
     mavlink_msg_heartbeat_pack(255, 0, &message, MAV_TYPE_GCS, MAV_AUTOPILOT_GENERIC, 0, 0, 0);
-    MavlinkMessageType *msg = new MavlinkMessageType(std::move(message), -1, 1000);
+    MavlinkMessageType *msg = new MavlinkMessageType(std::move(message), -1, 1000, uav::UavSendMessage::Priority::LOW);
     sendMessage(msg);
 }
 
@@ -318,7 +318,7 @@ void MavlinkProtocol::doConfigureMessageInterval(int uav, MessageType msg, int i
             {
                 mavlink_message_t message;
                 mavlink_msg_param_set_pack_chan(GCS_ID, 0, DIFFERENT_CHANNEL, &message, 0, 0, id.c_str(), std::floor(1000 / interval_ms), MAV_PARAM_TYPE_UINT8);
-                sendMessage(new MavlinkMessageType(std::move(message), 3, 200));
+                sendMessage(new MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::LOW));
             }
             break;
         }
@@ -338,7 +338,7 @@ void MavlinkProtocol::doConfigureMessageInterval(int uav, MessageType msg, int i
             mavlink_message_t message;
             mavlink_msg_command_long_pack_chan(
             GCS_ID, 0, DIFFERENT_CHANNEL, &message, uav, 0, MAV_CMD_SET_MESSAGE_INTERVAL, 1, msg_id, interval_ms * 1000, 1, 0, 0, 0, 0);
-            sendMessage(new MavlinkMessageType(std::move(message), 3, 200));
+            sendMessage(new MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::LOW));
             break;
         }
         default:
@@ -390,7 +390,7 @@ bool MavlinkPositionControl::goTo(geo::Coords3D &&target)
                                            (float)target.lon(),
                                            (float)target.alt(),
                                            MAV_MISSION_TYPE_MISSION);
-        MavlinkMessageType *msg = new MavlinkMessageType(std::move(message), 3, 200);
+        MavlinkMessageType *msg = new MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::HIGHT);
         m_proto->sendMessage(msg);
         return true;
     }

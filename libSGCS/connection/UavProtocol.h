@@ -63,11 +63,12 @@ public:
 
 protected:
     void requestToSend();
+    bool requestToSend(std::vector<uav::UavSendMessage *> *fromlist);
 
     virtual void setUAV(int id, uav::UAV *uav);
     void insertMessage(uav::UavTask *message);
 
-    std::list<uav::UavSendMessage *> m_send;
+    std::map<uav::UavSendMessage::Priority, std::vector<uav::UavSendMessage *> *> m_send;
     std::map<int, uav::UAV *> m_uavs;
     std::mutex m_mutex;
     std::atomic_bool m_valid;

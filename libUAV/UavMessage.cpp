@@ -22,8 +22,8 @@ UavTask::UavTask(int target) : targetID(target)
 {
 }
 
-UavSendMessage::UavSendMessage(int ticks, int interval)
-: m_first(true), m_interval(interval), m_ticks(ticks), m_sendTime(std::chrono::_V2::system_clock::now())
+UavSendMessage::UavSendMessage(int ticks, int interval, UavSendMessage::Priority priority)
+: m_first(true), m_interval(interval), m_ticks(ticks), m_priority(priority), m_sendTime(std::chrono::_V2::system_clock::now())
 {
 }
 
@@ -46,6 +46,11 @@ bool UavSendMessage::isReadyInterval() const
         return true;
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::_V2::system_clock::now() - m_sendTime);
     return ms.count() >= m_interval;
+}
+
+UavSendMessage::Priority UavSendMessage::priority() const
+{
+    return m_priority;
 }
 
 }

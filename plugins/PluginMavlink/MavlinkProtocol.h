@@ -28,10 +28,14 @@
 class MavlinkMessageType : public uav::UavSendMessage
 {
 public:
-    MavlinkMessageType(mavlink_message_t &&mavlink, int ticks = 1, int interval = 0)
-    : uav::UavSendMessage(ticks, interval), m_mavlink(mavlink)
+    MavlinkMessageType(mavlink_message_t &&mavlink,
+                       int ticks                         = 1,
+                       int interval                      = 0,
+                       UavSendMessage::Priority priority = UavSendMessage::Priority::NORMAL)
+    : uav::UavSendMessage(ticks, interval, priority), m_mavlink(mavlink)
     {
     }
+    virtual ~MavlinkMessageType() = default;
 
     virtual tools::CharMap pack() const override final;
     mavlink_message_t mavlink() const;

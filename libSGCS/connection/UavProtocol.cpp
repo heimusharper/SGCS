@@ -22,6 +22,14 @@ namespace connection
 {
 UavProtocol::UavProtocol()
 {
+    m_send.insert(std::pair(uav::UavSendMessage::Priority::HIGHT, new std::vector<uav::UavSendMessage *>()));
+    m_send.insert(std::pair(uav::UavSendMessage::Priority::NORMAL, new std::vector<uav::UavSendMessage *>()));
+    m_send.insert(std::pair(uav::UavSendMessage::Priority::LOW, new std::vector<uav::UavSendMessage *>()));
+
+    m_send[uav::UavSendMessage::Priority::HIGHT]->reserve(50);
+    m_send[uav::UavSendMessage::Priority::NORMAL]->reserve(50);
+    m_send[uav::UavSendMessage::Priority::LOW]->reserve(50);
+
     m_valid.store(false);
     m_sendTickStop.store(false);
 }
@@ -35,6 +43,9 @@ UavProtocol::~UavProtocol()
             m_sendTick->join();
         delete m_sendTick;
     }
+    delete m_send[uav::UavSendMessage::Priority::HIGHT];
+    delete m_send[uav::UavSendMessage::Priority::NORMAL];
+    delete m_send[uav::UavSendMessage::Priority::LOW];
 }
 
 tools::CharMap UavProtocol::hello() const
@@ -44,7 +55,7 @@ tools::CharMap UavProtocol::hello() const
 
 void UavProtocol::setUAV(int id, uav::UAV *uav)
 {
-    BOOST_LOG_TRIVIAL(debug) << "NEW UAV" << id;
+    BOOST_LOG_TRIVIAL(info) << "NEW UAV" << id;
     m_uavs.insert({id, uav});
     for (auto handler : _uavCreateHandlers)
         handler->onCreateUav(uav);
@@ -63,7 +74,7 @@ void UavProtocol::insertMessage(uav::UavTask *message)
 
 void UavProtocol::sendMessage(uav::UavSendMessage *message)
 {
-    m_send.push_back(message);
+    m_send[message->priority()]->push_back(message);
     // requestToSend();
 }
 
@@ -92,23 +103,39 @@ void UavProtocol::startMessaging()
 
 void UavProtocol::requestToSend()
 {
-    if (!m_send.empty())
+    if (!requestToSend(m_send[uav::UavSendMessage::Priority::HIGHT]))
+        if (!requestToSend(m_send[uav::UavSendMessage::Priority::NORMAL]))
+            requestToSend(m_send[uav::UavSendMessage::Priority::LOW]);
+}
+
+bool UavProtocol::requestToSend(std::vector<uav::UavSendMessage *> *fromlist)
+{
+    if (!fromlist->empty())
     {
         if (m_sendMutex.try_lock())
         {
-            auto message = m_send.front();
-            if (message->isReadyInterval())
+            bool writed = false;
+            for (size_t i = 0; i < fromlist->size(); i++)
             {
-                writeToParent(message->pack());
-                message->touch();
-            }
-            if (message->isReadyToDelete())
-            {
-                m_send.pop_front();
+                auto message = fromlist->at(i);
+                if (message->isReadyInterval())
+                {
+                    writeToParent(message->pack());
+                    message->touch();
+                    writed = true;
+                    break;
+                }
+                if (message->isReadyToDelete())
+                {
+                    fromlist->erase(fromlist->begin() + i);
+                    delete message;
+                }
             }
             m_sendMutex.unlock();
+            return writed;
         }
     }
+    return false;
 }
 }
 }
