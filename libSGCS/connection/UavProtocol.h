@@ -59,13 +59,23 @@ public:
 
     bool isValid() const;
 
+    void startMessaging();
+
 protected:
+    void requestToSend();
+
     virtual void setUAV(int id, uav::UAV *uav);
     void insertMessage(uav::UavTask *message);
 
+    std::list<uav::UavSendMessage *> m_send;
     std::map<int, uav::UAV *> m_uavs;
     std::mutex m_mutex;
     std::atomic_bool m_valid;
+
+    std::mutex m_sendMutex;
+    std::atomic_bool m_sendTickStop;
+    std::thread *m_sendTick;
+    std::atomic_bool m_readyToSend;
 
 private:
     std::list<sgcs::connection::UavProtocol::UavCreateHandler *> _uavCreateHandlers;

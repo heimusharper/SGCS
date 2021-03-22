@@ -33,8 +33,18 @@ public:
 class UavSendMessage
 {
 public:
-    UavSendMessage();
+    UavSendMessage(int ticks = 1, int interval = 0);
     virtual tools::CharMap pack() const = 0;
+
+    void touch();
+    bool isReadyToDelete() const;
+    bool isReadyInterval() const;
+
+private:
+    bool m_first = true;
+    int m_interval;
+    int m_ticks;
+    std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> m_sendTime;
 };
 }
 

@@ -92,6 +92,8 @@ void ConnectionRouter::runConection()
                     m_protocol->addUavCreateHandler(m_uavCreateHnadler);
                     m_connection->addChild(m_protocol);
                     m_protocol->setParent(m_connection);
+
+                    m_protocol->startMessaging();
                 }
             }
         }
@@ -106,7 +108,9 @@ void ConnectionRouter::runConection()
                     m_connection->processFromChild(hello);
             }
         }
-        usleep((!m_protocol) ? 2000000 : 50);
+        if (m_protocol)
+            return;
+        usleep(2000000);
     }
 }
 

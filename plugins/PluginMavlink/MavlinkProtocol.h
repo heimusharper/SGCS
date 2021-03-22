@@ -28,7 +28,8 @@
 class MavlinkMessageType : public uav::UavSendMessage
 {
 public:
-    MavlinkMessageType(mavlink_message_t &&mavlink) : m_mavlink(mavlink)
+    MavlinkMessageType(mavlink_message_t &&mavlink, int ticks = 1, int interval = 0)
+    : uav::UavSendMessage(ticks, interval), m_mavlink(mavlink)
     {
     }
 
@@ -72,14 +73,30 @@ private:
     void runMessageReader();
     void runPing();
 
-    void doConfigure();
+    void doConfigure(int uav);
+
+    enum class MessageType
+    {
+        SENSORS,
+        STAT,
+        RC,
+        RAW,
+        POS,
+        EXTRA1,
+        EXTRA2,
+        EXTRA3,
+        ADSB,
+        PARAMS
+    };
+
+    void doConfigureMessageInterval(int uav, MessageType msg, int interval_ms);
+    void doSendParameter(int uav, const std::string &name, int value);
 
 private:
     bool check(char c, mavlink_message_t *msg);
 
-    MavlinkHelper::Autopilot m_autopilot;
-
     const int DIFFERENT_CHANNEL;
+    const uint8_t GCS_ID;
     const std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> _bootTime;
 
     std::queue<mavlink_message_t> _mavlinkMessages;
@@ -88,11 +105,10 @@ private:
     std::atomic_bool _stopThread;
     std::thread *_dataProcessorThread    = nullptr;
     std::thread *_messageProcessorThread = nullptr;
-    std::thread *_pingProcessorThread    = nullptr;
     std::queue<tools::CharMap> _dataTasks;
     std::mutex _dataTaskMutex;
 
-    std::map<int, MavlinkHelper::Processing> _modes;
+    std::map<int, MavlinkHelper::Processing *> m_modes;
 };
 
 #endif // MAVLINKPROTOCOL_H

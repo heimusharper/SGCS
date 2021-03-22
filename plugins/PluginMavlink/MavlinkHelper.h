@@ -19,15 +19,16 @@ struct MavlinkHelper
     };
     enum class Autopilot
     {
+        INVALID,
         APM,
-        PIXHAWK,
-        INVALID
+        PIXHAWK
     };
 
     struct Processing
     {
         ProcessingMode pm;
         Autopilot ap;
+        bool initialized = false;
     };
 
     static Autopilot mavlinkAutopilot2SGCS(MAV_AUTOPILOT ap)

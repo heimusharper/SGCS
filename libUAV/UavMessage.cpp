@@ -22,8 +22,30 @@ UavTask::UavTask(int target) : targetID(target)
 {
 }
 
-UavSendMessage::UavSendMessage()
+UavSendMessage::UavSendMessage(int ticks, int interval)
+: m_first(true), m_interval(interval), m_ticks(ticks), m_sendTime(std::chrono::_V2::system_clock::now())
 {
+}
+
+void UavSendMessage::touch()
+{
+    m_first = false;
+    if (m_ticks > 0)
+        m_ticks--;
+    m_sendTime = std::chrono::_V2::system_clock::now();
+}
+
+bool UavSendMessage::isReadyToDelete() const
+{
+    return (!m_first && (m_ticks == 0));
+}
+
+bool UavSendMessage::isReadyInterval() const
+{
+    if (m_first)
+        return true;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::_V2::system_clock::now() - m_sendTime);
+    return ms.count() >= m_interval;
 }
 
 }

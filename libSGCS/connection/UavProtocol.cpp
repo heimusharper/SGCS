@@ -23,10 +23,18 @@ namespace connection
 UavProtocol::UavProtocol()
 {
     m_valid.store(false);
+    m_sendTickStop.store(false);
 }
 
 UavProtocol::~UavProtocol()
 {
+    m_sendTickStop.store(true);
+    if (m_sendTick)
+    {
+        if (m_sendTick->joinable())
+            m_sendTick->join();
+        delete m_sendTick;
+    }
 }
 
 tools::CharMap UavProtocol::hello() const
@@ -55,7 +63,8 @@ void UavProtocol::insertMessage(uav::UavTask *message)
 
 void UavProtocol::sendMessage(uav::UavSendMessage *message)
 {
-    writeToParent(message->pack());
+    m_send.push_back(message);
+    // requestToSend();
 }
 
 void UavProtocol::addUavCreateHandler(sgcs::connection::UavProtocol::UavCreateHandler *handler)
@@ -68,6 +77,38 @@ void UavProtocol::addUavCreateHandler(sgcs::connection::UavProtocol::UavCreateHa
 bool UavProtocol::isValid() const
 {
     return m_valid.load();
+}
+
+void UavProtocol::startMessaging()
+{
+    m_sendTick = new std::thread([this]() {
+        while (!m_sendTickStop.load())
+        {
+            requestToSend();
+            usleep(1000);
+        }
+    });
+}
+
+void UavProtocol::requestToSend()
+{
+    if (!m_send.empty())
+    {
+        if (m_sendMutex.try_lock())
+        {
+            auto message = m_send.front();
+            if (message->isReadyInterval())
+            {
+                writeToParent(message->pack());
+                message->touch();
+            }
+            if (message->isReadyToDelete())
+            {
+                m_send.pop_front();
+            }
+            m_sendMutex.unlock();
+        }
+    }
 }
 }
 }
