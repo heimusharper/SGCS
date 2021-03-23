@@ -23,7 +23,7 @@ namespace connection
 UavProtocol::UavProtocol()
 {
     m_send.insert(std::pair(uav::UavSendMessage::Priority::HIGHT, new std::vector<uav::UavSendMessage *>()));
-    m_send.insert(std::pair(uav::UavSendMessage::Priority::NORMAL, new std::vector<uav::UavSendMessage *>()));
+    m_send.insert(std::pair( uav::UavSendMessage::Priority::NORMAL, new std::vector<uav::UavSendMessage *>()));
     m_send.insert(std::pair(uav::UavSendMessage::Priority::LOW, new std::vector<uav::UavSendMessage *>()));
 
     m_send[uav::UavSendMessage::Priority::HIGHT]->reserve(50);
