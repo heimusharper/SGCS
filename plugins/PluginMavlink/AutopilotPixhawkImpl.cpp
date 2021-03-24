@@ -63,6 +63,7 @@ bool AutopilotPixhawkImpl::setInterval(IAutopilot::MessageType type, int interva
             break;
         case MessageType::SENSORS:
             msg_ids.push_back(MAVLINK_MSG_ID_RC_CHANNELS_SCALED);
+            msg_ids.push_back(MAVLINK_MSG_ID_BATTERY_STATUS);
             break;
         case MessageType::STAT:
             msg_ids.push_back(MAVLINK_MSG_ID_SYS_STATUS);
@@ -82,8 +83,21 @@ bool AutopilotPixhawkImpl::setInterval(IAutopilot::MessageType type, int interva
     for (const int &i : msg_ids)
     {
         mavlink_message_t message;
-        mavlink_msg_command_long_pack_chan(
-        m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_SET_MESSAGE_INTERVAL, 1, i, interval_hz, 0, 0, 0, 0, 0);
+        mavlink_msg_command_long_pack_chan(m_gcs,
+                                           0,
+                                           m_chanel,
+                                           &message,
+                                           m_id,
+                                           0,
+                                           MAV_CMD_SET_MESSAGE_INTERVAL,
+                                           1,
+                                           i,
+                                           (interval_hz < 0) ? -1 : (int)(1000000.f / (float)interval_hz),
+                                           0,
+                                           0,
+                                           0,
+                                           0,
+                                           0);
 
         // mavlink_msg_request_data_stream_pack_chan(
         // m_gcs, 0, m_chanel, &message, m_id, 0, i, (interval_hz < 0) ? 0 : interval_hz, (interval_hz < 0) ? 0 : 1);
