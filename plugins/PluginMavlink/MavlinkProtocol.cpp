@@ -362,12 +362,14 @@ void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
     uav->gps()->setHas(uav::GPS::HAS::HAS_HV_DOP | uav::GPS::HAS::HAS_PROVIDER_GPS);
     uav->position()->setHas(uav::Position::HAS::HAS_SOURCE_GPS);
     uav->speed()->setHas(uav::Speed::HAS_GROUND_SPEED);
-    UavProtocol::setUAV(id, uav);
+    uav->setTakeoffAltitude(10);
 
     MavlinkPositionControl *uavPositionControl = new MavlinkPositionControl(m_modes[id]);
     uav->position()->setControl(uavPositionControl);
     MavlinkARMControl *armControl = new MavlinkARMControl(m_modes[id]);
     uav->addControl(armControl);
+
+    UavProtocol::setUAV(id, uav);
 }
 
 bool MavlinkProtocol::check(char c, mavlink_message_t *msg)

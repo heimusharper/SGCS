@@ -32,7 +32,7 @@ public:
     virtual bool setInterval(MessageType type, int interval_hz)                            = 0;
     virtual bool requestARM(bool autoChangeMode, bool force, bool defaultModeAuto = false) = 0;
     virtual bool requestDisARM(bool force)                                                 = 0;
-    virtual bool requestTakeOff()                                                          = 0;
+    virtual bool requestTakeOff(int altitude)                                              = 0;
 
     virtual bool repositionOnboard(geo::Coords3D &&pos)  = 0;
     virtual bool repositionOffboard(geo::Coords3D &&pos) = 0;

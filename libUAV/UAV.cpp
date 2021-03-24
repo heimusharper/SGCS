@@ -29,6 +29,7 @@ UAV::UAV()
 , m_power(new Power())
 , m_speed(new Speed())
 , m_isFlight(false)
+, m_takeoffAltitude(10)
 {
 }
 
@@ -114,6 +115,16 @@ void UAV::removeControl(UAV::ControlInterface *i)
 void UAV::setIsFlight(bool isFlight)
 {
     m_isFlight = isFlight;
+}
+
+int UAV::takeoffAltitude() const
+{
+    return m_takeoffAltitude;
+}
+
+void UAV::setTakeoffAltitude(int takeoffAltitude)
+{
+    m_takeoffAltitude = takeoffAltitude;
 }
 
 Speed *UAV::speed() const

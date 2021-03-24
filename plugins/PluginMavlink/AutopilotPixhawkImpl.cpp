@@ -98,9 +98,6 @@ bool AutopilotPixhawkImpl::setInterval(IAutopilot::MessageType type, int interva
                                            0,
                                            0,
                                            0);
-
-        // mavlink_msg_request_data_stream_pack_chan(
-        // m_gcs, 0, m_chanel, &message, m_id, 0, i, (interval_hz < 0) ? 0 : interval_hz, (interval_hz < 0) ? 0 : 1);
         m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::LOW));
     }
     return true;
@@ -151,8 +148,19 @@ bool AutopilotPixhawkImpl::requestDisARM(bool force)
     disarm(force);
 }
 
-bool AutopilotPixhawkImpl::requestTakeOff()
+bool AutopilotPixhawkImpl::requestTakeOff(int altitude)
 {
+    mavlink_message_t message;
+    union px4::px4_custom_mode px4_mode;
+    px4_mode.data = m_customMode;
+    if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_AUTO)
+        mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_MISSION_START, 1, 0, 0, 0, 0, 0, 0, 0);
+    else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
+        mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_NAV_TAKEOFF, 1, 0, altitude, 0, 0, 0, 0, 0);
+    else
+        return false;
+    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::HIGHT));
+    return true;
 }
 
 bool AutopilotPixhawkImpl::repositionOnboard(geo::Coords3D &&pos)

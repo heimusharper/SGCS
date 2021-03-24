@@ -64,7 +64,7 @@ bool AutopilotAPMImpl::requestDisARM(bool force)
 {
 }
 
-bool AutopilotAPMImpl::requestTakeOff()
+bool AutopilotAPMImpl::requestTakeOff(int altitude)
 {
 }
 

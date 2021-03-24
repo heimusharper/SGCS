@@ -61,7 +61,7 @@ public:
     public:
         virtual void arm(bool force)    = 0;
         virtual void disarm(bool force) = 0;
-        virtual void takeOff()          = 0;
+        virtual void takeOff(int alt)   = 0;
     };
 
     UAV();
@@ -85,6 +85,9 @@ public:
     Speed *speed() const;
 
     bool isFlight() const;
+
+    int takeoffAltitude() const;
+    void setTakeoffAltitude(int takeoffAltitude);
 
     //
     void addControl(ControlInterface *i);
@@ -117,6 +120,8 @@ private:
     Speed *m_speed = nullptr;
 
     bool m_isFlight;
+
+    int m_takeoffAltitude;
 
     std::list<ControlInterface *> m_controls;
 };

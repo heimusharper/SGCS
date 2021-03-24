@@ -102,9 +102,9 @@ private:
         {
             m_ap->requestDisARM(force);
         }
-        virtual void takeOff() override final
+        virtual void takeOff(int alt) override final
         {
-            m_ap->requestTakeOff();
+            m_ap->requestTakeOff(alt);
         }
 
     private:
