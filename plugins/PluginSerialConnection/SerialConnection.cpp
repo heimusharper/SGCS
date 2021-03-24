@@ -99,7 +99,6 @@ void SerialConnection::run()
                 {
                     tools::CharMap cm = m_writeBuffer.front();
                     m_writeBuffer.pop();
-                    BOOST_LOG_TRIVIAL(info) << "WRITE";
                     write(serialDsc, cm.data, cm.size);
                 }
                 m_mutex.unlock();

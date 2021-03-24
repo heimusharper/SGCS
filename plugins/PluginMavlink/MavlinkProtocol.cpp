@@ -17,7 +17,7 @@
 #include "MavlinkProtocol.h"
 
 MavlinkProtocol::MavlinkProtocol()
-: sgcs::connection::UavProtocol(), DIFFERENT_CHANNEL(1), GCS_ID(255), _bootTime(std::chrono::_V2::system_clock::now())
+: sgcs::connection::UavProtocol(), DIFFERENT_CHANNEL(0), GCS_ID(255), _bootTime(std::chrono::_V2::system_clock::now())
 {
     _stopThread.store(false);
     _dataProcessorThread    = new std::thread(&MavlinkProtocol::runParser, this);
@@ -152,7 +152,10 @@ void MavlinkProtocol::runMessageReader()
                         m_modes.insert(std::pair(message.sysid, ap));
                         if (ap)
                         {
-                            ap->setSend([this](MavlinkHelper::MavlinkMessageType *message) { sendMessage(message); });
+                            ap->setSend([this](MavlinkHelper::MavlinkMessageType *message) {
+                                // BOOST_LOG_TRIVIAL(info) << "WRITE" << message->mavlink().msgid;
+                                sendMessage(message);
+                            });
                             switch (mode)
                             {
                                 case MavlinkHelper::ProcessingMode::ANT:
@@ -286,6 +289,22 @@ void MavlinkProtocol::runMessageReader()
                                 BOOST_LOG_TRIVIAL(info) << "PARAM ID " << id << " VALUE " << param.param_value;
                                 break;
                             }
+                            case MAVLINK_MSG_ID_COMMAND_ACK:
+                            {
+                                mavlink_command_ack_t ack;
+                                mavlink_msg_command_ack_decode(&message, &ack);
+                                /* switch (ack.result)
+                                {
+                                    case MAV_RESULT_ACCEPTED:
+                                        BOOST_LOG_TRIVIAL(info) << "ACK MESSAGE " << ack.command << " ACCEPTED";
+                                        break;
+                                    default:
+                                        BOOST_LOG_TRIVIAL(info)
+                                        << "ACK MESSAGE " << ack.command << " FAILED " << (int)ack.result;
+                                        break;
+                                } */
+                                break;
+                            }
                             default:
                                 break;
                         }
@@ -312,15 +331,15 @@ void MavlinkProtocol::runPing()
 void MavlinkProtocol::doConfigure(int uav)
 {
     doConfigureMessageInterval(uav, IAutopilot::MessageType::ADSB, -1);
-    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA1, 1000);
-    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA2, 1000);
-    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA3, 1000);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA1, 1);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA2, 1);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA3, 1);
     doConfigureMessageInterval(uav, IAutopilot::MessageType::PARAMS, -1);
     doConfigureMessageInterval(uav, IAutopilot::MessageType::POS, 2);
     doConfigureMessageInterval(uav, IAutopilot::MessageType::RAW, -1);
     doConfigureMessageInterval(uav, IAutopilot::MessageType::RC, -1);
     doConfigureMessageInterval(uav, IAutopilot::MessageType::SENSORS, -1);
-    doConfigureMessageInterval(uav, IAutopilot::MessageType::STAT, 1000);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::STAT, 1);
 
     runPing();
 }

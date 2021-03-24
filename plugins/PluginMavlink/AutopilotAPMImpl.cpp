@@ -5,7 +5,7 @@ AutopilotAPMImpl::AutopilotAPMImpl(int chan, int gcsID, int id, MavlinkHelper::P
 {
 }
 
-bool AutopilotAPMImpl::setInterval(IAutopilot::MessageType type, int interval_ms)
+bool AutopilotAPMImpl::setInterval(IAutopilot::MessageType type, int interval_hz)
 {
     std::list<std::string> msg_ids;
     switch (type)
@@ -48,8 +48,7 @@ bool AutopilotAPMImpl::setInterval(IAutopilot::MessageType type, int interval_ms
     for (const std::string &id : msg_ids)
     {
         mavlink_message_t message;
-        mavlink_msg_param_set_pack_chan(
-        m_gcs, 0, m_chanel, &message, m_id, 0, id.c_str(), (interval_ms < 0) ? 0 : std::floor(1000 / interval_ms), MAV_PARAM_TYPE_UINT8);
+        mavlink_msg_param_set_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, id.c_str(), (interval_hz < 0) ? 0 : interval_hz, MAV_PARAM_TYPE_UINT8);
         m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::LOW));
     }
     return true;

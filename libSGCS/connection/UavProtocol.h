@@ -62,7 +62,7 @@ public:
     void startMessaging();
 
 protected:
-    void requestToSend();
+    bool requestToSend();
     bool requestToSend(std::vector<uav::UavSendMessage *> *fromlist);
 
     virtual void setUAV(int id, uav::UAV *uav);

@@ -6,7 +6,7 @@ class AutopilotPixhawkImpl : public IAutopilot
 {
 public:
     AutopilotPixhawkImpl(int chan, int gcsID, int id, MavlinkHelper::ProcessingMode mode);
-    virtual bool setInterval(MessageType type, int interval_ms) override final;
+    virtual bool setInterval(MessageType type, int interval_hz) override final;
 };
 
 #endif // AUTOPILOTPIXHAWKIMPL_H

@@ -28,7 +28,7 @@ public:
     bool ready() const;
     void setReady(bool ready);
 
-    virtual bool setInterval(MessageType type, int interval_ms) = 0;
+    virtual bool setInterval(MessageType type, int interval_hz) = 0;
 
     void setSend(const std::function<void(MavlinkHelper::MavlinkMessageType *)> &send);
 

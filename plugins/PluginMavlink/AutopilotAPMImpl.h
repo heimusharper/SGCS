@@ -6,7 +6,7 @@ class AutopilotAPMImpl : public IAutopilot
 {
 public:
     AutopilotAPMImpl(int chan, int gcsID, int id, MavlinkHelper::ProcessingMode mode);
-    virtual bool setInterval(MessageType type, int interval_ms) override final;
+    virtual bool setInterval(MessageType type, int interval_hz) override final;
 
 private:
     int m_srid = 0;
