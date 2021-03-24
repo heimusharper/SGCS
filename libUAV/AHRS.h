@@ -17,6 +17,7 @@
 #ifndef UAVAHRS_H
 #define UAVAHRS_H
 #include "UavObject.h"
+#include <list>
 
 namespace uav
 {
@@ -34,6 +35,14 @@ public:
         tools::optional<float> yaw;
     };
 
+    class OnChangeAHRSCallback
+    {
+    public:
+        virtual void updateAngles()
+        {
+        }
+    };
+
     AHRS();
     virtual ~AHRS();
 
@@ -41,15 +50,20 @@ public:
 
     void get(float &roll, float &pitch, float &yaw);
 
-private:
-    void setRoll(float roll);
-    void setPitch(float pitch);
-    void setYaw(float yaw);
+    void addCallback(OnChangeAHRSCallback *call);
+    void removeCallback(OnChangeAHRSCallback *call);
 
 private:
-    float m_roll  = 0;
-    float m_pitch = 0;
-    float m_yaw   = 0;
+    bool setRoll(float roll);
+    bool setPitch(float pitch);
+    bool setYaw(float yaw);
+
+private:
+    float m_roll;
+    float m_pitch;
+    float m_yaw;
+
+    std::list<OnChangeAHRSCallback *> m_callbacks;
 };
 }
 #endif // UAVAHRS_H

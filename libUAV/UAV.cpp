@@ -19,7 +19,15 @@
 namespace uav
 {
 UAV::UAV()
-: UavObject(), m_id(-1), m_type(UAVType::UNDEFINED), m_ahrs(new AHRS()), m_gps(new GPS()), m_position(new Position()), m_home(new Home())
+: UavObject()
+, m_id(-1)
+, m_type(UAVType::UNDEFINED)
+, m_ahrs(new AHRS())
+, m_gps(new GPS())
+, m_position(new Position())
+, m_home(new Home())
+, m_power(new Power())
+, m_speed(new Speed())
 {
 }
 
@@ -29,6 +37,8 @@ UAV::~UAV()
     delete m_gps;
     delete m_position;
     delete m_home;
+    delete m_power;
+    delete m_speed;
 }
 
 void UAV::process(std::unique_ptr<UavTask> message)
@@ -45,10 +55,14 @@ void UAV::process(std::unique_ptr<UavTask> message)
         m_ahrs->process(ahrsmsg);
     else if (GPS::Message *gpsmsg = dynamic_cast<GPS::Message *>(task))
         m_gps->process(gpsmsg);
-    else if (Position::MessageGPS *posgpsmsg = dynamic_cast<Position::MessageGPS *>(task))
+    else if (Position::Message *posgpsmsg = dynamic_cast<Position::Message *>(task))
         m_position->process(posgpsmsg);
     else if (Home::Message *homemsg = dynamic_cast<Home::Message *>(task))
         m_home->process(homemsg);
+    else if (Power::Message *poewermsg = dynamic_cast<Power::Message *>(task))
+        m_power->process(poewermsg);
+    else if (Speed::Message *speedmsg = dynamic_cast<Speed::Message *>(task))
+        m_speed->process(speedmsg);
 }
 int UAV::id() const
 {
@@ -74,6 +88,16 @@ void UAV::setType(UAVType type)
         return;
     BOOST_LOG_TRIVIAL(info) << "UAV TYPE " << (int)type;
     m_type = type;
+}
+
+Speed *UAV::speed() const
+{
+    return m_speed;
+}
+
+Power *UAV::power() const
+{
+    return m_power;
 }
 
 Home *UAV::home() const

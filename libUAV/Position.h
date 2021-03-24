@@ -18,6 +18,7 @@
 #define UAVPOSITION_H
 #include "UavObject.h"
 #include <geo/Coords3D.h>
+#include <list>
 
 namespace uav
 {
@@ -40,27 +41,37 @@ public:
         virtual bool goTo(geo::Coords3D &&target) = 0;
     };
 
-    class MessageGPS : public UavTask
+    class Message : public UavTask
     {
     public:
-        MessageGPS(int target) : UavTask(target), lat(0.), lon(0.), alt(0.)
+        Message(int target) : UavTask(target), lat(0.), lon(0.), alt(0.)
         {
         }
         tools::optional<double> lat;
         tools::optional<double> lon;
         tools::optional<double> alt;
     };
+    class OnChangePositionCallback
+    {
+    public:
+        virtual void updateGPS()
+        {
+        }
+    };
 
     Position();
     virtual ~Position();
 
-    void process(Position::MessageGPS *message);
+    void process(Position::Message *message);
 
     geo::Coords3D gps() const;
 
     // control
     void setControl(PositionControlInterface *control);
     bool goTo(geo::Coords3D &&target);
+
+    void addCallback(OnChangePositionCallback *c);
+    void removeCallback(OnChangePositionCallback *c);
 
 protected:
     void setGps(geo::Coords3D &&gps);
@@ -69,6 +80,8 @@ private:
     tools::optional<geo::Coords3D> m_gps;
 
     PositionControlInterface *_control = nullptr;
+
+    std::list<OnChangePositionCallback *> m_callbacks;
 };
 }
 

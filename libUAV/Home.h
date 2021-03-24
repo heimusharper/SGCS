@@ -1,5 +1,5 @@
-#ifndef HOME_H
-#define HOME_H
+#ifndef UAVHOME_H
+#define UAVHOME_H
 
 #include "UavObject.h"
 #include <boost/log/trivial.hpp>
@@ -31,4 +31,4 @@ private:
     tools::optional<geo::Coords3D> m_position;
 };
 }
-#endif // HOME_H
+#endif // UAVHOME_H

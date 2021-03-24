@@ -18,7 +18,7 @@
 
 namespace uav
 {
-AHRS::AHRS() : UavObject()
+AHRS::AHRS() : UavObject(), m_roll(0), m_pitch(0), m_yaw(0)
 {
 }
 
@@ -28,12 +28,19 @@ AHRS::~AHRS()
 
 void AHRS::process(AHRS::Message *message)
 {
+    bool update = false;
     if (message->roll.dirty())
-        setRoll(message->roll.get());
+        if (setRoll(message->roll.get()))
+            update = true;
     if (message->pitch.dirty())
-        setPitch(message->pitch.get());
+        if (setPitch(message->pitch.get()))
+            update = true;
     if (message->yaw.dirty())
-        setYaw(message->yaw.get());
+        if (setYaw(message->yaw.get()))
+            update = true;
+    if (update)
+        for (auto c : m_callbacks)
+            c->updateAngles();
 }
 
 void AHRS::get(float &roll, float &pitch, float &yaw)
@@ -43,27 +50,30 @@ void AHRS::get(float &roll, float &pitch, float &yaw)
     yaw   = m_yaw;
 }
 
-void AHRS::setRoll(float roll)
+bool AHRS::setRoll(float roll)
 {
     if (fabs(m_roll - roll) < 0.1)
-        return;
+        return false;
     m_roll = roll;
+    return true;
     // BOOST_LOG_TRIVIAL(info) << "ROLL " << m_roll;
 }
 
-void AHRS::setPitch(float pitch)
+bool AHRS::setPitch(float pitch)
 {
     if (fabs(m_pitch - pitch) < 0.1)
-        return;
+        return false;
     m_pitch = pitch;
+    return true;
     // BOOST_LOG_TRIVIAL(info) << "PITCH " << m_pitch;
 }
 
-void AHRS::setYaw(float yaw)
+bool AHRS::setYaw(float yaw)
 {
     if (fabs(m_yaw - yaw) < 0.1)
-        return;
+        return false;
     m_yaw = yaw;
+    return true;
     // BOOST_LOG_TRIVIAL(info) << "YAW " << m_yaw;
 }
 

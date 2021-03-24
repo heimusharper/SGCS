@@ -18,7 +18,7 @@
 
 namespace uav
 {
-GPS::GPS() : UavObject()
+GPS::GPS() : UavObject(), m_provGPS(0), m_provGLONASS(0), m_hdop(250), m_vdop(250), m_fixType(FixType::NOGPS)
 {
 }
 
@@ -41,6 +41,8 @@ void GPS::process(GPS::Message *message)
         if (message->vdop.dirty())
             setVdop(message->vdop.get());
     }
+    if (message->fix.dirty())
+        setFixType(message->fix.get());
 }
 
 uint8_t GPS::provGPS() const
@@ -53,6 +55,8 @@ void GPS::setProvGPS(uint8_t provGPS)
     if (m_provGPS == provGPS)
         return;
     m_provGPS = provGPS;
+    for (auto x : m_GPSCallback)
+        x->updateSatelitesCount();
     BOOST_LOG_TRIVIAL(info) << "GPS " << (int)m_provGPS;
 }
 
@@ -66,6 +70,8 @@ void GPS::setProvGLONASS(uint8_t provGLONASS)
     if (m_provGLONASS == provGLONASS)
         return;
     m_provGLONASS = provGLONASS;
+    for (auto x : m_GPSCallback)
+        x->updateSatelitesCount();
     BOOST_LOG_TRIVIAL(info) << "GLONASS " << (int)m_provGLONASS;
 }
 
@@ -79,7 +85,33 @@ void GPS::setVdop(const uint8_t &vdop)
     if (m_vdop == vdop)
         return;
     m_vdop = vdop;
+    for (auto x : m_GPSCallback)
+        x->updateErros();
     BOOST_LOG_TRIVIAL(info) << "VDOP " << (int)m_vdop;
+}
+
+GPS::FixType GPS::fixType() const
+{
+    return m_fixType;
+}
+
+void GPS::addCallback(GPS::OnChangeGPSCallback *call)
+{
+    m_GPSCallback.push_back(call);
+}
+
+void GPS::removeCallback(GPS::OnChangeGPSCallback *call)
+{
+    m_GPSCallback.remove(call);
+}
+
+void GPS::setFixType(const GPS::FixType &fixType)
+{
+    if (m_fixType != fixType)
+        return;
+    m_fixType = fixType;
+    for (auto x : m_GPSCallback)
+        x->updateFixType();
 }
 
 uint8_t GPS::hdop() const
@@ -92,6 +124,8 @@ void GPS::setHdop(const uint8_t &hdop)
     if (m_hdop == hdop)
         return;
     m_hdop = hdop;
+    for (auto x : m_GPSCallback)
+        x->updateErros();
     BOOST_LOG_TRIVIAL(info) << "HDOP " << (int)m_hdop;
 }
 }

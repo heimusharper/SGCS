@@ -54,7 +54,8 @@ tools::CharMap MavlinkProtocol::hello() const
     mavlink_message_t msg;
     // mavlink_msg_heartbeat_pack_chan(255, 0, DIFFERENT_CHANNEL, &msg, MAV_TYPE_GCS, MAV_AUTOPILOT_INVALID, 0, 0, MAV_STATE_ACTIVE);
     mavlink_msg_ping_pack_chan(GCS_ID, 0, DIFFERENT_CHANNEL, &msg, ms.count(), 0, 1, 0);
-    MavlinkMessageType t = MavlinkMessageType(std::move(msg), 1, 0, uav::UavSendMessage::Priority::LOW);
+    MavlinkHelper::MavlinkMessageType t =
+    MavlinkHelper::MavlinkMessageType(std::move(msg), 1, 0, uav::UavSendMessage::Priority::LOW);
     return t.pack();
 }
 
@@ -118,15 +119,41 @@ void MavlinkProtocol::runMessageReader()
                         mavlink_heartbeat_t hrt;
                         mavlink_msg_heartbeat_decode(&message, &hrt);
 
-                        MavlinkHelper::Autopilot ap = MavlinkHelper::mavlinkAutopilot2SGCS((MAV_AUTOPILOT)hrt.autopilot);
-                        if (ap != MavlinkHelper::Autopilot::INVALID)
+                        IAutopilot *ap = nullptr;
+                        auto mode      = MavlinkHelper::mavlinkUavType2SGCS((MAV_TYPE)hrt.type);
+                        switch (hrt.autopilot)
                         {
-                            MavlinkHelper::ProcessingMode type = MavlinkHelper::mavlinkUavType2SGCS((MAV_TYPE)hrt.type);
-                            MavlinkHelper::Processing *proc    = new MavlinkHelper::Processing;
-                            proc->ap                           = ap;
-                            proc->pm                           = type;
-                            m_modes.insert(std::pair(message.sysid, proc));
-                            switch (type)
+                            case MAV_AUTOPILOT_ARDUPILOTMEGA:
+                                ap = new AutopilotAPMImpl(DIFFERENT_CHANNEL, GCS_ID, message.sysid, mode);
+                                break;
+                            case MAV_AUTOPILOT_INVALID:
+                                break;
+                            case MAV_AUTOPILOT_GENERIC:
+                            case MAV_AUTOPILOT_RESERVED:
+                            case MAV_AUTOPILOT_SLUGS:
+                            case MAV_AUTOPILOT_OPENPILOT:
+                            case MAV_AUTOPILOT_GENERIC_WAYPOINTS_ONLY:
+                            case MAV_AUTOPILOT_GENERIC_WAYPOINTS_AND_SIMPLE_NAVIGATION_ONLY:
+                            case MAV_AUTOPILOT_GENERIC_MISSION_FULL:
+                            case MAV_AUTOPILOT_PPZ:
+                            case MAV_AUTOPILOT_UDB:
+                            case MAV_AUTOPILOT_FP:
+                            case MAV_AUTOPILOT_PX4:
+                            case MAV_AUTOPILOT_SMACCMPILOT:
+                            case MAV_AUTOPILOT_AUTOQUAD:
+                            case MAV_AUTOPILOT_ARMAZILA:
+                            case MAV_AUTOPILOT_AEROB:
+                            case MAV_AUTOPILOT_ASLUAV:
+                            case MAV_AUTOPILOT_SMARTAP:
+                            case MAV_AUTOPILOT_AIRRAILS:
+                            default:
+                                ap = new AutopilotPixhawkImpl(DIFFERENT_CHANNEL, GCS_ID, message.sysid, mode);
+                        }
+                        m_modes.insert(std::pair(message.sysid, ap));
+                        if (ap)
+                        {
+                            ap->setSend([this](MavlinkHelper::MavlinkMessageType *message) { sendMessage(message); });
+                            switch (mode)
                             {
                                 case MavlinkHelper::ProcessingMode::ANT:
                                     break;
@@ -162,10 +189,12 @@ void MavlinkProtocol::runMessageReader()
             if (m_modes.contains(message.sysid))
             {
                 BOOST_LOG_TRIVIAL(info) << "IN MESSAGE " << message.msgid;
-                MavlinkHelper::ProcessingMode processMode = m_modes[message.sysid]->pm;
+                IAutopilot *ap = m_modes[message.sysid];
+                if (!ap)
+                    return;
                 // MavlinkHelper::Autopilot ap               = m_modes[message.sysid]->ap;
 
-                switch (processMode)
+                switch (ap->processingMode())
                 {
                     case MavlinkHelper::ProcessingMode::UAV_MC:
                     case MavlinkHelper::ProcessingMode::UAV_PLANE:
@@ -175,10 +204,10 @@ void MavlinkProtocol::runMessageReader()
                         {
                             case MAVLINK_MSG_ID_HEARTBEAT:
                             {
-                                if (!m_modes[message.sysid]->initialized)
+                                if (!ap->ready())
                                 {
                                     doConfigure(message.sysid);
-                                    m_modes[message.sysid]->initialized = true;
+                                    ap->setReady(true);
                                 }
                                 break;
                             }
@@ -201,12 +230,32 @@ void MavlinkProtocol::runMessageReader()
                                 gpsm->satelitesGPS      = gps.satellites_visible;
                                 gpsm->hdop              = gps.h_acc;
                                 gpsm->vdop              = gps.v_acc;
+                                switch (gps.fix_type)
+                                {
+                                    case GPS_FIX_TYPE_RTK_FLOAT:
+                                    case GPS_FIX_TYPE_RTK_FIXED:
+                                        gpsm->fix = uav::GPS::FixType::RTK;
+                                        break;
+                                    case GPS_FIX_TYPE_3D_FIX:
+                                    case GPS_FIX_TYPE_DGPS:
+                                        gpsm->fix = uav::GPS::FixType::FIX3D;
+                                        break;
+                                    case GPS_FIX_TYPE_NO_GPS:
+                                    case GPS_FIX_TYPE_NO_FIX:
+                                    case GPS_FIX_TYPE_2D_FIX:
+                                    case GPS_FIX_TYPE_STATIC:
+                                    case GPS_FIX_TYPE_PPP:
+                                    default:
+                                        gpsm->fix = uav::GPS::FixType::NOGPS;
+                                        break;
+                                }
+
                                 insertMessage(gpsm);
 
-                                uav::Position::MessageGPS *pos = new uav::Position::MessageGPS(message.sysid);
-                                pos->lat                       = ((double)gps.lat) / 1.E7;
-                                pos->lon                       = ((double)gps.lon) / 1.E7;
-                                pos->alt                       = ((double)gps.alt) / 1000.;
+                                uav::Position::Message *pos = new uav::Position::Message(message.sysid);
+                                pos->lat                    = ((double)gps.lat) / 1.E7;
+                                pos->lon                    = ((double)gps.lon) / 1.E7;
+                                pos->alt                    = ((double)gps.alt) / 1000.;
                                 insertMessage(pos);
                                 break;
                             }
@@ -247,107 +296,35 @@ void MavlinkProtocol::runPing()
 {
     mavlink_message_t message;
     mavlink_msg_heartbeat_pack(255, 0, &message, MAV_TYPE_GCS, MAV_AUTOPILOT_GENERIC, 0, 0, 0);
-    MavlinkMessageType *msg = new MavlinkMessageType(std::move(message), -1, 1000, uav::UavSendMessage::Priority::LOW);
+    MavlinkHelper::MavlinkMessageType *msg =
+    new MavlinkHelper::MavlinkMessageType(std::move(message), -1, 1000, uav::UavSendMessage::Priority::LOW);
     sendMessage(msg);
 }
 
 void MavlinkProtocol::doConfigure(int uav)
 {
-    doConfigureMessageInterval(uav, MessageType::ADSB, -1);
-    doConfigureMessageInterval(uav, MessageType::EXTRA1, 1000);
-    doConfigureMessageInterval(uav, MessageType::EXTRA2, 1000);
-    doConfigureMessageInterval(uav, MessageType::EXTRA3, 1000);
-    doConfigureMessageInterval(uav, MessageType::PARAMS, -1);
-    doConfigureMessageInterval(uav, MessageType::POS, 2);
-    doConfigureMessageInterval(uav, MessageType::RAW, -1);
-    doConfigureMessageInterval(uav, MessageType::RC, -1);
-    doConfigureMessageInterval(uav, MessageType::SENSORS, -1);
-    doConfigureMessageInterval(uav, MessageType::STAT, 1000);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::ADSB, -1);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA1, 1000);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA2, 1000);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA3, 1000);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::PARAMS, -1);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::POS, 2);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::RAW, -1);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::RC, -1);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::SENSORS, -1);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::STAT, 1000);
 
     runPing();
 }
 
-void MavlinkProtocol::doConfigureMessageInterval(int uav, MessageType msg, int interval_ms)
+void MavlinkProtocol::doConfigureMessageInterval(int uav, IAutopilot::MessageType msg, int interval_ms)
 {
     if (!m_modes.contains(uav))
         return;
-    MavlinkHelper::Autopilot ap = m_modes[uav]->ap;
-    switch (ap)
-    {
-        case MavlinkHelper::Autopilot::APM:
-        {
-            std::list<std::string> msg_ids;
-            switch (msg)
-            {
-                case MessageType::ADSB:
-                    msg_ids.push_back("SR1_ADSB");
-                    break;
-                case MessageType::EXTRA1:
-                    msg_ids.push_back("SR1_EXTRA1");
-                    break;
-                case MessageType::EXTRA2:
-                    msg_ids.push_back("SR1_EXTRA2");
-                    break;
-                case MessageType::EXTRA3:
-                    msg_ids.push_back("SR1_EXTRA3");
-                    break;
-                case MessageType::PARAMS:
-                    msg_ids.push_back("SR1_PARAMS");
-                    break;
-                case MessageType::POS:
-                    msg_ids.push_back("SR1_POSITION");
-                    break;
-                case MessageType::RAW:
-                    msg_ids.push_back("SR1_RAW_CTRL");
-                    msg_ids.push_back("SR1_RAW_SENS");
-                    break;
-                case MessageType::RC:
-                    msg_ids.push_back("SR1_RC_CHAN");
-                    break;
-                case MessageType::SENSORS:
-                    break;
-                case MessageType::STAT:
-                    msg_ids.push_back("SR1_EXT_STAT");
-                    break;
-                default:
-                    break;
-            }
-            if (msg_ids.empty())
-                break;
-            for (const std::string &id : msg_ids)
-            {
-                mavlink_message_t message;
-                mavlink_msg_param_set_pack_chan(GCS_ID, 0, DIFFERENT_CHANNEL, &message, 0, 0, id.c_str(), std::floor(1000 / interval_ms), MAV_PARAM_TYPE_UINT8);
-                sendMessage(new MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::LOW));
-            }
-            break;
-        }
-        case MavlinkHelper::Autopilot::PIXHAWK:
-        {
-            int msg_id = -1;
-            switch (msg)
-            {
-                case MessageType::POS:
-                    msg_id = MAVLINK_MSG_ID_GPS_RAW_INT;
-                    break;
-                default:
-                    break;
-            }
-            if (msg_id < 0)
-                break;
-            mavlink_message_t message;
-            mavlink_msg_command_long_pack_chan(
-            GCS_ID, 0, DIFFERENT_CHANNEL, &message, uav, 0, MAV_CMD_SET_MESSAGE_INTERVAL, 1, msg_id, interval_ms * 1000, 1, 0, 0, 0, 0);
-            sendMessage(new MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::LOW));
-            break;
-        }
-        default:
-            break;
-    }
-}
-
-void MavlinkProtocol::doSendParameter(int uav, const std::string &name, int value)
-{
+    IAutopilot *ap = m_modes[uav];
+    if (!ap)
+        return;
+    ap->setInterval(msg, interval_ms);
 }
 
 void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
@@ -390,29 +367,10 @@ bool MavlinkPositionControl::goTo(geo::Coords3D &&target)
                                            (float)target.lon(),
                                            (float)target.alt(),
                                            MAV_MISSION_TYPE_MISSION);
-        MavlinkMessageType *msg = new MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::HIGHT);
+        MavlinkHelper::MavlinkMessageType *msg =
+        new MavlinkHelper::MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::HIGHT);
         m_proto->sendMessage(msg);
         return true;
     }
     return false;
-}
-
-tools::CharMap MavlinkMessageType::pack() const
-{
-    tools::CharMap cm;
-    cm.data         = new char[MAVLINK_MAX_PACKET_LEN];
-    cm.size         = MAVLINK_MAX_PACKET_LEN;
-    uint16_t lenght = mavlink_msg_to_send_buffer((uint8_t *)cm.data, &m_mavlink);
-    if (lenght > 0)
-    {
-        BOOST_LOG_TRIVIAL(info) << "PACKING " << m_mavlink.msgid;
-        cm.size = lenght;
-        return cm;
-    }
-    return tools::CharMap();
-}
-
-mavlink_message_t MavlinkMessageType::mavlink() const
-{
-    return m_mavlink;
 }

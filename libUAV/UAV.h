@@ -14,12 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef UAV_H
-#define UAV_H
+#ifndef UAVUAV_H
+#define UAVUAV_H
 #include "AHRS.h"
 #include "GPS.h"
 #include "Home.h"
 #include "Position.h"
+#include "Power.h"
+#include "Speed.h"
 #include "UavObject.h"
 
 namespace uav
@@ -61,6 +63,10 @@ public:
 
     Home *home() const;
 
+    Power *power() const;
+
+    Speed *speed() const;
+
 private:
     void setId(int id);
 
@@ -80,6 +86,10 @@ private:
     Position *m_position = nullptr;
 
     Home *m_home = nullptr;
+
+    Power *m_power = nullptr;
+
+    Speed *m_speed = nullptr;
 };
 }
-#endif // SGCS_H
+#endif

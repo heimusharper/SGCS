@@ -26,7 +26,7 @@ Position::~Position()
 {
 }
 
-void Position::process(Position::MessageGPS *message)
+void Position::process(Position::Message *message)
 {
     if (has(uav::Position::HAS::HAS_SOURCE_GPS))
     {
@@ -48,6 +48,8 @@ void Position::setGps(geo::Coords3D &&gps)
     if (m_gps == gps)
         return;
     m_gps = gps;
+    for (auto c : m_callbacks)
+        c->updateGPS();
     BOOST_LOG_TRIVIAL(info) << "GPS POS {" << m_gps.get().lat() << "; " << m_gps.get().lon() << "; " << m_gps.get().alt() << "}";
 }
 
@@ -64,6 +66,16 @@ bool Position::goTo(geo::Coords3D &&target)
     if (_control && has(uav::Position::HAS::HAS_POSITION_CONTROL))
         return _control->goTo(std::move(target));
     return false;
+}
+
+void Position::addCallback(Position::OnChangePositionCallback *c)
+{
+    m_callbacks.push_back(c);
+}
+
+void Position::removeCallback(Position::OnChangePositionCallback *c)
+{
+    m_callbacks.remove(c);
 }
 
 }

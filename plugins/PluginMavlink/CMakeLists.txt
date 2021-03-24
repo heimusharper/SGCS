@@ -29,11 +29,17 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/../../thirdparty/c_library_v2)
 SET(SRC_LIST
     PluginMavlink.cpp
     MavlinkProtocol.cpp
+    IAutopilot.cpp
+    AutopilotAPMImpl.cpp
+    AutopilotPixhawkImpl.cpp
     )
 SET(HEADER_LIST
     MavlinkHelper.h
     PluginMavlink.h
     MavlinkProtocol.h
+    IAutopilot.h
+    AutopilotAPMImpl.h
+    AutopilotPixhawkImpl.h
     )
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 

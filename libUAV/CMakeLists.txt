@@ -17,6 +17,8 @@ SET(SRC_LIST
     GPS.cpp
     Position.cpp
     Home.cpp
+    Power.cpp
+    Speed.cpp
     )
 SET(HEADER_LIST
     UAV.h
@@ -26,6 +28,8 @@ SET(HEADER_LIST
     GPS.h
     Position.h
     Home.h
+    Power.h
+    Speed.h
     )
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST})

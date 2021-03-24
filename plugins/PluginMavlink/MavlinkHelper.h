@@ -2,10 +2,46 @@
 #define MAVLINKHELPER_H
 #include "all/mavlink.h"
 #include "mavlink_types.h"
+#include <CharMap.h>
 #include <UAV.h>
 
 struct MavlinkHelper
 {
+    class MavlinkMessageType : public uav::UavSendMessage
+    {
+    public:
+        MavlinkMessageType(mavlink_message_t &&mavlink,
+                           int ticks                         = 1,
+                           int interval                      = 0,
+                           UavSendMessage::Priority priority = UavSendMessage::Priority::NORMAL)
+        : uav::UavSendMessage(ticks, interval, priority), m_mavlink(mavlink)
+        {
+        }
+        virtual ~MavlinkMessageType() = default;
+
+        virtual tools::CharMap pack() const override final
+        {
+            tools::CharMap cm;
+            cm.data         = new char[MAVLINK_MAX_PACKET_LEN];
+            cm.size         = MAVLINK_MAX_PACKET_LEN;
+            uint16_t lenght = mavlink_msg_to_send_buffer((uint8_t *)cm.data, &m_mavlink);
+            if (lenght > 0)
+            {
+                BOOST_LOG_TRIVIAL(info) << "PACKING " << m_mavlink.msgid;
+                cm.size = lenght;
+                return cm;
+            }
+            return tools::CharMap();
+        }
+        mavlink_message_t mavlink() const
+        {
+            return m_mavlink;
+        }
+
+    private:
+        mavlink_message_t m_mavlink;
+    };
+
     enum class ProcessingMode
     {
         UAV_VTOL,
@@ -17,52 +53,6 @@ struct MavlinkHelper
         CAMERA,
         UNDEFINED
     };
-    enum class Autopilot
-    {
-        INVALID,
-        APM,
-        PIXHAWK
-    };
-
-    struct Processing
-    {
-        ProcessingMode pm;
-        Autopilot ap;
-        bool initialized = false;
-    };
-
-    static Autopilot mavlinkAutopilot2SGCS(MAV_AUTOPILOT ap)
-    {
-        switch (ap)
-        {
-            case MAV_AUTOPILOT_ARDUPILOTMEGA:
-                return Autopilot::APM;
-                break;
-            case MAV_AUTOPILOT_INVALID:
-                return Autopilot::INVALID;
-            case MAV_AUTOPILOT_GENERIC:
-            case MAV_AUTOPILOT_RESERVED:
-            case MAV_AUTOPILOT_SLUGS:
-            case MAV_AUTOPILOT_OPENPILOT:
-            case MAV_AUTOPILOT_GENERIC_WAYPOINTS_ONLY:
-            case MAV_AUTOPILOT_GENERIC_WAYPOINTS_AND_SIMPLE_NAVIGATION_ONLY:
-            case MAV_AUTOPILOT_GENERIC_MISSION_FULL:
-            case MAV_AUTOPILOT_PPZ:
-            case MAV_AUTOPILOT_UDB:
-            case MAV_AUTOPILOT_FP:
-            case MAV_AUTOPILOT_PX4:
-            case MAV_AUTOPILOT_SMACCMPILOT:
-            case MAV_AUTOPILOT_AUTOQUAD:
-            case MAV_AUTOPILOT_ARMAZILA:
-            case MAV_AUTOPILOT_AEROB:
-            case MAV_AUTOPILOT_ASLUAV:
-            case MAV_AUTOPILOT_SMARTAP:
-            case MAV_AUTOPILOT_AIRRAILS:
-            default:
-                return Autopilot::PIXHAWK;
-        }
-        return Autopilot::INVALID;
-    }
 
     static ProcessingMode mavlinkUavType2SGCS(MAV_TYPE type)
     {

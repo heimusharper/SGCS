@@ -17,6 +17,9 @@
 
 #ifndef MAVLINKPROTOCOL_H
 #define MAVLINKPROTOCOL_H
+#include "AutopilotAPMImpl.h"
+#include "AutopilotPixhawkImpl.h"
+#include "IAutopilot.h"
 #include "MavlinkHelper.h"
 #include <atomic>
 #include <boost/log/trivial.hpp>
@@ -24,25 +27,6 @@
 #include <connection/UavProtocol.h>
 #include <queue>
 #include <thread>
-
-class MavlinkMessageType : public uav::UavSendMessage
-{
-public:
-    MavlinkMessageType(mavlink_message_t &&mavlink,
-                       int ticks                         = 1,
-                       int interval                      = 0,
-                       UavSendMessage::Priority priority = UavSendMessage::Priority::NORMAL)
-    : uav::UavSendMessage(ticks, interval, priority), m_mavlink(mavlink)
-    {
-    }
-    virtual ~MavlinkMessageType() = default;
-
-    virtual tools::CharMap pack() const override final;
-    mavlink_message_t mavlink() const;
-
-private:
-    mavlink_message_t m_mavlink;
-};
 
 class MavlinkPositionControl : public uav::Position::PositionControlInterface
 {
@@ -79,22 +63,7 @@ private:
 
     void doConfigure(int uav);
 
-    enum class MessageType
-    {
-        SENSORS,
-        STAT,
-        RC,
-        RAW,
-        POS,
-        EXTRA1,
-        EXTRA2,
-        EXTRA3,
-        ADSB,
-        PARAMS
-    };
-
-    void doConfigureMessageInterval(int uav, MessageType msg, int interval_ms);
-    void doSendParameter(int uav, const std::string &name, int value);
+    void doConfigureMessageInterval(int uav, IAutopilot::MessageType msg, int interval_ms);
 
 private:
     bool check(char c, mavlink_message_t *msg);
@@ -112,7 +81,7 @@ private:
     std::queue<tools::CharMap> _dataTasks;
     std::mutex _dataTaskMutex;
 
-    std::map<int, MavlinkHelper::Processing *> m_modes;
+    std::map<int, IAutopilot *> m_modes;
 };
 
 #endif // MAVLINKPROTOCOL_H

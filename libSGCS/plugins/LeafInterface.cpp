@@ -24,7 +24,7 @@ LeafInterface::LeafInterface()
 
 void LeafInterface::setUAV(uav::UAV *uav)
 {
-    _uav = uav;
+    m_uav = uav;
     onSetUAV();
 }
 }

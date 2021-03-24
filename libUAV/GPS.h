@@ -30,16 +30,39 @@ public:
         HAS_HV_DOP           = 0b1 << 2
     };
 
+    enum class FixType : uint8_t
+    {
+        NOGPS,
+        FIX3D,
+        RTK
+    };
+
     class Message : public UavTask
     {
     public:
-        Message(int target) : UavTask(target), satelitesGPS(0), satelitesGLONASS(0), hdop(255), vdop(255)
+        Message(int target)
+        : UavTask(target), satelitesGPS(0), satelitesGLONASS(0), hdop(255), vdop(255), fix(FixType::NOGPS)
         {
         }
         tools::optional<uint8_t> satelitesGPS;
         tools::optional<uint8_t> satelitesGLONASS;
         tools::optional<uint8_t> hdop;
         tools::optional<uint8_t> vdop;
+        tools::optional<FixType> fix;
+    };
+
+    class OnChangeGPSCallback
+    {
+    public:
+        virtual void updateSatelitesCount()
+        {
+        }
+        virtual void updateErros()
+        {
+        }
+        virtual void updateFixType()
+        {
+        }
     };
 
     GPS();
@@ -53,11 +76,18 @@ public:
     uint8_t hdop() const;
     uint8_t vdop() const;
 
+    GPS::FixType fixType() const;
+
+    //
+    void addCallback(OnChangeGPSCallback *call);
+    void removeCallback(OnChangeGPSCallback *call);
+
 protected:
     void setProvGPS(uint8_t provGPS);
     void setProvGLONASS(uint8_t provGLONASS);
     void setHdop(const uint8_t &hdop);
     void setVdop(const uint8_t &vdop);
+    void setFixType(const GPS::FixType &fixType);
 
 private:
     uint8_t m_provGPS     = 0;
@@ -65,6 +95,10 @@ private:
 
     uint8_t m_hdop = 255;
     uint8_t m_vdop = 255;
+
+    FixType m_fixType;
+
+    std::list<OnChangeGPSCallback *> m_GPSCallback;
 };
 }
 
