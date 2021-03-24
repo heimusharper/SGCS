@@ -82,7 +82,7 @@ void MavlinkProtocol::runParser()
             tools::CharMap data = _dataTasks.front();
             _dataTasks.pop();
             _dataTaskMutex.unlock();
-            for (int i = 0; i < data.size; i++)
+            for (size_t i = 0; i < data.size; i++)
             {
                 if (check(data.data[i], &msg))
                 {
@@ -186,9 +186,9 @@ void MavlinkProtocol::runMessageReader()
                 }
             }
             //
+            BOOST_LOG_TRIVIAL(info) << "IN MESSAGE " << (int)message.sysid << " " << message.msgid;
             if (m_modes.contains(message.sysid))
             {
-                BOOST_LOG_TRIVIAL(info) << "IN MESSAGE " << message.msgid;
                 IAutopilot *ap = m_modes[message.sysid];
                 if (!ap)
                     return;
@@ -276,6 +276,14 @@ void MavlinkProtocol::runMessageReader()
                                 mavlink_gps_status_t gps;
                                 mavlink_msg_gps_status_decode(&message, &gps);
 
+                                break;
+                            }
+                            case MAVLINK_MSG_ID_PARAM_VALUE:
+                            {
+                                mavlink_param_value_t param;
+                                mavlink_msg_param_value_decode(&message, &param);
+                                std::string id = std::string(param.param_id, strnlen(param.param_id, 16));
+                                BOOST_LOG_TRIVIAL(info) << "PARAM ID " << id << " VALUE " << param.param_value;
                                 break;
                             }
                             default:

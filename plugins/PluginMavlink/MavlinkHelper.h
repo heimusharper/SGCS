@@ -27,7 +27,7 @@ struct MavlinkHelper
             uint16_t lenght = mavlink_msg_to_send_buffer((uint8_t *)cm.data, &m_mavlink);
             if (lenght > 0)
             {
-                BOOST_LOG_TRIVIAL(info) << "PACKING " << m_mavlink.msgid;
+                // BOOST_LOG_TRIVIAL(info) << "PACKING " << m_mavlink.msgid;
                 cm.size = lenght;
                 return cm;
             }
