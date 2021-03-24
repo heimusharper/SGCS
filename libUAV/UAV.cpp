@@ -28,6 +28,7 @@ UAV::UAV()
 , m_home(new Home())
 , m_power(new Power())
 , m_speed(new Speed())
+, m_isFlight(false)
 {
 }
 
@@ -50,6 +51,11 @@ void UAV::process(std::unique_ptr<UavTask> message)
             setId(uavmessage->id.get());
         if (uavmessage->type.dirty())
             setType(uavmessage->type.get());
+    }
+    else if (UAV::MessageFlight *uavmessage = dynamic_cast<UAV::MessageFlight *>(task))
+    {
+        if (uavmessage->flight.dirty())
+            setIsFlight(uavmessage->flight.get());
     }
     else if (AHRS::Message *ahrsmsg = dynamic_cast<AHRS::Message *>(task))
         m_ahrs->process(ahrsmsg);
@@ -88,6 +94,26 @@ void UAV::setType(UAVType type)
         return;
     BOOST_LOG_TRIVIAL(info) << "UAV TYPE " << (int)type;
     m_type = type;
+}
+
+bool UAV::isFlight() const
+{
+    return m_isFlight;
+}
+
+void UAV::addControl(UAV::ControlInterface *i)
+{
+    m_controls.push_back(i);
+}
+
+void UAV::removeControl(UAV::ControlInterface *i)
+{
+    m_controls.remove(i);
+}
+
+void UAV::setIsFlight(bool isFlight)
+{
+    m_isFlight = isFlight;
 }
 
 Speed *UAV::speed() const

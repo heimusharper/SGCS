@@ -105,3 +105,97 @@ bool AutopilotPixhawkImpl::setInterval(IAutopilot::MessageType type, int interva
     }
     return true;
 }
+
+bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defaultModeAuto)
+{
+    bool readyToStart = false;
+    if (m_baseMode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)
+    {
+        union px4::px4_custom_mode px4_mode;
+        px4_mode.data = m_customMode;
+        if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_AUTO || px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
+            readyToStart = true;
+        if (readyToStart)
+        {
+            // arm
+            arm(force);
+            return true;
+        }
+        else if (autoChangeMode)
+        {
+            // mode change
+            union px4::px4_custom_mode px4_mode;
+            if (defaultModeAuto)
+            {
+                px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_AUTO;
+                px4_mode.sub_mode  = px4::PX4_CUSTOM_SUB_MODE_AUTO_READY;
+            }
+            else
+            {
+                px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD;
+                px4_mode.sub_mode  = 0;
+            }
+            target_main_mode   = px4_mode.main_mode;
+            target_sub_mode    = px4_mode.sub_mode;
+            target_force_arm   = force;
+            m_waitPrepareToARM = 5;
+            sendMode(0, px4_mode.data);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool AutopilotPixhawkImpl::requestDisARM(bool force)
+{
+    disarm(force);
+}
+
+bool AutopilotPixhawkImpl::requestTakeOff()
+{
+}
+
+bool AutopilotPixhawkImpl::repositionOnboard(geo::Coords3D &&pos)
+{
+    mavlink_message_t message;
+    mavlink_msg_mission_item_pack_chan(m_gcs,
+                                       0,
+                                       m_chanel,
+                                       &message,
+                                       m_id,
+                                       0,
+                                       0,
+                                       MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                                       MAV_CMD_NAV_WAYPOINT,
+                                       2,
+                                       1,
+                                       0,
+                                       0,
+                                       0,
+                                       NAN,
+                                       (float)pos.lat(),
+                                       (float)pos.lon(),
+                                       (float)pos.alt(),
+                                       MAV_MISSION_TYPE_MISSION);
+    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 2, 200, uav::UavSendMessage::Priority::HIGHT));
+    return true;
+}
+
+bool AutopilotPixhawkImpl::repositionOffboard(geo::Coords3D &&pos)
+{
+    return repositionOnboard(std::move(pos));
+}
+
+void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
+{
+    IAutopilot::setMode(base, custom);
+    if (m_waitPrepareToARM-- > 0)
+    {
+        union px4::px4_custom_mode px4_mode;
+        px4_mode.data = custom;
+        if (target_main_mode == px4_mode.main_mode && target_sub_mode == px4_mode.sub_mode)
+        {
+            requestARM(false, target_force_arm);
+        }
+    }
+}

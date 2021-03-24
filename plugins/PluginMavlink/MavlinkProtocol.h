@@ -29,19 +29,6 @@
 #include <queue>
 #include <thread>
 
-class MavlinkPositionControl : public uav::Position::PositionControlInterface
-{
-public:
-    MavlinkPositionControl(sgcs::connection::UavProtocol *proto, uint8_t id) : m_proto(proto), m_id(id)
-    {
-    }
-    virtual bool goTo(geo::Coords3D &&target) override final;
-
-private:
-    sgcs::connection::UavProtocol *m_proto = nullptr;
-    uint8_t m_id                           = 0;
-};
-
 class MavlinkProtocol : public sgcs::connection::UavProtocol
 {
 public:
@@ -83,6 +70,46 @@ private:
     std::mutex _dataTaskMutex;
 
     std::map<int, IAutopilot *> m_modes;
+
+private:
+    class MavlinkPositionControl : public uav::Position::PositionControlInterface
+    {
+    public:
+        MavlinkPositionControl(IAutopilot *ap) : m_ap(ap)
+        {
+        }
+        virtual bool goTo(geo::Coords3D &&target) override final
+        {
+            m_ap->repositionOffboard(std::move(target));
+            return false;
+        }
+
+    private:
+        IAutopilot *m_ap = nullptr;
+    };
+
+    class MavlinkARMControl : public uav::UAV::ControlInterface
+    {
+    public:
+        MavlinkARMControl(IAutopilot *ap) : m_ap(ap)
+        {
+        }
+        virtual void arm(bool force) override final
+        {
+            m_ap->requestARM(true, force, false);
+        }
+        virtual void disarm(bool force) override final
+        {
+            m_ap->requestDisARM(force);
+        }
+        virtual void takeOff() override final
+        {
+            m_ap->requestTakeOff();
+        }
+
+    private:
+        IAutopilot *m_ap = nullptr;
+    };
 };
 
 #endif // MAVLINKPROTOCOL_H

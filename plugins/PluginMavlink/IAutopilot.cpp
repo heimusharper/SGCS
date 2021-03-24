@@ -25,7 +25,36 @@ void IAutopilot::setReady(bool ready)
     m_ready = ready;
 }
 
+void IAutopilot::setMode(uint8_t base, uint32_t custom)
+{
+    m_baseMode   = base;
+    m_customMode = custom;
+}
+
 void IAutopilot::setSend(const std::function<void(MavlinkHelper::MavlinkMessageType *)> &send)
 {
     m_send = send;
+}
+
+void IAutopilot::sendMode(uint8_t base, uint32_t custom)
+{
+    mavlink_message_t message;
+    mavlink_msg_set_mode_pack_chan(m_gcs, 0, m_chanel, &message, m_id, base, custom);
+    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 5, 200, uav::UavSendMessage::Priority::HIGHT));
+}
+
+void IAutopilot::arm(bool force)
+{
+    mavlink_message_t message;
+    mavlink_msg_command_long_pack_chan(
+    m_gcs, 1, m_chanel, &message, m_id, 0, MAV_CMD_COMPONENT_ARM_DISARM, 1, 1, (force) ? 21196 : 0, 0, 0, 0, 0, 0);
+    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 5, 200, uav::UavSendMessage::Priority::HIGHT));
+}
+
+void IAutopilot::disarm(bool force)
+{
+    mavlink_message_t message;
+    mavlink_msg_command_long_pack_chan(
+    m_gcs, 1, m_chanel, &message, m_id, 0, MAV_CMD_COMPONENT_ARM_DISARM, 1, 0, (force) ? 21196 : 0, 0, 0, 0, 0, 0);
+    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 5, 200, uav::UavSendMessage::Priority::HIGHT));
 }

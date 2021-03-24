@@ -53,3 +53,48 @@ bool AutopilotAPMImpl::setInterval(IAutopilot::MessageType type, int interval_hz
     }
     return true;
 }
+
+bool AutopilotAPMImpl::requestARM(bool autoChangeMode, bool force, bool defaultModeAuto)
+{
+    // TODO: implement me
+    return false;
+}
+
+bool AutopilotAPMImpl::requestDisARM(bool force)
+{
+}
+
+bool AutopilotAPMImpl::requestTakeOff()
+{
+}
+
+bool AutopilotAPMImpl::repositionOnboard(geo::Coords3D &&pos)
+{
+    mavlink_message_t message;
+    mavlink_msg_mission_item_pack_chan(m_gcs,
+                                       0,
+                                       m_chanel,
+                                       &message,
+                                       m_id,
+                                       0,
+                                       0,
+                                       MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                                       MAV_CMD_NAV_WAYPOINT,
+                                       2,
+                                       1,
+                                       0,
+                                       0,
+                                       0,
+                                       NAN,
+                                       (float)pos.lat(),
+                                       (float)pos.lon(),
+                                       (float)pos.alt(),
+                                       MAV_MISSION_TYPE_MISSION);
+    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 2, 200, uav::UavSendMessage::Priority::HIGHT));
+    return true;
+}
+
+bool AutopilotAPMImpl::repositionOffboard(geo::Coords3D &&pos)
+{
+    return repositionOnboard(std::move(pos));
+}

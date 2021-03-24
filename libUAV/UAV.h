@@ -47,6 +47,23 @@ public:
         tools::optional<UAVType> type;
     };
 
+    class MessageFlight : public UavTask
+    {
+    public:
+        MessageFlight(int target) : UavTask(target), flight(false)
+        {
+        }
+        tools::optional<bool> flight;
+    };
+
+    class ControlInterface
+    {
+    public:
+        virtual void arm(bool force)    = 0;
+        virtual void disarm(bool force) = 0;
+        virtual void takeOff()          = 0;
+    };
+
     UAV();
     virtual ~UAV();
     void process(std::unique_ptr<uav::UavTask> message);
@@ -67,10 +84,18 @@ public:
 
     Speed *speed() const;
 
+    bool isFlight() const;
+
+    //
+    void addControl(ControlInterface *i);
+    void removeControl(ControlInterface *i);
+
 private:
     void setId(int id);
 
     void setType(UAVType type);
+
+    void setIsFlight(bool isFlight);
 
 private:
     int m_id;
@@ -90,6 +115,10 @@ private:
     Power *m_power = nullptr;
 
     Speed *m_speed = nullptr;
+
+    bool m_isFlight;
+
+    std::list<ControlInterface *> m_controls;
 };
 }
 #endif

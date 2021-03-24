@@ -207,6 +207,9 @@ void MavlinkProtocol::runMessageReader()
                         {
                             case MAVLINK_MSG_ID_HEARTBEAT:
                             {
+                                mavlink_heartbeat_t hrt;
+                                mavlink_msg_heartbeat_decode(&message, &hrt);
+                                ap->setMode(hrt.base_mode, hrt.custom_mode);
                                 if (!ap->ready())
                                 {
                                     doConfigure(message.sysid);
@@ -358,9 +361,13 @@ void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
 {
     uav->gps()->setHas(uav::GPS::HAS::HAS_HV_DOP | uav::GPS::HAS::HAS_PROVIDER_GPS);
     uav->position()->setHas(uav::Position::HAS::HAS_SOURCE_GPS);
-    MavlinkPositionControl *uavPositionControl = new MavlinkPositionControl(this, 0);
-    uav->position()->setControl(uavPositionControl);
+    uav->speed()->setHas(uav::Speed::HAS_GROUND_SPEED);
     UavProtocol::setUAV(id, uav);
+
+    MavlinkPositionControl *uavPositionControl = new MavlinkPositionControl(m_modes[id]);
+    uav->position()->setControl(uavPositionControl);
+    MavlinkARMControl *armControl = new MavlinkARMControl(m_modes[id]);
+    uav->addControl(armControl);
 }
 
 bool MavlinkProtocol::check(char c, mavlink_message_t *msg)
@@ -368,36 +375,4 @@ bool MavlinkProtocol::check(char c, mavlink_message_t *msg)
     mavlink_status_t stats;
     uint8_t i = mavlink_parse_char(DIFFERENT_CHANNEL, c, msg, &stats);
     return i != 0;
-}
-
-bool MavlinkPositionControl::goTo(geo::Coords3D &&target)
-{
-    if (m_proto)
-    {
-        mavlink_message_t message;
-        mavlink_msg_mission_item_pack_chan(255,
-                                           0,
-                                           0,
-                                           &message,
-                                           m_id,
-                                           0,
-                                           0,
-                                           MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                                           MAV_CMD_NAV_WAYPOINT,
-                                           2,
-                                           1,
-                                           0,
-                                           0,
-                                           0,
-                                           NAN,
-                                           (float)target.lat(),
-                                           (float)target.lon(),
-                                           (float)target.alt(),
-                                           MAV_MISSION_TYPE_MISSION);
-        MavlinkHelper::MavlinkMessageType *msg =
-        new MavlinkHelper::MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::HIGHT);
-        m_proto->sendMessage(msg);
-        return true;
-    }
-    return false;
 }
