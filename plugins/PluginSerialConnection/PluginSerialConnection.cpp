@@ -18,6 +18,7 @@
 
 PluginSerialConnection::PluginSerialConnection() : sgcs::plugin::DataSourcePlugin()
 {
+    RunConfiguration::instance().get<SerialConfig>();
 }
 
 std::string PluginSerialConnection::name() const

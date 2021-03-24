@@ -20,6 +20,7 @@
 #include "AutopilotAPMImpl.h"
 #include "AutopilotPixhawkImpl.h"
 #include "IAutopilot.h"
+#include "MavlinkConfig.h"
 #include "MavlinkHelper.h"
 #include <atomic>
 #include <boost/log/trivial.hpp>

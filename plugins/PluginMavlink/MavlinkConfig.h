@@ -14,20 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef SERIALCONFIG_H
-#define SERIALCONFIG_H
+#ifndef MAVLINKCONFIG_H
+#define MAVLINKCONFIG_H
 #include <config/RunConfiguration.h>
 
-class SerialConfig : public ConfigInterface
+class MavlinkConfig : public ConfigInterface
 {
-#if defined(SerialConfig_def)
-#error Redefenition SerialConfig_def
+#if defined(MavlinkConfig_def)
+#error Redefenition MavlinkConfig_def
 #else
-#define SerialConfig_def
+#define MavlinkConfig_def
 #endif
 public:
-    SerialConfig(ConfigInterface *parent);
-    virtual ~SerialConfig() = default;
+    MavlinkConfig(ConfigInterface *parent);
+    virtual ~MavlinkConfig() = default;
     /*!
      * \brief name ApplicationConfiguration
      * \return ApplicationConfiguration
@@ -45,19 +45,49 @@ public:
      */
     virtual void fromNode(const YAML::Node &node) override final;
 
-    std::string portName() const;
-    void setPortName(const std::string &portName);
+    int rateADSB() const;
 
-    uint32_t baudRate() const;
-    void setBaudRate(const uint32_t &baudRate);
+    int rateExtra1() const;
 
-    bool autoName() const;
-    void setAutoName(bool autoName);
+    int rateExtra2() const;
+
+    int rateExtra3() const;
+
+    int rateParams() const;
+
+    int ratePos() const;
+
+    int rateRaw() const;
+
+    int rateRC() const;
+
+    int rateSensors() const;
+
+    int rateStat() const;
 
 private:
-    std::string m_portName;
-    uint32_t m_baudRate;
-    bool m_autoName;
+    void setRateADSB(int rateADSB);
+    void setRateExtra1(int rateExtra1);
+    void setRateExtra2(int rateExtra2);
+    void setRateExtra3(int rateExtra3);
+    void setRateParams(int rateParams);
+    void setRatePos(int ratePos);
+    void setRateRaw(int rateRaw);
+    void setRateRC(int rateRC);
+    void setRateSensors(int rateSensors);
+    void setRateStat(int rateStat);
+
+private:
+    int m_rateADSB;
+    int m_rateExtra1;
+    int m_rateExtra2;
+    int m_rateExtra3;
+    int m_rateParams;
+    int m_ratePos;
+    int m_rateRaw;
+    int m_rateRC;
+    int m_rateSensors;
+    int m_rateStat;
 };
 
-#endif // SERIALCONFIG_H
+#endif // MAVLINKCONFIG_H

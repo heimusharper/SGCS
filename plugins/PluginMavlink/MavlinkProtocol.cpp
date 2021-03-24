@@ -330,16 +330,16 @@ void MavlinkProtocol::runPing()
 
 void MavlinkProtocol::doConfigure(int uav)
 {
-    doConfigureMessageInterval(uav, IAutopilot::MessageType::ADSB, -1);
-    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA1, 1);
-    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA2, 1);
-    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA3, 1);
-    doConfigureMessageInterval(uav, IAutopilot::MessageType::PARAMS, -1);
-    doConfigureMessageInterval(uav, IAutopilot::MessageType::POS, 2);
-    doConfigureMessageInterval(uav, IAutopilot::MessageType::RAW, -1);
-    doConfigureMessageInterval(uav, IAutopilot::MessageType::RC, -1);
-    doConfigureMessageInterval(uav, IAutopilot::MessageType::SENSORS, -1);
-    doConfigureMessageInterval(uav, IAutopilot::MessageType::STAT, 1);
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::ADSB, RunConfiguration::instance().get<MavlinkConfig>()->rateADSB());
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA1, RunConfiguration::instance().get<MavlinkConfig>()->rateExtra1());
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA2, RunConfiguration::instance().get<MavlinkConfig>()->rateExtra2());
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::EXTRA3, RunConfiguration::instance().get<MavlinkConfig>()->rateExtra3());
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::PARAMS, RunConfiguration::instance().get<MavlinkConfig>()->rateParams());
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::POS, RunConfiguration::instance().get<MavlinkConfig>()->ratePos());
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::RAW, RunConfiguration::instance().get<MavlinkConfig>()->rateRaw());
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::RC, RunConfiguration::instance().get<MavlinkConfig>()->rateRC());
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::SENSORS, RunConfiguration::instance().get<MavlinkConfig>()->rateSensors());
+    doConfigureMessageInterval(uav, IAutopilot::MessageType::STAT, RunConfiguration::instance().get<MavlinkConfig>()->rateStat());
 
     runPing();
 }

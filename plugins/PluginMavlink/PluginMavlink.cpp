@@ -18,6 +18,7 @@
 
 PluginMavlink::PluginMavlink() : sgcs::plugin::ProtocolPlugin()
 {
+    RunConfiguration::instance().get<MavlinkConfig>();
 }
 
 PluginMavlink::~PluginMavlink()

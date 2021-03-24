@@ -32,6 +32,7 @@ SET(SRC_LIST
     IAutopilot.cpp
     AutopilotAPMImpl.cpp
     AutopilotPixhawkImpl.cpp
+    MavlinkConfig.cpp
     )
 SET(HEADER_LIST
     MavlinkHelper.h
@@ -40,6 +41,7 @@ SET(HEADER_LIST
     IAutopilot.h
     AutopilotAPMImpl.h
     AutopilotPixhawkImpl.h
+    MavlinkConfig.h
     )
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 

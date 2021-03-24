@@ -102,8 +102,6 @@ bool AutopilotPixhawkImpl::setInterval(IAutopilot::MessageType type, int interva
         // mavlink_msg_request_data_stream_pack_chan(
         // m_gcs, 0, m_chanel, &message, m_id, 0, i, (interval_hz < 0) ? 0 : interval_hz, (interval_hz < 0) ? 0 : 1);
         m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::LOW));
-
-        //  BOOST_LOG_TRIVIAL(info) << "CONSTRUCT RATE " << m_gcs << " " << m_chanel << " " << m_id << " " << interval_hz << " " << i;
     }
     return true;
 }

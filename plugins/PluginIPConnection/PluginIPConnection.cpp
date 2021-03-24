@@ -18,6 +18,7 @@
 
 PluginIPConnection::PluginIPConnection() : sgcs::plugin::DataSourcePlugin()
 {
+    RunConfiguration::instance().get<IPConfig>();
 }
 
 std::string PluginIPConnection::name() const
