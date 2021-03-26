@@ -94,21 +94,45 @@ private:
         MavlinkARMControl(IAutopilot *ap) : m_ap(ap)
         {
         }
-        virtual void arm(bool force) override final
+        virtual void changeState(uav::UAVControlState state, bool force = false) override final
         {
-            m_ap->requestARM(true, force, false);
-        }
-        virtual void disarm(bool force) override final
-        {
-            m_ap->requestDisARM(force);
-        }
-        virtual void takeOff(int alt) override final
-        {
-            m_ap->requestTakeOff(alt);
+            switch (state)
+            {
+                case uav::UAVControlState::AUTO:
+
+                    break;
+                case uav::UAVControlState::KILL:
+                    m_ap->requestDisARM(force);
+                    break;
+                case uav::UAVControlState::LAND:
+
+                    break;
+                case uav::UAVControlState::MANUAL_OFFBOARD:
+
+                    break;
+                case uav::UAVControlState::MANUAL_ONBOARD:
+
+                    break;
+                case uav::UAVControlState::PREPARED:
+                    m_ap->requestARM(true, force, true);
+                    break;
+                case uav::UAVControlState::RTL:
+
+                    break;
+                case uav::UAVControlState::STARTED:
+                    m_ap->requestTakeOff(altitude);
+                    break;
+                case uav::UAVControlState::WAIT:
+
+                    break;
+                default:
+                    break;
+            }
         }
 
     private:
         IAutopilot *m_ap = nullptr;
+        float altitude   = 10;
     };
 };
 

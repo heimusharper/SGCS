@@ -28,7 +28,7 @@ UAV::UAV()
 , m_home(new Home())
 , m_power(new Power())
 , m_speed(new Speed())
-, m_isFlight(false)
+, m_state(UAVControlState::WAIT)
 , m_takeoffAltitude(10)
 {
 }
@@ -55,8 +55,8 @@ void UAV::process(std::unique_ptr<UavTask> message)
     }
     else if (UAV::MessageFlight *uavmessage = dynamic_cast<UAV::MessageFlight *>(task))
     {
-        if (uavmessage->flight.dirty())
-            setIsFlight(uavmessage->flight.get());
+        if (uavmessage->state.dirty())
+            setState(uavmessage->state.get());
     }
     else if (AHRS::Message *ahrsmsg = dynamic_cast<AHRS::Message *>(task))
         m_ahrs->process(ahrsmsg);
@@ -97,11 +97,6 @@ void UAV::setType(UAVType type)
     m_type = type;
 }
 
-bool UAV::isFlight() const
-{
-    return m_isFlight;
-}
-
 void UAV::addControl(UAV::ControlInterface *i)
 {
     m_controls.push_back(i);
@@ -112,9 +107,25 @@ void UAV::removeControl(UAV::ControlInterface *i)
     m_controls.remove(i);
 }
 
-void UAV::setIsFlight(bool isFlight)
+UAVControlState UAV::state() const
 {
-    m_isFlight = isFlight;
+    return m_state;
+}
+
+void UAV::sendControlState(UAVControlState newState, bool force)
+{
+    for (auto c : m_controls)
+        c->changeState(newState, force);
+}
+
+void UAV::setState(const UAVControlState &state)
+{
+    if (m_state != state)
+    {
+        m_state = state;
+        for (auto c : m_controls)
+            c->onChangeControlState(m_state);
+    }
 }
 
 int UAV::takeoffAltitude() const

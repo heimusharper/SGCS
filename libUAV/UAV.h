@@ -34,6 +34,19 @@ enum class UAVType
     UNDEFINED
 };
 
+enum class UAVControlState
+{
+    WAIT,
+    PREPARED,
+    STARTED,
+    AUTO,
+    MANUAL_ONBOARD,
+    MANUAL_OFFBOARD,
+    RTL,
+    LAND,
+    KILL
+};
+
 class UAV : public UavObject<uint8_t>
 {
 public:
@@ -50,18 +63,21 @@ public:
     class MessageFlight : public UavTask
     {
     public:
-        MessageFlight(int target) : UavTask(target), flight(false)
+        MessageFlight(int target) : UavTask(target), state(UAVControlState::WAIT)
         {
         }
-        tools::optional<bool> flight;
+        tools::optional<UAVControlState> state;
     };
 
     class ControlInterface
     {
     public:
-        virtual void arm(bool force)    = 0;
-        virtual void disarm(bool force) = 0;
-        virtual void takeOff(int alt)   = 0;
+        virtual void changeState(UAVControlState state, bool force = false)
+        {
+        }
+        virtual void onChangeControlState(UAVControlState state)
+        {
+        }
     };
 
     UAV();
@@ -84,8 +100,6 @@ public:
 
     Speed *speed() const;
 
-    bool isFlight() const;
-
     int takeoffAltitude() const;
     void setTakeoffAltitude(int takeoffAltitude);
 
@@ -93,12 +107,18 @@ public:
     void addControl(ControlInterface *i);
     void removeControl(ControlInterface *i);
 
+    UAVControlState state() const;
+
+    // control
+
+    void sendControlState(UAVControlState newState, bool force = false);
+
 private:
     void setId(int id);
 
     void setType(UAVType type);
 
-    void setIsFlight(bool isFlight);
+    void setState(const UAVControlState &state);
 
 private:
     int m_id;
@@ -119,7 +139,7 @@ private:
 
     Speed *m_speed = nullptr;
 
-    bool m_isFlight;
+    UAVControlState m_state;
 
     int m_takeoffAltitude;
 

@@ -68,6 +68,10 @@ bool AutopilotAPMImpl::requestTakeOff(int altitude)
 {
 }
 
+uav::UAVControlState AutopilotAPMImpl::getState(bool &done) const
+{
+}
+
 bool AutopilotAPMImpl::repositionOnboard(geo::Coords3D &&pos)
 {
     mavlink_message_t message;

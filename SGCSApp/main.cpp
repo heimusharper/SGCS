@@ -30,6 +30,13 @@
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/program_options.hpp>
 
+bool exitbool = false;
+void onExit()
+{
+    BOOST_LOG_TRIVIAL(warning) << "Close signal";
+    exitbool = true;
+}
+
 void initLogger(bool output, bool trace, const std::string &file)
 {
     if (!output)
@@ -113,7 +120,10 @@ int main(int argc, char *argv[])
         }
     }
     RunConfiguration::instance().forceSave();
-    while (true)
+    const int result = std::atexit(onExit);
+    while (!exitbool)
+    {
         usleep(10);
-    return 0;
+    }
+    return EXIT_SUCCESS;
 }

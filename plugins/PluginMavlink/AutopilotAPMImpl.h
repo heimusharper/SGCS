@@ -10,6 +10,7 @@ public:
     virtual bool requestARM(bool autoChangeMode, bool force, bool defaultModeAuto = false) override final;
     virtual bool requestDisARM(bool force) override final;
     virtual bool requestTakeOff(int altitude) override final;
+    virtual uav::UAVControlState getState(bool &done) const override final;
 
     virtual bool repositionOnboard(geo::Coords3D &&pos) override final;
     virtual bool repositionOffboard(geo::Coords3D &&pos) override final;

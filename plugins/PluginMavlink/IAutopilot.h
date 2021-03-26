@@ -34,14 +34,16 @@ public:
     virtual bool requestDisARM(bool force)                                                 = 0;
     virtual bool requestTakeOff(int altitude)                                              = 0;
 
-    virtual bool repositionOnboard(geo::Coords3D &&pos)  = 0;
-    virtual bool repositionOffboard(geo::Coords3D &&pos) = 0;
+    virtual bool repositionOnboard(geo::Coords3D &&pos)     = 0;
+    virtual bool repositionOffboard(geo::Coords3D &&pos)    = 0;
+    virtual uav::UAVControlState getState(bool &done) const = 0;
 
     virtual void setMode(uint8_t base, uint32_t custom);
     //
     void setSend(const std::function<void(MavlinkHelper::MavlinkMessageType *)> &send);
 
     //
+    void setIsFlight(bool value);
 
 protected:
     void sendMode(uint8_t base, uint32_t custom);
@@ -55,6 +57,8 @@ protected:
 
     uint8_t m_baseMode;
     uint32_t m_customMode;
+
+    bool isFlight = false;
 
 private:
     MavlinkHelper::ProcessingMode m_processingMode;

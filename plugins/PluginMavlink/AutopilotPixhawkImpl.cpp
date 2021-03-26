@@ -14,7 +14,7 @@ bool AutopilotPixhawkImpl::setInterval(IAutopilot::MessageType type, int interva
             // msg_ids.push_back(MAVLINK_MSG_ID_ADSB);
             break;
         case MessageType::EXTRA1:
-            msg_ids.push_back(MAVLINK_MSG_ID_ATTITUDE_TARGET);
+            msg_ids.push_back(MAVLINK_MSG_ID_ATTITUDE);
             msg_ids.push_back(MAVLINK_MSG_ID_AHRS2);
             msg_ids.push_back(MAVLINK_MSG_ID_PID_TUNING);
             break;
@@ -46,6 +46,7 @@ bool AutopilotPixhawkImpl::setInterval(IAutopilot::MessageType type, int interva
         case MessageType::POS:
             msg_ids.push_back(MAVLINK_MSG_ID_ALTITUDE);
             msg_ids.push_back(MAVLINK_MSG_ID_GLOBAL_POSITION_INT);
+            msg_ids.push_back(MAVLINK_MSG_ID_LOCAL_POSITION_NED);
             msg_ids.push_back(MAVLINK_MSG_ID_POSITION_TARGET_GLOBAL_INT);
             break;
         case MessageType::RAW:
@@ -57,6 +58,10 @@ bool AutopilotPixhawkImpl::setInterval(IAutopilot::MessageType type, int interva
             msg_ids.push_back(MAVLINK_MSG_ID_SCALED_PRESSURE2);
             msg_ids.push_back(MAVLINK_MSG_ID_SCALED_PRESSURE3);
             msg_ids.push_back(MAVLINK_MSG_ID_ACTUATOR_CONTROL_TARGET);
+            msg_ids.push_back(MAVLINK_MSG_ID_ODOMETRY);
+            msg_ids.push_back(MAVLINK_MSG_ID_ESTIMATOR_STATUS);
+            msg_ids.push_back(MAVLINK_MSG_ID_ATTITUDE_QUATERNION);
+            msg_ids.push_back(MAVLINK_MSG_ID_ATTITUDE_TARGET);
             break;
         case MessageType::RC:
             msg_ids.push_back(MAVLINK_MSG_ID_SERVO_OUTPUT_RAW);
@@ -105,6 +110,7 @@ bool AutopilotPixhawkImpl::setInterval(IAutopilot::MessageType type, int interva
 
 bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defaultModeAuto)
 {
+    BOOST_LOG_TRIVIAL(info) << "DO ARM";
     bool readyToStart = false;
     if (m_baseMode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)
     {
@@ -145,11 +151,13 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
 
 bool AutopilotPixhawkImpl::requestDisARM(bool force)
 {
+    BOOST_LOG_TRIVIAL(info) << "DO DISARM";
     disarm(force);
 }
 
 bool AutopilotPixhawkImpl::requestTakeOff(int altitude)
 {
+    BOOST_LOG_TRIVIAL(info) << "DO TAKEOFF";
     mavlink_message_t message;
     union px4::px4_custom_mode px4_mode;
     px4_mode.data = m_customMode;
@@ -163,8 +171,60 @@ bool AutopilotPixhawkImpl::requestTakeOff(int altitude)
     return true;
 }
 
+uav::UAVControlState AutopilotPixhawkImpl::getState(bool &done) const
+{
+    done = true;
+    if (!isFlight)
+    {
+        return uav::UAVControlState::WAIT;
+    }
+    else
+    {
+        union px4::px4_custom_mode px4_mode;
+        px4_mode.data = m_customMode;
+        switch (px4_mode.main_mode)
+        {
+            case px4::PX4_CUSTOM_MAIN_MODE_MANUAL:
+            case px4::PX4_CUSTOM_MAIN_MODE_ALTCTL:
+            case px4::PX4_CUSTOM_MAIN_MODE_POSCTL:
+            case px4::PX4_CUSTOM_MAIN_MODE_ACRO:
+            case px4::PX4_CUSTOM_MAIN_MODE_STABILIZED:
+            case px4::PX4_CUSTOM_MAIN_MODE_RATTITUDE:
+                return uav::UAVControlState::MANUAL_ONBOARD;
+            case px4::PX4_CUSTOM_MAIN_MODE_AUTO:
+            {
+                switch (px4_mode.sub_mode)
+                {
+                    case px4::PX4_CUSTOM_SUB_MODE_AUTO_READY:
+                        return uav::UAVControlState::PREPARED;
+                    case px4::PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF:
+                        return uav::UAVControlState::STARTED;
+                    case px4::PX4_CUSTOM_SUB_MODE_AUTO_LOITER:
+                    case px4::PX4_CUSTOM_SUB_MODE_AUTO_MISSION:
+                        return uav::UAVControlState::AUTO;
+                    case px4::PX4_CUSTOM_SUB_MODE_AUTO_RTGS:
+                    case px4::PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET:
+                    case px4::PX4_CUSTOM_SUB_MODE_AUTO_RTL:
+                        return uav::UAVControlState::RTL;
+                    case px4::PX4_CUSTOM_SUB_MODE_AUTO_LAND:
+                        return uav::UAVControlState::LAND;
+                        break;
+                    default:
+                        break;
+                }
+                return uav::UAVControlState::AUTO;
+            }
+            case px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD:
+            default:
+                return uav::UAVControlState::MANUAL_OFFBOARD;
+        }
+    }
+    done = false;
+}
+
 bool AutopilotPixhawkImpl::repositionOnboard(geo::Coords3D &&pos)
 {
+    BOOST_LOG_TRIVIAL(info) << "DO REPOSITION" << pos.lat() << ";" << pos.lon() << ";" << pos.alt();
     mavlink_message_t message;
     mavlink_msg_mission_item_pack_chan(m_gcs,
                                        0,
@@ -196,6 +256,7 @@ bool AutopilotPixhawkImpl::repositionOffboard(geo::Coords3D &&pos)
 
 void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
 {
+    BOOST_LOG_TRIVIAL(info) << "DO MODE " << (int)base << " " << custom;
     IAutopilot::setMode(base, custom);
     if (m_waitPrepareToARM-- > 0)
     {

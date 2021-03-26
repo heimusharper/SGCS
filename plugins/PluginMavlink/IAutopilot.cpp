@@ -58,3 +58,8 @@ void IAutopilot::disarm(bool force)
     m_gcs, 1, m_chanel, &message, m_id, 0, MAV_CMD_COMPONENT_ARM_DISARM, 1, 0, (force) ? 21196 : 0, 0, 0, 0, 0, 0);
     m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 5, 200, uav::UavSendMessage::Priority::HIGHT));
 }
+
+void IAutopilot::setIsFlight(bool value)
+{
+    isFlight = value;
+}

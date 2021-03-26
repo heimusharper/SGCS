@@ -215,6 +215,11 @@ void MavlinkProtocol::runMessageReader()
                                     doConfigure(message.sysid);
                                     ap->setReady(true);
                                 }
+                                bool readyState              = false;
+                                auto state                   = ap->getState(readyState);
+                                uav::UAV::MessageFlight *msf = new uav::UAV::MessageFlight(message.sysid);
+                                msf->state                   = state;
+                                insertMessage(msf);
                                 break;
                             }
                             case MAVLINK_MSG_ID_ATTITUDE:
@@ -296,16 +301,19 @@ void MavlinkProtocol::runMessageReader()
                             {
                                 mavlink_command_ack_t ack;
                                 mavlink_msg_command_ack_decode(&message, &ack);
-                                /* switch (ack.result)
+                                switch (ack.result)
                                 {
                                     case MAV_RESULT_ACCEPTED:
-                                        BOOST_LOG_TRIVIAL(info) << "ACK MESSAGE " << ack.command << " ACCEPTED";
+                                        BOOST_LOG_TRIVIAL(info)
+                                        << "ACK MESSAGE " << ack.command << " ACCEPTED " << (int)ack.progress << " "
+                                        << (int)ack.result << " " << ack.result_param2;
                                         break;
                                     default:
-                                        BOOST_LOG_TRIVIAL(info)
-                                        << "ACK MESSAGE " << ack.command << " FAILED " << (int)ack.result;
+                                        BOOST_LOG_TRIVIAL(warning)
+                                        << "ACK MESSAGE " << ack.command << " FAILED " << (int)ack.result
+                                        << (int)ack.progress << " " << ack.result_param2;
                                         break;
-                                } */
+                                }
                                 break;
                             }
                             default:
