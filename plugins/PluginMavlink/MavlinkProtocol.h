@@ -87,6 +87,21 @@ private:
     std::map<int, IAutopilot *> m_modes;
 
 private:
+    class MavlinkAHRSControl : public uav::AHRS::OnChangeAHRSCallback
+    {
+    public:
+        MavlinkAHRSControl(IAutopilot *ap) : m_ap(ap)
+        {
+        }
+        virtual void sendYaw(float yaw)
+        {
+            m_ap->repositionAzimuth(yaw);
+        }
+
+    private:
+        IAutopilot *m_ap = nullptr;
+    };
+
     class MavlinkPositionControl : public uav::Position::PositionControlInterface
     {
     public:

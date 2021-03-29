@@ -114,6 +114,19 @@ void MavlinkProtocol::runMessageReader()
                         m_modes.insert(std::pair(message.sysid, ap));
                         if (ap)
                         {
+                            ap->setRemove([this](int id) {
+                                m_sendMutex.lock();
+                                auto rmx = [id](std::vector<uav::UavSendMessage *> *msgs) {
+                                    for (uav::UavSendMessage *obj : msg)
+                                    {
+                                        obj.c
+                                    }
+                                };
+                                rmx(m_send[uav::UavSendMessage::Priority::HIGHT]);
+                                rmx(m_send[uav::UavSendMessage::Priority::LOW]);
+                                rmx(m_send[uav::UavSendMessage::Priority::NORMAL]);
+                                m_sendMutex.unlock();
+                            });
                             ap->setSend([this](MavlinkHelper::MavlinkMessageType *message) {
                                 // BOOST_LOG_TRIVIAL(info) << "WRITE" << message->mavlink().msgid;
                                 sendMessage(message);
@@ -167,6 +180,10 @@ void MavlinkProtocol::runMessageReader()
                     {
                         switch (message.msgid)
                         {
+                            case MAVLINK_MSG_ID_PING:
+                            {
+                                break;
+                            }
                             case MAVLINK_MSG_ID_HEARTBEAT:
                             {
                                 mavlink_heartbeat_t hrt;
@@ -338,7 +355,10 @@ void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
     uav->setTakeoffAltitude(10);
 
     MavlinkPositionControl *uavPositionControl = new MavlinkPositionControl(m_modes[id]);
+    MavlinkAHRSControl *ahrsPositionControl    = new MavlinkAHRSControl(m_modes[id]);
+
     uav->position()->setControl(uavPositionControl);
+    uav->ahrs()->addCallback(ahrsPositionControl);
     MavlinkARMControl *armControl = new MavlinkARMControl(m_modes[id]);
     uav->addControl(armControl);
 
