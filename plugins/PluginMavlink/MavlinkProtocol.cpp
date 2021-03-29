@@ -117,10 +117,15 @@ void MavlinkProtocol::runMessageReader()
                             ap->setRemove([this](int id) {
                                 m_sendMutex.lock();
                                 auto rmx = [id](std::vector<uav::UavSendMessage *> *msgs) {
-                                    for (uav::UavSendMessage *obj : msg)
-                                    {
-                                        obj.c
-                                    }
+                                    auto x = std::remove_if(msgs->begin(), msgs->end(), [id](const uav::UavSendMessage *obj) {
+                                        const MavlinkHelper::MavlinkMessageType *d =
+                                        dynamic_cast<const MavlinkHelper::MavlinkMessageType *>(obj);
+                                        if (d)
+                                            return d->mavlink().msgid == id;
+                                        return false;
+                                    });
+                                    if (x != msgs->end())
+                                        msgs->erase(x);
                                 };
                                 rmx(m_send[uav::UavSendMessage::Priority::HIGHT]);
                                 rmx(m_send[uav::UavSendMessage::Priority::LOW]);
