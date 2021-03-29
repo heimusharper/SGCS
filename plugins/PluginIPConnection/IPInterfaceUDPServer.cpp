@@ -73,6 +73,7 @@ void IPInterfaceUDPServer::run()
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family      = AF_INET; // IPv4
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    inet_aton(m_hostName.c_str(), &servaddr.sin_addr);
 
     boost::container::vector<struct sockaddr_in> clients;
 
