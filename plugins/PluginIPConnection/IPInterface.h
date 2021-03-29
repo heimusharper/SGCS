@@ -12,7 +12,7 @@ public:
     IPInterface();
     virtual ~IPInterface() = default;
 
-    virtual void close()                                           = 0;
+    virtual void closeConnection()                                           = 0;
     virtual void doConnect(const std::string &host, uint16_t port) = 0;
 };
 

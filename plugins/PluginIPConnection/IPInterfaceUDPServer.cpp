@@ -2,6 +2,7 @@
 
 IPInterfaceUDPServer::IPInterfaceUDPServer() : IPInterface(), m_hostName(""), m_port(15760), MAX_LINE(1024)
 {
+    _dirty.store(true);
     m_stopThread.store(false);
     m_thread = new std::thread(&IPInterfaceUDPServer::run, this);
 }
@@ -13,7 +14,7 @@ IPInterfaceUDPServer::~IPInterfaceUDPServer()
     delete m_thread;
 }
 
-void IPInterfaceUDPServer::close()
+void IPInterfaceUDPServer::closeConnection()
 {
     m_bufferMutex.lock();
     m_bufferMutex.unlock();
@@ -25,6 +26,7 @@ void IPInterfaceUDPServer::doConnect(const std::string &host, uint16_t port)
     m_hostName = host;
     m_port     = port;
     m_bufferMutex.unlock();
+    _dirty.store(true);
 }
 
 void IPInterfaceUDPServer::pipeProcessFromParent(const tools::CharMap &data)
@@ -36,6 +38,7 @@ void IPInterfaceUDPServer::pipeProcessFromParent(const tools::CharMap &data)
 
 void IPInterfaceUDPServer::pipeProcessFromChild(const tools::CharMap &data)
 {
+    pipeWriteToParent(data);
 }
 /*
 std::queue<uint8_t> IPInterfaceUDPServer::readBuffer()
@@ -75,7 +78,6 @@ void IPInterfaceUDPServer::run()
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     boost::container::vector<struct sockaddr_in> clients;
-
     while (!m_stopThread.load())
     {
         // m_bufferMutex.lock();
@@ -93,12 +95,23 @@ void IPInterfaceUDPServer::run()
                     sock = -1;
                     BOOST_LOG_TRIVIAL(info) << "Failed bind UDP connection " << m_hostName << ":" << m_port;
                 }
+                else
+                {
+                    BOOST_LOG_TRIVIAL(info) << "Done bind server " << m_port;
+                }
             }
             else
                 BOOST_LOG_TRIVIAL(info) << "Failed to create UDP connection " << m_hostName << ":" << m_port;
         }
         else
         {
+            if (_dirty.load())
+            {
+                _dirty.store(false);
+                close(sock);
+                sock = -1;
+                continue;
+            }
             struct sockaddr_in cliaddr;
             memset(&cliaddr, 0, sizeof(cliaddr));
             socklen_t len = sizeof(cliaddr); // len is value/resuslt
@@ -110,8 +123,9 @@ void IPInterfaceUDPServer::run()
             m_bufferMutex.lock();
             if (n > 0)
             {
+                // BOOST_LOG_TRIVIAL(info) << "RECEIVEFROM " << n;
                 readBuffer.size = n;
-                m_readBuffer.push(readBuffer);
+                pipeWriteToParent(readBuffer);
             }
             // to readed buffer
             // prepare data to transmit
@@ -124,6 +138,7 @@ void IPInterfaceUDPServer::run()
                     for (sockaddr_in client : clients)
                     {
                         const size_t l = sizeof(client);
+                        // BOOST_LOG_TRIVIAL(info) << "SENDTO";
                         sendto(sock, (const char *)cm.data, cm.size, MSG_CONFIRM, (const struct sockaddr *)&client, l);
                     }
                 }
@@ -139,9 +154,9 @@ void IPInterfaceUDPServer::run()
             if (!has)
             { // client not found, add
                 clients.push_back(cliaddr);
-                BOOST_LOG_TRIVIAL(debug) << "NEW User " << (int)cliaddr.sin_port << cliaddr.sin_addr.s_addr;
+                // BOOST_LOG_TRIVIAL(debug) << "NEW User " << (int)cliaddr.sin_port << cliaddr.sin_addr.s_addr;
             }
         }
-        usleep(100);
+        usleep((sock <= 0) ? 1000000 : 100);
     }
 }
