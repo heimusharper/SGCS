@@ -50,6 +50,30 @@ public:
 
     UavSendMessage::Priority priority() const;
 
+    enum class CompareMode
+    {
+        HARD,
+        LIGHT
+    };
+
+    virtual bool compare(UavSendMessage *message, CompareMode cmpmode)
+    {
+        switch (cmpmode)
+        {
+            case CompareMode::HARD:
+                if (m_priority != message->priority())
+                    return false;
+                break;
+            case CompareMode::LIGHT:
+            default:
+                break;
+        }
+        return compare(message);
+    }
+
+protected:
+    virtual bool compare(const UavSendMessage *message) const = 0;
+
 private:
     bool m_first = true;
     int m_interval;

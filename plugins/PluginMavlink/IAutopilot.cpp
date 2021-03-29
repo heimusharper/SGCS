@@ -1,7 +1,7 @@
 #include "IAutopilot.h"
 
 IAutopilot::IAutopilot(int chan, int gcsID, int id, MavlinkHelper::ProcessingMode mode)
-: m_chanel(chan), m_gcs(gcsID), m_id(id), m_processingMode(mode)
+: m_chanel(chan), m_gcs(gcsID), m_id(id), m_processingMode(mode), m_bootTimeMS(0)
 {
 }
 
@@ -57,6 +57,16 @@ void IAutopilot::disarm(bool force)
     mavlink_msg_command_long_pack_chan(
     m_gcs, 1, m_chanel, &message, m_id, 0, MAV_CMD_COMPONENT_ARM_DISARM, 1, 0, (force) ? 21196 : 0, 0, 0, 0, 0, 0);
     m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 5, 200, uav::UavSendMessage::Priority::HIGHT));
+}
+
+void IAutopilot::setRemove(const std::function<void (int removeAsId)> &remove)
+{
+    m_remove = remove;
+}
+
+void IAutopilot::setBootTimeMS(const uint32_t &bootTimeMS)
+{
+    m_bootTimeMS = bootTimeMS;
 }
 
 void IAutopilot::setIsFlight(bool value)

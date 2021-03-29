@@ -12,8 +12,9 @@ public:
     virtual bool requestTakeOff(int altitude) override final;
     virtual uav::UAVControlState getState(bool &done) const override final;
 
-    virtual bool repositionOnboard(geo::Coords3D &&pos) override final;
-    virtual bool repositionOffboard(geo::Coords3D &&pos) override final;
+    virtual bool repositionOnboard(const geo::Coords3D &pos) override final;
+    virtual bool repositionOffboard(const geo::Coords3D &pos) override final;
+    virtual bool repositionAzimuth(float az) override final;
 
 private:
     int m_srid = 0;

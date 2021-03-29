@@ -41,6 +41,10 @@ public:
         virtual void updateAngles()
         {
         }
+
+        virtual void sendYaw(float yaw)
+        {
+        }
     };
 
     AHRS();
@@ -52,6 +56,8 @@ public:
 
     void addCallback(OnChangeAHRSCallback *call);
     void removeCallback(OnChangeAHRSCallback *call);
+
+    void doSendYaw(float yaw);
 
 private:
     bool setRoll(float roll);

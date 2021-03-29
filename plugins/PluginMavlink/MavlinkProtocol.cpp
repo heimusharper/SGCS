@@ -20,19 +20,12 @@ MavlinkProtocol::MavlinkProtocol()
 : sgcs::connection::UavProtocol(), DIFFERENT_CHANNEL(0), GCS_ID(255), _bootTime(std::chrono::_V2::system_clock::now())
 {
     _stopThread.store(false);
-    _dataProcessorThread    = new std::thread(&MavlinkProtocol::runParser, this);
     _messageProcessorThread = new std::thread(&MavlinkProtocol::runMessageReader, this);
 }
 
 MavlinkProtocol::~MavlinkProtocol()
 {
     _stopThread.store(true);
-    if (_dataProcessorThread)
-    {
-        if (_dataProcessorThread->joinable())
-            _dataProcessorThread->join();
-        delete _dataProcessorThread;
-    }
     if (_messageProcessorThread)
     {
         if (_messageProcessorThread->joinable())
@@ -59,41 +52,8 @@ tools::CharMap MavlinkProtocol::hello() const
     return t.pack();
 }
 
-void MavlinkProtocol::processFromParent(const tools::CharMap &data)
-{
-    _dataTaskMutex.lock();
-    _dataTasks.push(data);
-    _dataTaskMutex.unlock();
-}
-
 void MavlinkProtocol::processFromChild(const tools::CharMap &data)
 {
-}
-
-void MavlinkProtocol::runParser()
-{
-    mavlink_message_t msg;
-    while (!_stopThread.load())
-    {
-        // collect buffers
-        while (!_dataTasks.empty())
-        {
-            _dataTaskMutex.lock();
-            tools::CharMap data = _dataTasks.front();
-            _dataTasks.pop();
-            _dataTaskMutex.unlock();
-            for (size_t i = 0; i < data.size; i++)
-            {
-                if (check(data.data[i], &msg))
-                {
-                    _mavlinkStoreMutex.lock();
-                    _mavlinkMessages.push(msg);
-                    _mavlinkStoreMutex.unlock();
-                }
-            }
-        }
-        usleep(100);
-    }
 }
 
 void MavlinkProtocol::runMessageReader()
@@ -103,9 +63,11 @@ void MavlinkProtocol::runMessageReader()
         while (!_mavlinkMessages.empty())
         {
             _mavlinkStoreMutex.lock();
-            mavlink_message_t message = _mavlinkMessages.front();
-            _mavlinkMessages.pop();
+            uav::UavSendMessage *messageref = _mavlinkMessages.back();
+            _mavlinkMessages.pop_back();
             _mavlinkStoreMutex.unlock();
+            mavlink_message_t message = dynamic_cast<MavlinkHelper::MavlinkMessageType *>(messageref)->mavlink();
+            delete messageref;
 
             if (!m_modes.contains(message.sysid))
             {
@@ -152,6 +114,19 @@ void MavlinkProtocol::runMessageReader()
                         m_modes.insert(std::pair(message.sysid, ap));
                         if (ap)
                         {
+                            ap->setRemove([this](int id) {
+                                m_sendMutex.lock();
+                                auto rmx = [id](std::vector<uav::UavSendMessage *> *msgs) {
+                                    for (uav::UavSendMessage *obj : msg)
+                                    {
+                                        obj.c
+                                    }
+                                };
+                                rmx(m_send[uav::UavSendMessage::Priority::HIGHT]);
+                                rmx(m_send[uav::UavSendMessage::Priority::LOW]);
+                                rmx(m_send[uav::UavSendMessage::Priority::NORMAL]);
+                                m_sendMutex.unlock();
+                            });
                             ap->setSend([this](MavlinkHelper::MavlinkMessageType *message) {
                                 // BOOST_LOG_TRIVIAL(info) << "WRITE" << message->mavlink().msgid;
                                 sendMessage(message);
@@ -205,6 +180,10 @@ void MavlinkProtocol::runMessageReader()
                     {
                         switch (message.msgid)
                         {
+                            case MAVLINK_MSG_ID_PING:
+                            {
+                                break;
+                            }
                             case MAVLINK_MSG_ID_HEARTBEAT:
                             {
                                 mavlink_heartbeat_t hrt;
@@ -215,11 +194,14 @@ void MavlinkProtocol::runMessageReader()
                                     doConfigure(message.sysid);
                                     ap->setReady(true);
                                 }
-                                bool readyState              = false;
-                                auto state                   = ap->getState(readyState);
-                                uav::UAV::MessageFlight *msf = new uav::UAV::MessageFlight(message.sysid);
-                                msf->state                   = state;
-                                insertMessage(msf);
+                                bool readyState = false;
+                                auto state      = ap->getState(readyState);
+                                if (readyState)
+                                {
+                                    uav::UAV::MessageFlight *msf = new uav::UAV::MessageFlight(message.sysid);
+                                    msf->state                   = state;
+                                    insertMessage(msf);
+                                }
                                 break;
                             }
                             case MAVLINK_MSG_ID_ATTITUDE:
@@ -373,7 +355,10 @@ void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
     uav->setTakeoffAltitude(10);
 
     MavlinkPositionControl *uavPositionControl = new MavlinkPositionControl(m_modes[id]);
+    MavlinkAHRSControl *ahrsPositionControl    = new MavlinkAHRSControl(m_modes[id]);
+
     uav->position()->setControl(uavPositionControl);
+    uav->ahrs()->addCallback(ahrsPositionControl);
     MavlinkARMControl *armControl = new MavlinkARMControl(m_modes[id]);
     uav->addControl(armControl);
 

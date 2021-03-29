@@ -38,6 +38,247 @@ struct MavlinkHelper
             return m_mavlink;
         }
 
+    protected:
+        virtual bool compare(const UavSendMessage *message) const override final
+        {
+            const MavlinkHelper::MavlinkMessageType *msg = dynamic_cast<const MavlinkHelper::MavlinkMessageType *>(message);
+            if (msg)
+            {
+                mavlink_message_t msgt = msg->mavlink();
+                if (m_mavlink.msgid == msgt.msgid)
+                {
+                    switch (m_mavlink.msgid)
+                    {
+                        case MAVLINK_MSG_ID_COMMAND_LONG:
+                        {
+                            mavlink_command_long_t long1;
+                            mavlink_msg_command_long_decode(&m_mavlink, &long1);
+                            mavlink_command_long_t long2;
+                            mavlink_msg_command_long_decode(&msgt, &long2);
+                            if (long1.command != long2.command)
+                                return false;
+                            break;
+                        }
+                        case MAVLINK_MSG_ID_PARAM_SET:
+                        {
+                            mavlink_param_set_t rsp1;
+                            mavlink_msg_param_set_decode(&m_mavlink, &rsp1);
+                            mavlink_param_set_t rsp2;
+                            mavlink_msg_param_set_decode(&msgt, &rsp2);
+                            std::string first  = std::string(rsp1.param_id, strnlen(rsp1.param_id, 16));
+                            std::string second = std::string(rsp2.param_id, strnlen(rsp2.param_id, 16));
+                            if (first.compare(second) != 0)
+                                return false;
+                            break;
+                        }
+                        case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
+                        {
+                            mavlink_param_request_read_t rsp1;
+                            mavlink_msg_param_request_read_decode(&m_mavlink, &rsp1);
+                            mavlink_param_request_read_t rsp2;
+                            mavlink_msg_param_request_read_decode(&msgt, &rsp2);
+
+                            std::string first  = std::string(rsp1.param_id, strnlen(rsp1.param_id, 16));
+                            std::string second = std::string(rsp2.param_id, strnlen(rsp2.param_id, 16));
+                            if (first.compare(second) != 0)
+                                return false;
+                            break;
+                        }
+                        case MAVLINK_MSG_ID_DATA32:
+                        {
+                            mavlink_data32_t data1;
+                            mavlink_msg_data32_decode(&m_mavlink, &data1);
+                            mavlink_data32_t data2;
+                            mavlink_msg_data32_decode(&msgt, &data2);
+                            if (data1.type != data2.type)
+                                return false;
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                    return true;
+                }
+                else
+                {
+                    switch (m_mavlink.msgid)
+                    {
+                        case MAVLINK_MSG_ID_COMMAND_LONG:
+                        {
+                            if (msgt.msgid == MAVLINK_MSG_ID_COMMAND_ACK)
+                            {
+                                mavlink_command_long_t longd;
+                                mavlink_msg_command_long_decode(&m_mavlink, &longd);
+                                mavlink_command_ack_t ack;
+                                mavlink_msg_command_ack_decode(&msgt, &ack);
+                                if (ack.command == longd.command)
+                                    return true;
+                            }
+                            break;
+                        }
+                        case MAVLINK_MSG_ID_SET_MODE:
+                        {
+                            if (msgt.msgid == MAVLINK_MSG_ID_COMMAND_ACK)
+                            {
+                                mavlink_command_ack_t ack;
+                                mavlink_msg_command_ack_decode(&msgt, &ack);
+                                if (ack.command == MAV_CMD_DO_SET_MODE)
+                                {
+                                    return true;
+                                }
+                            }
+                            break;
+                        }
+                        case MAVLINK_MSG_ID_COMMAND_ACK:
+                        {
+                            if (msgt.msgid == MAVLINK_MSG_ID_COMMAND_LONG)
+                            {
+                                mavlink_command_long_t longd;
+                                mavlink_msg_command_long_decode(&msgt, &longd);
+                                mavlink_command_ack_t ack;
+                                mavlink_msg_command_ack_decode(&m_mavlink, &ack);
+                                if (ack.command == longd.command)
+                                    return true;
+                            }
+                            if (msgt.msgid == MAVLINK_MSG_ID_SET_MODE)
+                            {
+                                mavlink_command_ack_t ack;
+                                mavlink_msg_command_ack_decode(&m_mavlink, &ack);
+                                if (ack.command == MAV_CMD_DO_SET_MODE)
+                                    return true;
+                            }
+                            break;
+                        }
+                        case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
+                        {
+                            if (msgt.msgid == MAVLINK_MSG_ID_MISSION_COUNT)
+                                return true;
+                            break;
+                        }
+                        case MAVLINK_MSG_ID_MISSION_REQUEST:
+                        {
+                            if (msgt.msgid == MAVLINK_MSG_ID_MISSION_ITEM)
+                            {
+                                mavlink_mission_item_t it;
+                                mavlink_msg_mission_item_decode(&msgt, &it);
+                                mavlink_mission_request_t itx;
+                                mavlink_msg_mission_request_decode(&m_mavlink, &itx);
+                                if (it.seq == itx.seq)
+                                    return true;
+                            }
+                            break;
+                        }
+                        case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
+                        {
+                            if (msgt.msgid == MAVLINK_MSG_ID_MISSION_CURRENT)
+                            {
+                                mavlink_mission_current_t itin;
+                                mavlink_msg_mission_current_decode(&msgt, &itin);
+                                mavlink_mission_set_current_t it;
+                                mavlink_msg_mission_set_current_decode(&m_mavlink, &it);
+                                if (itin.seq == it.seq)
+                                    return true;
+                            }
+                        }
+                        case MAVLINK_MSG_ID_PARAM_SET:
+                        {
+                            if (msgt.msgid == MAVLINK_MSG_ID_PARAM_VALUE)
+                            {
+                                mavlink_param_value_t rsp;
+                                mavlink_msg_param_value_decode(&msgt, &rsp);
+                                mavlink_param_set_t rq;
+                                mavlink_msg_param_set_decode(&m_mavlink, &rq);
+                                std::string first  = std::string(rsp.param_id, strnlen(rsp.param_id, 16));
+                                std::string second = std::string(rq.param_id, strnlen(rq.param_id, 16));
+                                if (first.compare(second) == 0)
+                                    return true;
+                            }
+                            break;
+                        }
+                        case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
+                        {
+                            if (msgt.msgid == MAVLINK_MSG_ID_PARAM_VALUE)
+                            {
+                                mavlink_param_value_t rsp;
+                                mavlink_msg_param_value_decode(&msgt, &rsp);
+                                mavlink_param_request_read_t rq;
+                                mavlink_msg_param_request_read_decode(&m_mavlink, &rq);
+                                std::string first  = std::string(rsp.param_id, strnlen(rsp.param_id, 16));
+                                std::string second = std::string(rq.param_id, strnlen(rq.param_id, 16));
+                                if (first.compare(second) == 0)
+                                    return true;
+                            }
+                            break;
+                        }
+                        case MAVLINK_MSG_ID_MISSION_CLEAR_ALL:
+                        {
+                            if (msgt.msgid == MAVLINK_MSG_ID_MISSION_ACK)
+                            {
+                                mavlink_mission_ack_t ac;
+                                mavlink_msg_mission_ack_decode(&msgt, &ac);
+                                if (ac.type == MAV_MISSION_ACCEPTED)
+                                    return true;
+                            }
+                            break;
+                        }
+                        case MAVLINK_MSG_ID_MISSION_COUNT:
+                        {
+                            if (msgt.msgid == MAVLINK_MSG_ID_MISSION_REQUEST)
+                            {
+                                return true;
+                            }
+                            if (msgt.msgid == MAVLINK_MSG_ID_MISSION_ACK)
+                            {
+                                mavlink_mission_ack_t ac;
+                                mavlink_msg_mission_ack_decode(&msgt, &ac);
+                                if (ac.type == MAV_MISSION_ACCEPTED)
+                                    return true;
+                            }
+                            break;
+                        }
+                        case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
+                        {
+                            if (msgt.msgid == MAVLINK_MSG_ID_MISSION_REQUEST)
+                            {
+                                return true;
+                            }
+                            else if (msgt.msgid == MAVLINK_MSG_ID_MISSION_ACK)
+                            {
+                                mavlink_mission_ack_t ac;
+                                mavlink_msg_mission_ack_decode(&msgt, &ac);
+                                if (ac.type == MAV_MISSION_ACCEPTED)
+                                    return true;
+                            }
+                            break;
+                        }
+                        case MAVLINK_MSG_ID_MISSION_ITEM:
+                        {
+                            if (msgt.msgid == MAVLINK_MSG_ID_MISSION_REQUEST)
+                            {
+                                mavlink_mission_item_t item;
+                                mavlink_msg_mission_item_decode(&m_mavlink, &item);
+                                mavlink_mission_request_t rq;
+                                mavlink_msg_mission_request_decode(&msgt, &rq);
+                                if (item.seq < rq.seq)
+                                    return true;
+                            }
+                            else if (msgt.msgid == MAVLINK_MSG_ID_MISSION_ACK)
+                            {
+                                mavlink_mission_ack_t ac;
+                                mavlink_msg_mission_ack_decode(&msgt, &ac);
+                                if (ac.type == MAV_MISSION_ACCEPTED)
+                                    return true;
+                            }
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                }
+            }
+            return false;
+        }
+
     private:
         mavlink_message_t m_mavlink;
     };

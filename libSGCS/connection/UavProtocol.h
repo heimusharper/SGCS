@@ -61,7 +61,11 @@ public:
 
     void startMessaging();
 
+    virtual void processFromParent(const tools::CharMap &data) override final;
+
 protected:
+    virtual std::list<uav::UavSendMessage *> createUAVMesage(const tools::CharMap &data) = 0;
+
     bool requestToSend();
     bool requestToSend(std::vector<uav::UavSendMessage *> *fromlist);
 

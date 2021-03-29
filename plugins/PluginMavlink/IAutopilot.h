@@ -34,9 +34,10 @@ public:
     virtual bool requestDisARM(bool force)                                                 = 0;
     virtual bool requestTakeOff(int altitude)                                              = 0;
 
-    virtual bool repositionOnboard(geo::Coords3D &&pos)     = 0;
-    virtual bool repositionOffboard(geo::Coords3D &&pos)    = 0;
-    virtual uav::UAVControlState getState(bool &done) const = 0;
+    virtual bool repositionOnboard(const geo::Coords3D &pos)  = 0;
+    virtual bool repositionOffboard(const geo::Coords3D &pos) = 0;
+    virtual uav::UAVControlState getState(bool &done) const   = 0;
+    virtual bool repositionAzimuth(float az)                  = 0;
 
     virtual void setMode(uint8_t base, uint32_t custom);
     //
@@ -45,18 +46,25 @@ public:
     //
     void setIsFlight(bool value);
 
+    void setBootTimeMS(const uint32_t &bootTimeMS);
+
+    void setRemove(const std::function<void(int removeAsId)> &remove);
+
 protected:
     void sendMode(uint8_t base, uint32_t custom);
     void arm(bool force = false);
     void disarm(bool force = false);
 
     std::function<void(MavlinkHelper::MavlinkMessageType *)> m_send;
+    std::function<void(int removeAsId)> m_remove;
     const int m_chanel;
     const int m_gcs;
     const int m_id;
 
     uint8_t m_baseMode;
     uint32_t m_customMode;
+
+    uint32_t m_bootTimeMS;
 
     bool isFlight = false;
 
