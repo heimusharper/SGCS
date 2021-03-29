@@ -75,7 +75,7 @@ void IPInterfaceUDPServer::run()
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     inet_aton(m_hostName.c_str(), &servaddr.sin_addr);
 
-    boost::container::vector<struct sockaddr_in> clients;
+    std::vector<struct sockaddr_in> clients;
 
     while (!m_stopThread.load())
     {
@@ -107,7 +107,7 @@ void IPInterfaceUDPServer::run()
             tools::CharMap readBuffer;
             readBuffer.data = new char[MAX_LINE];
             readBuffer.size = MAX_LINE;
-            int n = recvfrom(sock, (char *)readBuffer.data, MAX_LINE, MSG_WAITALL, (struct sockaddr *)&cliaddr, &len);
+            int n = recvfrom(sock, (char *)readBuffer.data, MAX_LINE, MSG_DONTWAIT, (struct sockaddr *)&cliaddr, &len);
             m_bufferMutex.lock();
             if (n > 0)
             {
@@ -125,7 +125,7 @@ void IPInterfaceUDPServer::run()
                     for (sockaddr_in client : clients)
                     {
                         const size_t l = sizeof(client);
-                        sendto(sock, (const char *)cm.data, cm.size, MSG_CONFIRM, (const struct sockaddr *)&client, l);
+                        sendto(sock, (const char *)cm.data, cm.size, MSG_WAITALL | MSG_NOSIGNAL, (const struct sockaddr *)&client, l);
                     }
                 }
             }

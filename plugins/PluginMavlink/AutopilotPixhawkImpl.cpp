@@ -1,7 +1,7 @@
 #include "AutopilotPixhawkImpl.h"
 
 AutopilotPixhawkImpl::AutopilotPixhawkImpl(int chan, int gcsID, int id, MavlinkHelper::ProcessingMode mode)
-: IAutopilot(chan, gcsID, id, mode)
+: IAutopilot(chan, gcsID, id, mode), m_waitPrepareToARM(), m_waitPrepareToARMTimer(std::chrono::system_clock::now())
 {
 }
 
@@ -116,7 +116,8 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
     {
         union px4::px4_custom_mode px4_mode;
         px4_mode.data = m_customMode;
-        if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_AUTO || px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
+        if ((defaultModeAuto && px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_AUTO) ||
+            (!defaultModeAuto && px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_POSCTL))
             readyToStart = true;
         if (readyToStart)
         {
@@ -131,17 +132,18 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
             if (defaultModeAuto)
             {
                 px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_AUTO;
-                px4_mode.sub_mode  = px4::PX4_CUSTOM_SUB_MODE_AUTO_READY;
+                px4_mode.sub_mode  = px4::PX4_CUSTOM_SUB_MODE_AUTO_MISSION;
             }
             else
             {
-                px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD;
+                px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_POSCTL;
                 px4_mode.sub_mode  = 0;
             }
-            target_main_mode   = px4_mode.main_mode;
-            target_sub_mode    = px4_mode.sub_mode;
-            target_force_arm   = force;
-            m_waitPrepareToARM = 5;
+            target_main_mode        = px4_mode.main_mode;
+            target_sub_mode         = px4_mode.sub_mode;
+            target_force_arm        = force;
+            m_waitPrepareToARM      = true;
+            m_waitPrepareToARMTimer = std::chrono::system_clock::now();
             sendMode(0, px4_mode.data);
             return true;
         }
@@ -163,7 +165,7 @@ bool AutopilotPixhawkImpl::requestTakeOff(int altitude)
     px4_mode.data = m_customMode;
     if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_AUTO)
         mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_MISSION_START, 1, 0, 0, 0, 0, 0, 0, 0);
-    else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
+    else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_POSCTL)
         mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_NAV_TAKEOFF, 1, 0, altitude, 0, 0, 0, 0, 0);
     else
         return false;
@@ -256,15 +258,89 @@ bool AutopilotPixhawkImpl::repositionOffboard(geo::Coords3D &&pos)
 
 void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
 {
+    printMode();
+
     BOOST_LOG_TRIVIAL(info) << "DO MODE " << (int)base << " " << custom;
     IAutopilot::setMode(base, custom);
-    if (m_waitPrepareToARM-- > 0)
+    if (m_waitPrepareToARM)
     {
+        // 2 seconds to start
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::_V2::system_clock::now() - m_waitPrepareToARMTimer);
+        if (ms.count() > 2000)
+        {
+            m_waitPrepareToARM = false;
+        }
         union px4::px4_custom_mode px4_mode;
         px4_mode.data = custom;
         if (target_main_mode == px4_mode.main_mode && target_sub_mode == px4_mode.sub_mode)
         {
+            m_waitPrepareToARM = false;
             requestARM(false, target_force_arm);
         }
+    }
+}
+
+void AutopilotPixhawkImpl::printMode()
+{
+    union px4::px4_custom_mode px4_mode;
+    px4_mode.data = m_customMode;
+    switch (px4_mode.main_mode)
+    {
+        case px4::PX4_CUSTOM_MAIN_MODE_ACRO:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: ACRO";
+            break;
+        case px4::PX4_CUSTOM_MAIN_MODE_ALTCTL:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: Altitude control";
+            break;
+        case px4::PX4_CUSTOM_MAIN_MODE_AUTO:
+            switch (px4_mode.sub_mode)
+            {
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(follow target)";
+                    break;
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_LAND:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(land)";
+                    break;
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_LOITER:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(loiter)";
+                    break;
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_MISSION:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(mission)";
+                    break;
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_READY:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(ready)";
+                    break;
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_RTGS:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(rtgs)";
+                    break;
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_RTL:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(RTL)";
+                    break;
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(Takeoff)";
+                    break;
+                default:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(undefiened)";
+                    break;
+            }
+            break;
+        case px4::PX4_CUSTOM_MAIN_MODE_MANUAL:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: Manual";
+            break;
+        case px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: offboard";
+            break;
+        case px4::PX4_CUSTOM_MAIN_MODE_POSCTL:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: pos control";
+            break;
+        case px4::PX4_CUSTOM_MAIN_MODE_RATTITUDE:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: ratititude";
+            break;
+        case px4::PX4_CUSTOM_MAIN_MODE_STABILIZED:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: stabilized";
+            break;
+        default:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: undefined";
+            break;
     }
 }

@@ -1,6 +1,9 @@
 #ifndef AUTOPILOTPIXHAWKIMPL_H
 #define AUTOPILOTPIXHAWKIMPL_H
 #include "IAutopilot.h"
+#include <UAV.h>
+#include <boost/log/trivial.hpp>
+#include <chrono>
 
 class AutopilotPixhawkImpl : public IAutopilot
 {
@@ -18,10 +21,14 @@ public:
     virtual void setMode(uint8_t base, uint32_t custom) override final;
 
 private:
-    int m_waitPrepareToARM = 0;
+    bool m_waitPrepareToARM;
+    std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> m_waitPrepareToARMTimer;
+
     uint8_t target_main_mode;
     uint8_t target_sub_mode;
     bool target_force_arm = false;
+
+    void printMode();
 };
 
 namespace px4

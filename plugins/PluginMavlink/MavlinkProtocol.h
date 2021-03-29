@@ -39,13 +39,30 @@ public:
     virtual tools::CharMap hello() const override;
 
     virtual void processFromChild(const tools::CharMap &data) override final;
-    virtual void processFromParent(const tools::CharMap &data) override final;
 
 protected:
     virtual void setUAV(int id, uav::UAV *uav) override final;
 
+    virtual std::list<uav::UavSendMessage *> createUAVMesage(const tools::CharMap &data)
+    {
+        mavlink_message_t msg;
+        std::list<uav::UavSendMessage *> messages;
+        for (size_t i = 0; i < data.size; i++)
+        {
+            if (check(data.data[i], &msg))
+            {
+                mavlink_message_t mcopy;
+                memcpy(&mcopy, &msg, sizeof(mavlink_message_t));
+                messages.push_back(new MavlinkHelper::MavlinkMessageType(std::move(mcopy)));
+                _mavlinkStoreMutex.lock();
+                _mavlinkMessages.push_back(new MavlinkHelper::MavlinkMessageType(std::move(msg)));
+                _mavlinkStoreMutex.unlock();
+            }
+        }
+        return messages;
+    }
+
 private:
-    void runParser();
     void runMessageReader();
     void runPing();
 
@@ -60,13 +77,11 @@ private:
     const uint8_t GCS_ID;
     const std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> _bootTime;
 
-    std::queue<mavlink_message_t> _mavlinkMessages;
+    std::vector<uav::UavSendMessage *> _mavlinkMessages;
     std::mutex _mavlinkStoreMutex;
 
     std::atomic_bool _stopThread;
-    std::thread *_dataProcessorThread    = nullptr;
     std::thread *_messageProcessorThread = nullptr;
-    std::queue<tools::CharMap> _dataTasks;
     std::mutex _dataTaskMutex;
 
     std::map<int, IAutopilot *> m_modes;
