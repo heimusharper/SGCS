@@ -19,7 +19,7 @@ public:
     IPInterfaceUDPServer();
     virtual ~IPInterfaceUDPServer();
 
-    virtual void close() override final;
+    virtual void closeConnection() override final;
     virtual void doConnect(const std::string &host, uint16_t port) override final;
     // IO
     virtual void pipeProcessFromParent(const tools::CharMap &data) override final;
@@ -34,11 +34,12 @@ private:
     const size_t MAX_LINE;
 
     std::mutex m_bufferMutex;
-    std::queue<tools::CharMap> m_readBuffer;
     std::queue<tools::CharMap> m_writeBuffer;
 
     std::thread *m_thread = nullptr;
     std::atomic_bool m_stopThread;
+
+    std::atomic_bool _dirty = true;
 };
 
 #endif // IPINTERFACEUDPSERVER_H

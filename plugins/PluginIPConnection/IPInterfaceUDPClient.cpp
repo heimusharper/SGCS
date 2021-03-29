@@ -15,7 +15,7 @@ IPInterfaceUDPClient::~IPInterfaceUDPClient()
     delete m_thread;
 }
 
-void IPInterfaceUDPClient::close()
+void IPInterfaceUDPClient::closeConnection()
 {
     m_reconnect.store(false);
 }

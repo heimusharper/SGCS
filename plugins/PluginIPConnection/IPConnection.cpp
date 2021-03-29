@@ -115,5 +115,5 @@ void IPConnection::doConnectToPort(const std::string &hostName, uint16_t port)
 void IPConnection::doDisconnectFromPort()
 {
     if (m_interface)
-        m_interface->close();
+        m_interface->closeConnection();
 }
