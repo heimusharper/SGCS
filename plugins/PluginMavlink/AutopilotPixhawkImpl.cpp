@@ -118,13 +118,15 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
     bool readyToStart = false;
     if (m_baseMode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)
     {
+        BOOST_LOG_TRIVIAL(info) << "    inside";
         union px4::px4_custom_mode px4_mode;
         px4_mode.data = m_customMode;
         if ((defaultModeAuto && px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_AUTO) ||
-            (!defaultModeAuto && px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_POSCTL))
+            (!defaultModeAuto && (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_POSCTL || px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_ALTCTL)))
             readyToStart = true;
         if (readyToStart)
         {
+            BOOST_LOG_TRIVIAL(info) << "    ARM";
             // arm
             arm(force);
             return true;
@@ -135,12 +137,14 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
             union px4::px4_custom_mode px4_mode;
             if (defaultModeAuto)
             {
+                BOOST_LOG_TRIVIAL(info) << "    chnage mode to AUTO";
                 px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_AUTO;
                 px4_mode.sub_mode  = px4::PX4_CUSTOM_SUB_MODE_AUTO_MISSION;
             }
             else
             {
-                px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_POSCTL;
+                BOOST_LOG_TRIVIAL(info) << "    chnage mode to ALTCTRL";
+                px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_ALTCTL; // px4::PX4_CUSTOM_MAIN_MODE_POSCTL ;
                 px4_mode.sub_mode  = 0;
             }
             target_main_mode        = px4_mode.main_mode;
@@ -169,7 +173,7 @@ bool AutopilotPixhawkImpl::requestTakeOff(int altitude)
     px4_mode.data = m_customMode;
     if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_AUTO)
         mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_MISSION_START, 1, 0, 0, 0, 0, 0, 0, 0);
-    else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_POSCTL)
+    else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_POSCTL || px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_ALTCTL)
         mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_NAV_TAKEOFF, 1, 0, altitude, 0, 0, 0, 0, 0);
     else
         return false;

@@ -144,7 +144,7 @@ private:
 
                     break;
                 case uav::UAVControlState::PREPARED:
-                    m_ap->requestARM(true, force, true);
+                    m_ap->requestARM(true, force, false);
                     break;
                 case uav::UAVControlState::RTL:
 

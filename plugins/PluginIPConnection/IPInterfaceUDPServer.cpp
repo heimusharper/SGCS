@@ -140,7 +140,7 @@ void IPInterfaceUDPServer::run()
                     {
                         const size_t l = sizeof(client);
                         // BOOST_LOG_TRIVIAL(info) << "SENDTO";
-                        sendto(sock, (const char *)cm.data, cm.size, MSG_CONFIRM | MSG_NOSIGNAL, (const struct sockaddr *)&client, l);
+                        sendto(sock, (const char *)cm.data, cm.size, MSG_NOSIGNAL, (const struct sockaddr *)&client, l);
                     }
                 }
             }
