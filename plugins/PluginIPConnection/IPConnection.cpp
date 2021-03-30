@@ -22,7 +22,8 @@ IPConnection::IPConnection()
 , m_port(RunConfiguration::instance().get<IPConfig>()->port())
 {
     // TODO: tempolary onnly UDP client mode
-    m_interface = new IPInterfaceTCPClient();
+    // m_interface = new IPInterfaceTCPClient();
+    m_interface = new IPInterfaceUDPServer();
     m_interface->pipeSetParent(this);
     pipeAddChild(m_interface);
     // m_interface = new IPInterfaceUDPServer();
