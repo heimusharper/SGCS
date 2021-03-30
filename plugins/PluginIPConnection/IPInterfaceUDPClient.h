@@ -20,7 +20,7 @@ public:
     IPInterfaceUDPClient();
     virtual ~IPInterfaceUDPClient();
 
-    virtual void close() override final;
+    virtual void closeConnection() override final;
     virtual void doConnect(const std::string &host, uint16_t port) override final;
 
     virtual void pipeProcessFromParent(const tools::CharMap &data) override final;

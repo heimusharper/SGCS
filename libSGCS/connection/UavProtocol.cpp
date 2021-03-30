@@ -20,7 +20,7 @@ namespace sgcs
 {
 namespace connection
 {
-UavProtocol::UavProtocol()
+UavProtocol::UavProtocol() : tools::IOObject()
 {
     m_send.insert(std::pair(uav::UavSendMessage::Priority::HIGHT, new std::vector<uav::UavSendMessage *>()));
     m_send.insert(std::pair(uav::UavSendMessage::Priority::NORMAL, new std::vector<uav::UavSendMessage *>()));
@@ -74,6 +74,7 @@ void UavProtocol::insertMessage(uav::UavTask *message)
 
 void UavProtocol::sendMessage(uav::UavSendMessage *message)
 {
+    // if (tosend.compare(m, uav::UavSendMessage::CompareMode::HARD)) // TODO: Check exists
     m_send[message->priority()]->push_back(message);
     // requestToSend();
 }
@@ -103,6 +104,36 @@ void UavProtocol::startMessaging()
     });
 }
 
+void UavProtocol::processFromParent(const tools::CharMap &data)
+{
+    std::list<uav::UavSendMessage *> messages = createUAVMesage(data);
+    if (!messages.empty())
+    {
+        while (!messages.empty())
+        {
+            auto m = messages.front();
+            for (auto tosendvec : m_send)
+            {
+                bool dobrk = false;
+                for (size_t i = 0; i < tosendvec.second->size(); i++)
+                {
+                    auto tosend = tosendvec.second->at(i);
+                    if (tosend->compare(m, uav::UavSendMessage::CompareMode::LIGHT))
+                    {
+                        tosendvec.second->erase(tosendvec.second->begin() + i);
+                        dobrk = true;
+                        break;
+                    }
+                }
+                if (dobrk)
+                    break;
+            }
+            messages.pop_front();
+            delete m;
+        }
+    }
+}
+
 bool UavProtocol::requestToSend()
 {
     if (!requestToSend(m_send[uav::UavSendMessage::Priority::HIGHT]))
@@ -127,14 +158,14 @@ bool UavProtocol::requestToSend(std::vector<uav::UavSendMessage *> *fromlist)
                 // << "    MESSAGE " << message->isReadyInterval() << " " << message->isReadyToDelete() << " " << message;
                 if (!writed && message->isReadyInterval())
                 {
-                    // BOOST_LOG_TRIVIAL(info) << "        SEND...";
+                    BOOST_LOG_TRIVIAL(info) << "        SEND...";
                     writeToParent(message->pack());
                     message->touch();
                     writed = true;
                 }
                 if (message->isReadyToDelete())
                 {
-                    // BOOST_LOG_TRIVIAL(info) << "        REMOVE...";
+                    BOOST_LOG_TRIVIAL(info) << "        REMOVE...";
                     fromlist->erase(fromlist->begin() + i);
                     delete message;
                 }

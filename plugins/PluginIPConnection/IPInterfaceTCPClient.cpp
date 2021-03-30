@@ -15,7 +15,7 @@ IPInterfaceTCPClient::~IPInterfaceTCPClient()
     delete m_thread;
 }
 
-void IPInterfaceTCPClient::close()
+void IPInterfaceTCPClient::closeConnection()
 {
     m_reconnect.store(false);
 }

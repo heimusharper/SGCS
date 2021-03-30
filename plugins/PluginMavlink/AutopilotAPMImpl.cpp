@@ -72,7 +72,7 @@ uav::UAVControlState AutopilotAPMImpl::getState(bool &done) const
 {
 }
 
-bool AutopilotAPMImpl::repositionOnboard(geo::Coords3D &&pos)
+bool AutopilotAPMImpl::repositionOnboard(const geo::Coords3D &pos)
 {
     mavlink_message_t message;
     mavlink_msg_mission_item_pack_chan(m_gcs,
@@ -98,7 +98,11 @@ bool AutopilotAPMImpl::repositionOnboard(geo::Coords3D &&pos)
     return true;
 }
 
-bool AutopilotAPMImpl::repositionOffboard(geo::Coords3D &&pos)
+bool AutopilotAPMImpl::repositionOffboard(const geo::Coords3D &pos)
 {
-    return repositionOnboard(std::move(pos));
+    return repositionOnboard(pos);
+}
+
+bool AutopilotAPMImpl::repositionAzimuth(float az)
+{
 }

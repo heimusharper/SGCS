@@ -1,6 +1,9 @@
 #ifndef AUTOPILOTPIXHAWKIMPL_H
 #define AUTOPILOTPIXHAWKIMPL_H
 #include "IAutopilot.h"
+#include <UAV.h>
+#include <boost/log/trivial.hpp>
+#include <chrono>
 
 class AutopilotPixhawkImpl : public IAutopilot
 {
@@ -12,16 +15,28 @@ public:
     virtual bool requestTakeOff(int altitude) override final;
     virtual uav::UAVControlState getState(bool &done) const override final;
 
-    virtual bool repositionOnboard(geo::Coords3D &&pos) override final;
-    virtual bool repositionOffboard(geo::Coords3D &&pos) override final;
+    virtual bool repositionOnboard(const geo::Coords3D &pos) override final;
+    virtual bool repositionOffboard(const geo::Coords3D &pos) override final;
+    virtual bool repositionAzimuth(float az) override final;
 
     virtual void setMode(uint8_t base, uint32_t custom) override final;
 
+protected:
+    virtual void sendMode(uint8_t base, uint32_t custom) override final;
+
 private:
-    int m_waitPrepareToARM = 0;
+    bool m_waitPrepareToARM;
+    std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> m_waitPrepareToARMTimer;
+    bool m_waitForRepositionOFFBOARD;
+
     uint8_t target_main_mode;
     uint8_t target_sub_mode;
     bool target_force_arm = false;
+
+    geo::Coords3D m_lastRepositionPos;
+    float m_lastYaw;
+
+    void printMode(uint32_t custom);
 };
 
 namespace px4

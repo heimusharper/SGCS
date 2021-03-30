@@ -15,7 +15,7 @@ IPInterfaceUDPClient::~IPInterfaceUDPClient()
     delete m_thread;
 }
 
-void IPInterfaceUDPClient::close()
+void IPInterfaceUDPClient::closeConnection()
 {
     m_reconnect.store(false);
 }
@@ -120,13 +120,16 @@ void IPInterfaceUDPClient::run()
             socklen_t len = sizeof(servaddr);
             char readBuffer[MAX_LINE];
             int n = recvfrom(sock, (char *)readBuffer, MAX_LINE, MSG_WAITALL, (struct sockaddr *)&servaddr, &len);
-
             m_bufferMutex.lock();
-            tools::CharMap cm;
-            cm.data = new char[n];
-            memcpy(cm.data, readBuffer, n);
-            cm.size = n;
-            m_readBuffer.push(cm);
+            if (n > 0)
+            {
+                tools::CharMap cm;
+                cm.data = new char[n];
+                memcpy(cm.data, readBuffer, n);
+                cm.size = n;
+                BOOST_LOG_TRIVIAL(info) << "::::<" << n;
+                m_readBuffer.push(cm);
+            }
             // prepare data to transmit
             while (!m_writeBuffer.empty())
             {

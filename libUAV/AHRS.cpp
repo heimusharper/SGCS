@@ -50,6 +50,22 @@ void AHRS::get(float &roll, float &pitch, float &yaw)
     yaw   = m_yaw;
 }
 
+void AHRS::addCallback(AHRS::OnChangeAHRSCallback *call)
+{
+    m_callbacks.push_back(call);
+}
+
+void AHRS::removeCallback(AHRS::OnChangeAHRSCallback *call)
+{
+    m_callbacks.remove(call);
+}
+
+void AHRS::doSendYaw(float yaw)
+{
+    for (auto x : m_callbacks)
+        x->sendYaw(yaw);
+}
+
 bool AHRS::setRoll(float roll)
 {
     if (fabs(m_roll - roll) < 0.1)

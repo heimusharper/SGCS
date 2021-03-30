@@ -26,8 +26,6 @@ IPConnection::IPConnection()
     m_interface = new IPInterfaceUDPServer();
     m_interface->pipeSetParent(this);
     pipeAddChild(m_interface);
-    // m_interface = new IPInterfaceUDPServer();
-    // m_interface = new IPInterfaceUDPClient();
     if (!m_hostName.empty() && m_port >= 1024)
     {
         // ready to connect automaticaly
@@ -116,5 +114,5 @@ void IPConnection::doConnectToPort(const std::string &hostName, uint16_t port)
 void IPConnection::doDisconnectFromPort()
 {
     if (m_interface)
-        m_interface->close();
+        m_interface->closeConnection();
 }

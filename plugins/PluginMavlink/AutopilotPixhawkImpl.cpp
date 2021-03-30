@@ -2,6 +2,10 @@
 
 AutopilotPixhawkImpl::AutopilotPixhawkImpl(int chan, int gcsID, int id, MavlinkHelper::ProcessingMode mode)
 : IAutopilot(chan, gcsID, id, mode)
+, m_waitPrepareToARM()
+, m_waitPrepareToARMTimer(std::chrono::system_clock::now())
+, m_waitForRepositionOFFBOARD(false)
+, m_lastYaw(0)
 {
 }
 
@@ -112,14 +116,17 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
 {
     BOOST_LOG_TRIVIAL(info) << "DO ARM";
     bool readyToStart = false;
-    if (m_baseMode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)
+    // if (m_baseMode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)
     {
+        BOOST_LOG_TRIVIAL(info) << "    inside";
         union px4::px4_custom_mode px4_mode;
         px4_mode.data = m_customMode;
-        if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_AUTO || px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
+        if ((defaultModeAuto && px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_AUTO) ||
+            (!defaultModeAuto && (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_POSCTL || px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_ALTCTL)))
             readyToStart = true;
         if (readyToStart)
         {
+            BOOST_LOG_TRIVIAL(info) << "    ARM";
             // arm
             arm(force);
             return true;
@@ -130,19 +137,22 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
             union px4::px4_custom_mode px4_mode;
             if (defaultModeAuto)
             {
+                BOOST_LOG_TRIVIAL(info) << "    chnage mode to AUTO";
                 px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_AUTO;
-                px4_mode.sub_mode  = px4::PX4_CUSTOM_SUB_MODE_AUTO_READY;
+                px4_mode.sub_mode  = px4::PX4_CUSTOM_SUB_MODE_AUTO_MISSION;
             }
             else
             {
-                px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD;
+                BOOST_LOG_TRIVIAL(info) << "    chnage mode to ALTCTRL";
+                px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_ALTCTL; // px4::PX4_CUSTOM_MAIN_MODE_POSCTL ;
                 px4_mode.sub_mode  = 0;
             }
-            target_main_mode   = px4_mode.main_mode;
-            target_sub_mode    = px4_mode.sub_mode;
-            target_force_arm   = force;
-            m_waitPrepareToARM = 5;
-            sendMode(0, px4_mode.data);
+            target_main_mode        = px4_mode.main_mode;
+            target_sub_mode         = px4_mode.sub_mode;
+            target_force_arm        = force;
+            m_waitPrepareToARM      = true;
+            m_waitPrepareToARMTimer = std::chrono::system_clock::now();
+            sendMode(m_baseMode, px4_mode.data);
             return true;
         }
     }
@@ -163,7 +173,7 @@ bool AutopilotPixhawkImpl::requestTakeOff(int altitude)
     px4_mode.data = m_customMode;
     if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_AUTO)
         mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_MISSION_START, 1, 0, 0, 0, 0, 0, 0, 0);
-    else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
+    else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_POSCTL || px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_ALTCTL)
         mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_NAV_TAKEOFF, 1, 0, altitude, 0, 0, 0, 0, 0);
     else
         return false;
@@ -222,49 +232,200 @@ uav::UAVControlState AutopilotPixhawkImpl::getState(bool &done) const
     done = false;
 }
 
-bool AutopilotPixhawkImpl::repositionOnboard(geo::Coords3D &&pos)
+bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos)
 {
+    m_lastRepositionPos = pos;
+    union px4::px4_custom_mode px4_mode;
+    px4_mode.data = m_customMode;
+    if (px4_mode.main_mode != px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
+    {
+        // goto OFFBOARD
+        m_waitForRepositionOFFBOARD = true;
+        px4_mode.main_mode          = px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD;
+        px4_mode.sub_mode           = 0;
+        sendMode(m_baseMode, px4_mode.data);
+        return true;
+    }
+    auto mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE |
+    POSITION_TARGET_TYPEMASK_VZ_IGNORE | POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE |
+    POSITION_TARGET_TYPEMASK_AZ_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_FORCE_SET;
+
     BOOST_LOG_TRIVIAL(info) << "DO REPOSITION" << pos.lat() << ";" << pos.lon() << ";" << pos.alt();
+
     mavlink_message_t message;
-    mavlink_msg_mission_item_pack_chan(m_gcs,
-                                       0,
-                                       m_chanel,
-                                       &message,
-                                       m_id,
-                                       0,
-                                       0,
-                                       MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                                       MAV_CMD_NAV_WAYPOINT,
-                                       2,
-                                       1,
-                                       0,
-                                       0,
-                                       0,
-                                       NAN,
-                                       (float)pos.lat(),
-                                       (float)pos.lon(),
-                                       (float)pos.alt(),
-                                       MAV_MISSION_TYPE_MISSION);
-    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 2, 200, uav::UavSendMessage::Priority::HIGHT));
+    mavlink_msg_set_position_target_global_int_pack_chan(m_gcs,
+                                                         0,
+                                                         m_chanel,
+                                                         &message,
+                                                         m_bootTimeMS,
+                                                         m_id,
+                                                         0,
+                                                         MAV_FRAME_GLOBAL,
+                                                         mask,
+                                                         (int32_t)(pos.lat() * 1.e7),
+                                                         (int32_t)(pos.lon() * 1.e7),
+                                                         pos.alt(),
+                                                         0,
+                                                         0,
+                                                         0,
+                                                         0,
+                                                         0,
+                                                         0,
+                                                         m_lastYaw / 180. * M_PI,
+                                                         0);
+    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), -1, 1000, uav::UavSendMessage::Priority::HIGHT));
     return true;
 }
 
-bool AutopilotPixhawkImpl::repositionOffboard(geo::Coords3D &&pos)
+bool AutopilotPixhawkImpl::repositionOffboard(const geo::Coords3D &pos)
 {
-    return repositionOnboard(std::move(pos));
+    return repositionOnboard(pos);
+}
+
+bool AutopilotPixhawkImpl::repositionAzimuth(float az)
+{
+    m_lastYaw = az;
+    repositionOffboard(m_lastRepositionPos);
 }
 
 void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
 {
+    printMode(m_customMode);
+
     BOOST_LOG_TRIVIAL(info) << "DO MODE " << (int)base << " " << custom;
-    IAutopilot::setMode(base, custom);
-    if (m_waitPrepareToARM-- > 0)
+    IAutopilot::setMode(m_baseMode, custom);
+    if (m_waitPrepareToARM)
     {
+        // 2 seconds to start
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::_V2::system_clock::now() - m_waitPrepareToARMTimer);
+        if (ms.count() > 2000)
+        {
+            m_waitPrepareToARM = false;
+        }
         union px4::px4_custom_mode px4_mode;
         px4_mode.data = custom;
+        if (px4_mode.main_mode != px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
+        { // rm
+            m_remove(MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT);
+        }
         if (target_main_mode == px4_mode.main_mode && target_sub_mode == px4_mode.sub_mode)
         {
+            m_waitPrepareToARM = false;
             requestARM(false, target_force_arm);
         }
+        else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD && m_waitForRepositionOFFBOARD)
+        {
+            repositionOffboard(m_lastRepositionPos);
+        }
+    }
+}
+/*
+ * auto_mode_flags  = mavlink.MAV_MODE_FLAG_AUTO_ENABLED \
+ *                 | mavlink.MAV_MODE_FLAG_STABILIZE_ENABLED \
+ *                 | mavlink.MAV_MODE_FLAG_GUIDED_ENABLED
+ *
+ *px4_map = { "MANUAL":        (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | mavlink.MAV_MODE_FLAG_STABILIZE_ENABLED |
+ *mavlink.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED,   PX4_CUSTOM_MAIN_MODE_MANUAL,      0 ),
+ *
+ *            "STABILIZED":    (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | mavlink.MAV_MODE_FLAG_STABILIZE_ENABLED |
+ *mavlink.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED,   PX4_CUSTOM_MAIN_MODE_STABILIZED,  0 ),
+ *
+ *            "ACRO":          (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | mavlink.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED,
+ *PX4_CUSTOM_MAIN_MODE_ACRO,        0                                       ),
+ *
+ *            "RATTITUDE":     (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | mavlink.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED,
+ *PX4_CUSTOM_MAIN_MODE_RATTITUDE,   0                                       ),
+ *
+ *            "ALTCTL":        (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | mavlink.MAV_MODE_FLAG_STABILIZE_ENABLED |
+ *mavlink.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED,   PX4_CUSTOM_MAIN_MODE_ALTCTL,      0 ),
+ *
+ *            "POSCTL":        (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | mavlink.MAV_MODE_FLAG_STABILIZE_ENABLED |
+ *mavlink.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED,   PX4_CUSTOM_MAIN_MODE_POSCTL,      0 ),
+ *
+ *            "LOITER":        (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | auto_mode_flags, PX4_CUSTOM_MAIN_MODE_AUTO,
+ *PX4_CUSTOM_SUB_MODE_AUTO_LOITER         ),
+ *
+ *            "MISSION":       (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | auto_mode_flags, PX4_CUSTOM_MAIN_MODE_AUTO,
+ *PX4_CUSTOM_SUB_MODE_AUTO_MISSION        ),
+ *
+ *            "RTL":           (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | auto_mode_flags, PX4_CUSTOM_MAIN_MODE_AUTO,
+ *PX4_CUSTOM_SUB_MODE_AUTO_RTL            ),
+ *
+ *            "FOLLOWME":      (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | auto_mode_flags, PX4_CUSTOM_MAIN_MODE_AUTO,
+ *PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET  ),
+ *
+ *            "OFFBOARD":      (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | auto_mode_flags,
+ *PX4_CUSTOM_MAIN_MODE_OFFBOARD,    0                                       )}
+ */
+
+void AutopilotPixhawkImpl::sendMode(uint8_t base, uint32_t custom)
+{
+    IAutopilot::sendMode(base | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | MAV_MODE_FLAG_MANUAL_INPUT_ENABLED |
+                         MAV_MODE_FLAG_GUIDED_ENABLED | MAV_MODE_FLAG_STABILIZE_ENABLED | MAV_MODE_FLAG_AUTO_ENABLED,
+                         custom);
+}
+
+void AutopilotPixhawkImpl::printMode(uint32_t custom)
+{
+    union px4::px4_custom_mode px4_mode;
+    px4_mode.data = custom;
+    switch (px4_mode.main_mode)
+    {
+        case px4::PX4_CUSTOM_MAIN_MODE_ACRO:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: ACRO";
+            break;
+        case px4::PX4_CUSTOM_MAIN_MODE_ALTCTL:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: Altitude control";
+            break;
+        case px4::PX4_CUSTOM_MAIN_MODE_AUTO:
+            switch (px4_mode.sub_mode)
+            {
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(follow target)";
+                    break;
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_LAND:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(land)";
+                    break;
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_LOITER:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(loiter)";
+                    break;
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_MISSION:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(mission)";
+                    break;
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_READY:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(ready)";
+                    break;
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_RTGS:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(rtgs)";
+                    break;
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_RTL:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(RTL)";
+                    break;
+                case px4::PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(Takeoff)";
+                    break;
+                default:
+                    BOOST_LOG_TRIVIAL(info) << "Mode now: AUTO(undefiened)";
+                    break;
+            }
+            break;
+        case px4::PX4_CUSTOM_MAIN_MODE_MANUAL:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: Manual";
+            break;
+        case px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: offboard";
+            break;
+        case px4::PX4_CUSTOM_MAIN_MODE_POSCTL:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: pos control";
+            break;
+        case px4::PX4_CUSTOM_MAIN_MODE_RATTITUDE:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: ratititude";
+            break;
+        case px4::PX4_CUSTOM_MAIN_MODE_STABILIZED:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: stabilized";
+            break;
+        default:
+            BOOST_LOG_TRIVIAL(info) << "Mode now: undefined";
+            break;
     }
 }
