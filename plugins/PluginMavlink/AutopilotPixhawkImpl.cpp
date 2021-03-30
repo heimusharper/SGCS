@@ -116,7 +116,7 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
 {
     BOOST_LOG_TRIVIAL(info) << "DO ARM";
     bool readyToStart = false;
-    if (m_baseMode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)
+    // if (m_baseMode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)
     {
         BOOST_LOG_TRIVIAL(info) << "    inside";
         union px4::px4_custom_mode px4_mode;
@@ -152,7 +152,7 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
             target_force_arm        = force;
             m_waitPrepareToARM      = true;
             m_waitPrepareToARMTimer = std::chrono::system_clock::now();
-            sendMode(0, px4_mode.data);
+            sendMode(m_baseMode, px4_mode.data);
             return true;
         }
     }
@@ -243,7 +243,7 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos)
         m_waitForRepositionOFFBOARD = true;
         px4_mode.main_mode          = px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD;
         px4_mode.sub_mode           = 0;
-        sendMode(0, px4_mode.data);
+        sendMode(m_baseMode, px4_mode.data);
         return true;
     }
     auto mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE |
@@ -290,10 +290,10 @@ bool AutopilotPixhawkImpl::repositionAzimuth(float az)
 
 void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
 {
-    printMode();
+    printMode(m_customMode);
 
     BOOST_LOG_TRIVIAL(info) << "DO MODE " << (int)base << " " << custom;
-    IAutopilot::setMode(base, custom);
+    IAutopilot::setMode(m_baseMode, custom);
     if (m_waitPrepareToARM)
     {
         // 2 seconds to start
@@ -319,11 +319,56 @@ void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
         }
     }
 }
+/*
+ * auto_mode_flags  = mavlink.MAV_MODE_FLAG_AUTO_ENABLED \
+ *                 | mavlink.MAV_MODE_FLAG_STABILIZE_ENABLED \
+ *                 | mavlink.MAV_MODE_FLAG_GUIDED_ENABLED
+ *
+ *px4_map = { "MANUAL":        (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | mavlink.MAV_MODE_FLAG_STABILIZE_ENABLED |
+ *mavlink.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED,   PX4_CUSTOM_MAIN_MODE_MANUAL,      0 ),
+ *
+ *            "STABILIZED":    (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | mavlink.MAV_MODE_FLAG_STABILIZE_ENABLED |
+ *mavlink.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED,   PX4_CUSTOM_MAIN_MODE_STABILIZED,  0 ),
+ *
+ *            "ACRO":          (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | mavlink.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED,
+ *PX4_CUSTOM_MAIN_MODE_ACRO,        0                                       ),
+ *
+ *            "RATTITUDE":     (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | mavlink.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED,
+ *PX4_CUSTOM_MAIN_MODE_RATTITUDE,   0                                       ),
+ *
+ *            "ALTCTL":        (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | mavlink.MAV_MODE_FLAG_STABILIZE_ENABLED |
+ *mavlink.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED,   PX4_CUSTOM_MAIN_MODE_ALTCTL,      0 ),
+ *
+ *            "POSCTL":        (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | mavlink.MAV_MODE_FLAG_STABILIZE_ENABLED |
+ *mavlink.MAV_MODE_FLAG_MANUAL_INPUT_ENABLED,   PX4_CUSTOM_MAIN_MODE_POSCTL,      0 ),
+ *
+ *            "LOITER":        (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | auto_mode_flags, PX4_CUSTOM_MAIN_MODE_AUTO,
+ *PX4_CUSTOM_SUB_MODE_AUTO_LOITER         ),
+ *
+ *            "MISSION":       (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | auto_mode_flags, PX4_CUSTOM_MAIN_MODE_AUTO,
+ *PX4_CUSTOM_SUB_MODE_AUTO_MISSION        ),
+ *
+ *            "RTL":           (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | auto_mode_flags, PX4_CUSTOM_MAIN_MODE_AUTO,
+ *PX4_CUSTOM_SUB_MODE_AUTO_RTL            ),
+ *
+ *            "FOLLOWME":      (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | auto_mode_flags, PX4_CUSTOM_MAIN_MODE_AUTO,
+ *PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET  ),
+ *
+ *            "OFFBOARD":      (mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | auto_mode_flags,
+ *PX4_CUSTOM_MAIN_MODE_OFFBOARD,    0                                       )}
+ */
 
-void AutopilotPixhawkImpl::printMode()
+void AutopilotPixhawkImpl::sendMode(uint8_t base, uint32_t custom)
+{
+    IAutopilot::sendMode(base | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | MAV_MODE_FLAG_MANUAL_INPUT_ENABLED |
+                         MAV_MODE_FLAG_GUIDED_ENABLED | MAV_MODE_FLAG_STABILIZE_ENABLED | MAV_MODE_FLAG_AUTO_ENABLED,
+                         custom);
+}
+
+void AutopilotPixhawkImpl::printMode(uint32_t custom)
 {
     union px4::px4_custom_mode px4_mode;
-    px4_mode.data = m_customMode;
+    px4_mode.data = custom;
     switch (px4_mode.main_mode)
     {
         case px4::PX4_CUSTOM_MAIN_MODE_ACRO:

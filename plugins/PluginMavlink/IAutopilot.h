@@ -51,7 +51,7 @@ public:
     void setRemove(const std::function<void(int removeAsId)> &remove);
 
 protected:
-    void sendMode(uint8_t base, uint32_t custom);
+    virtual void sendMode(uint8_t base, uint32_t custom);
     void arm(bool force = false);
     void disarm(bool force = false);
 

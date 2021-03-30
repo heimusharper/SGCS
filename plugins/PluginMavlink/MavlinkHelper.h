@@ -27,7 +27,7 @@ struct MavlinkHelper
             uint16_t lenght = mavlink_msg_to_send_buffer((uint8_t *)cm.data, &m_mavlink);
             if (lenght > 0)
             {
-                // BOOST_LOG_TRIVIAL(info) << "PACKING " << m_mavlink.msgid;
+                BOOST_LOG_TRIVIAL(info) << "PACKING " << m_mavlink.msgid;
                 cm.size = lenght;
                 return cm;
             }
@@ -45,6 +45,9 @@ struct MavlinkHelper
             if (msg)
             {
                 mavlink_message_t msgt = msg->mavlink();
+                if (m_mavlink.msgid == MAVLINK_MSG_ID_HEARTBEAT || msgt.msgid == MAVLINK_MSG_ID_HEARTBEAT ||
+                    m_mavlink.msgid == MAVLINK_MSG_ID_PING || msgt.msgid == MAVLINK_MSG_ID_PING)
+                    return false;
                 if (m_mavlink.msgid == msgt.msgid)
                 {
                     switch (m_mavlink.msgid)

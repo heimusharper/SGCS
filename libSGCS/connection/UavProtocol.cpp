@@ -158,14 +158,14 @@ bool UavProtocol::requestToSend(std::vector<uav::UavSendMessage *> *fromlist)
                 // << "    MESSAGE " << message->isReadyInterval() << " " << message->isReadyToDelete() << " " << message;
                 if (!writed && message->isReadyInterval())
                 {
-                    // BOOST_LOG_TRIVIAL(info) << "        SEND...";
+                    BOOST_LOG_TRIVIAL(info) << "        SEND...";
                     writeToParent(message->pack());
                     message->touch();
                     writed = true;
                 }
                 if (message->isReadyToDelete())
                 {
-                    // BOOST_LOG_TRIVIAL(info) << "        REMOVE...";
+                    BOOST_LOG_TRIVIAL(info) << "        REMOVE...";
                     fromlist->erase(fromlist->begin() + i);
                     delete message;
                 }
