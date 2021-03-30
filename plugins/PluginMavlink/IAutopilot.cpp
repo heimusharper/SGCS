@@ -61,5 +61,8 @@ void IAutopilot::disarm(bool force)
 
 void IAutopilot::setIsFlight(bool value)
 {
+    if (isFlight == value)
+        return;
+    BOOST_LOG_TRIVIAL(info) << "DETECTED FLIGHT IS " << value;
     isFlight = value;
 }

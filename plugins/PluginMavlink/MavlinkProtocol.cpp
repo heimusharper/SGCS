@@ -282,6 +282,14 @@ void MavlinkProtocol::runMessageReader()
                                 insertMessage(home);
                                 break;
                             }
+                            case MAVLINK_MSG_ID_VFR_HUD:
+                            {
+                                mavlink_vfr_hud_t hud;
+                                mavlink_msg_vfr_hud_decode(&message, &hud);
+                                bool isFlight = (hud.throttle > 10);
+                                ap->setIsFlight(isFlight);
+                                break;
+                            }
                             case MAVLINK_MSG_ID_GPS_STATUS:
                             {
                                 mavlink_gps_status_t gps;
