@@ -135,6 +135,7 @@ void MavlinkProtocol::runMessageReader()
                                 // BOOST_LOG_TRIVIAL(info) << "WRITE" << message->mavlink().msgid;
                                 sendMessage(message);
                             });
+                            ap->ping();
                             switch (mode)
                             {
                                 case MavlinkHelper::ProcessingMode::ANT:

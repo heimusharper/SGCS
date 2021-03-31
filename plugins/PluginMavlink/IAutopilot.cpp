@@ -3,6 +3,7 @@
 IAutopilot::IAutopilot(int chan, int gcsID, int id, MavlinkHelper::ProcessingMode mode)
 : m_chanel(chan), m_gcs(gcsID), m_id(id), m_processingMode(mode), m_bootTimeMS(0)
 {
+    m_pingThreadStop.store(false);
 }
 
 MavlinkHelper::ProcessingMode IAutopilot::processingMode() const
@@ -73,6 +74,17 @@ void IAutopilot::sendSpeed(float ms)
 
 void IAutopilot::ping()
 {
+    if (m_pingThread)
+        return;
+    m_pingThread = new std::thread([this]() {
+        while (!m_pingThreadStop.load())
+        {
+            mavlink_message_t message;
+            mavlink_msg_heartbeat_pack_chan(m_gcs, 1, m_chanel, &message, m_id, 0, 0, 0, 0);
+            m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 1, 1000, uav::UavSendMessage::Priority::HIGHT));
+            usleep(1000000);
+        }
+    });
 }
 
 void IAutopilot::setBootTimeMS(const uint32_t &bootTimeMS)

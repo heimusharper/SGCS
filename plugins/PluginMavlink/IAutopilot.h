@@ -76,6 +76,7 @@ protected:
     std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> m_bootTimeReceived;
 
     std::thread *m_pingThread = nullptr;
+    std::atomic_bool m_pingThreadStop;
 
 private:
     MavlinkHelper::ProcessingMode m_processingMode;
