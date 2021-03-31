@@ -49,6 +49,12 @@ float Speed::air() const
     return m_air;
 }
 
+void Speed::doSendSpeed(float newSpeed)
+{
+    for (auto o : m_callbacks)
+        o->sendSpeed(newSpeed);
+}
+
 void Speed::setAir(float air)
 {
     if (std::abs(m_air - air) < 0.01)

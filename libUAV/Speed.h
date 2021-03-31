@@ -28,7 +28,13 @@ public:
     class OnChangeSpeedCallback
     {
     public:
-        virtual void updateSpeed() = 0;
+        virtual void updateSpeed()
+        {
+        }
+
+        virtual void sendSpeed(float newSpeed)
+        {
+        }
     };
 
     Speed();
@@ -42,6 +48,9 @@ public:
 
     float ground() const;
     float air() const;
+
+    // do
+    void doSendSpeed(float newSpeed);
 
 protected:
     void setGround(float ground);

@@ -102,6 +102,21 @@ private:
         IAutopilot *m_ap = nullptr;
     };
 
+    class MavlinkSpeedControl : public uav::Speed::OnChangeSpeedCallback
+    {
+    public:
+        MavlinkSpeedControl(IAutopilot *ap) : m_ap(ap)
+        {
+        }
+        virtual void sendSpeed(float newSpeed) override final
+        {
+            m_ap->sendSpeed(newSpeed);
+        }
+
+    private:
+        IAutopilot *m_ap = nullptr;
+    };
+
     class MavlinkPositionControl : public uav::Position::PositionControlInterface
     {
     public:

@@ -18,6 +18,7 @@ bool AutopilotPixhawkImpl::setInterval(IAutopilot::MessageType type, int interva
             // msg_ids.push_back(MAVLINK_MSG_ID_ADSB);
             break;
         case MessageType::EXTRA1:
+            msg_ids.push_back(MAVLINK_MSG_ID_SYSTEM_TIME);
             msg_ids.push_back(MAVLINK_MSG_ID_ATTITUDE);
             msg_ids.push_back(MAVLINK_MSG_ID_AHRS2);
             msg_ids.push_back(MAVLINK_MSG_ID_PID_TUNING);
@@ -29,7 +30,6 @@ bool AutopilotPixhawkImpl::setInterval(IAutopilot::MessageType type, int interva
             break;
         case MessageType::EXTRA3:
             msg_ids.push_back(MAVLINK_MSG_ID_AHRS);
-            msg_ids.push_back(MAVLINK_MSG_ID_SYSTEM_TIME);
             msg_ids.push_back(MAVLINK_MSG_ID_HWSTATUS);
             msg_ids.push_back(MAVLINK_MSG_ID_RANGEFINDER);
             msg_ids.push_back(MAVLINK_MSG_ID_DISTANCE_SENSOR);
@@ -252,12 +252,18 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos)
 
     BOOST_LOG_TRIVIAL(info) << "DO REPOSITION" << pos.lat() << ";" << pos.lon() << ";" << pos.alt();
 
+    uint32_t compensate = 0;
+    {
+        std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> now = std::chrono::system_clock::now();
+        compensate = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_bootTimeReceived).count();
+    }
+
     mavlink_message_t message;
     mavlink_msg_set_position_target_global_int_pack_chan(m_gcs,
                                                          0,
                                                          m_chanel,
                                                          &message,
-                                                         m_bootTimeMS,
+                                                         m_bootTimeMS + compensate,
                                                          m_id,
                                                          0,
                                                          MAV_FRAME_GLOBAL,

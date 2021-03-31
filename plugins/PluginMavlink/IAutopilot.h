@@ -3,6 +3,7 @@
 #include "MavlinkHelper.h"
 #include <functional>
 #include <geo/Coords3D.h>
+#include <thread>
 
 class IAutopilot
 {
@@ -50,6 +51,10 @@ public:
 
     void setRemove(const std::function<void(int removeAsId)> &remove);
 
+    void sendSpeed(float ms);
+
+    void ping();
+
 protected:
     virtual void sendMode(uint8_t base, uint32_t custom);
     void arm(bool force = false);
@@ -67,6 +72,10 @@ protected:
     uint32_t m_bootTimeMS;
 
     bool isFlight = false;
+
+    std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> m_bootTimeReceived;
+
+    std::thread *m_pingThread = nullptr;
 
 private:
     MavlinkHelper::ProcessingMode m_processingMode;

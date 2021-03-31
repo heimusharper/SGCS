@@ -59,14 +59,26 @@ void IAutopilot::disarm(bool force)
     m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 5, 200, uav::UavSendMessage::Priority::HIGHT));
 }
 
-void IAutopilot::setRemove(const std::function<void (int removeAsId)> &remove)
+void IAutopilot::setRemove(const std::function<void(int removeAsId)> &remove)
 {
     m_remove = remove;
 }
 
+void IAutopilot::sendSpeed(float ms)
+{
+    mavlink_message_t message;
+    mavlink_msg_command_long_pack_chan(m_gcs, 1, m_chanel, &message, m_id, 0, MAV_CMD_DO_CHANGE_SPEED, 1, 1, ms, -1, 0, 0, 0, 0);
+    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 5, 200, uav::UavSendMessage::Priority::HIGHT));
+}
+
+void IAutopilot::ping()
+{
+}
+
 void IAutopilot::setBootTimeMS(const uint32_t &bootTimeMS)
 {
-    m_bootTimeMS = bootTimeMS;
+    m_bootTimeReceived = std::chrono::_V2::system_clock::now();
+    m_bootTimeMS       = bootTimeMS;
 }
 
 void IAutopilot::setIsFlight(bool value)

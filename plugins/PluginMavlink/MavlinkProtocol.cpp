@@ -41,8 +41,7 @@ std::string MavlinkProtocol::name() const
 
 tools::CharMap MavlinkProtocol::hello() const
 {
-    std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> now =
-    std::chrono::_V2::system_clock::now();
+    std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> now = std::chrono::system_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::microseconds>(now - _bootTime);
     mavlink_message_t msg;
     // mavlink_msg_heartbeat_pack_chan(255, 0, DIFFERENT_CHANNEL, &msg, MAV_TYPE_GCS, MAV_AUTOPILOT_INVALID, 0, 0, MAV_STATE_ACTIVE);
@@ -187,6 +186,9 @@ void MavlinkProtocol::runMessageReader()
                         {
                             case MAVLINK_MSG_ID_PING:
                             {
+                                /*mavlink_ping_t time;
+                                mavlink_msg_ping_decode(&message, &time);
+                                ap->setBootTimeMS(time.time_usec);*/
                                 break;
                             }
                             case MAVLINK_MSG_ID_HEARTBEAT:
@@ -311,6 +313,13 @@ void MavlinkProtocol::runMessageReader()
                                 }
                                 break;
                             }
+                            case MAVLINK_MSG_ID_SYSTEM_TIME:
+                            {
+                                mavlink_system_time_t time;
+                                mavlink_msg_system_time_decode(&message, &time);
+                                ap->setBootTimeMS(time.time_boot_ms);
+                                break;
+                            }
                             default:
                                 break;
                         }
@@ -369,10 +378,12 @@ void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
 
     MavlinkPositionControl *uavPositionControl = new MavlinkPositionControl(m_modes[id]);
     MavlinkAHRSControl *ahrsPositionControl    = new MavlinkAHRSControl(m_modes[id]);
+    MavlinkSpeedControl *speedControl          = new MavlinkSpeedControl(m_modes[id]);
+    MavlinkARMControl *armControl              = new MavlinkARMControl(m_modes[id]);
 
     uav->position()->setControl(uavPositionControl);
     uav->ahrs()->addCallback(ahrsPositionControl);
-    MavlinkARMControl *armControl = new MavlinkARMControl(m_modes[id]);
+    uav->speed()->addCallback(speedControl);
     uav->addControl(armControl);
 
     UavProtocol::setUAV(id, uav);
