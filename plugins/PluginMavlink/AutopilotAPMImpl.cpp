@@ -64,7 +64,7 @@ bool AutopilotAPMImpl::requestDisARM(bool force)
 {
 }
 
-bool AutopilotAPMImpl::requestTakeOff(int altitude)
+bool AutopilotAPMImpl::requestTakeOff(const geo::Coords3D &target)
 {
 }
 

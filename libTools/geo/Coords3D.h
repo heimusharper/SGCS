@@ -38,6 +38,11 @@ public:
         return m_alt;
     }
 
+    void setAlt(T a)
+    {
+        m_alt = a;
+    }
+
     bool operator==(const Coords<T> &coord) const
     {
         return std::abs(coord.lat() - m_lat) < 0.000001 && std::abs(coord.lon() - m_lon) < 0.000001 &&

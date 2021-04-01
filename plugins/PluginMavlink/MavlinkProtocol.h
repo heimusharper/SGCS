@@ -165,8 +165,12 @@ private:
 
                     break;
                 case uav::UAVControlState::STARTED:
-                    m_ap->requestTakeOff(altitude);
+                {
+                    geo::Coords3D gps = m_uav->position()->gps();
+                    gps.setAlt(gps.alt() + m_uav->takeoffAltitude());
+                    m_ap->requestTakeOff(gps);
                     break;
+                }
                 case uav::UAVControlState::WAIT:
 
                     break;
@@ -176,9 +180,8 @@ private:
         }
 
     private:
-        uav::UAV *m_uav  = nullptr;
         IAutopilot *m_ap = nullptr;
-        float altitude   = 10;
+        uav::UAV *m_uav  = nullptr;
     };
 };
 

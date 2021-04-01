@@ -170,22 +170,35 @@ bool AutopilotPixhawkImpl::requestDisARM(bool force)
     return true;
 }
 
-bool AutopilotPixhawkImpl::requestTakeOff(int altitude)
+bool AutopilotPixhawkImpl::requestTakeOff(const geo::Coords3D &target)
 {
     /* Takeoff from ground / hand. Vehicles that support multiple takeoff modes (e.g. VTOL quadplane) should take off
      * using the currently configured mode. |Minimum pitch (if airspeed sensor present), desired pitch without sensor |
      * Empty | Empty | Yaw angle (if magnetometer present), ignored without magnetometer. NaN to use the current system
      * yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.). | Latitude | Longitude | Altitude|  */
 
-    BOOST_LOG_TRIVIAL(info) << "DO TAKEOFF" << altitude;
-    altitude = 50;
+    BOOST_LOG_TRIVIAL(info) << "DO TAKEOFF " << target.lat() << " " << ;
     mavlink_message_t message;
     union px4::px4_custom_mode px4_mode;
     px4_mode.data = m_customMode;
     if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_AUTO)
         mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_MISSION_START, 1, 0, 0, 0, 0, 0, 0, 0);
     else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_POSCTL || px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_ALTCTL)
-        mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_NAV_TAKEOFF, 1, 0, 0, 0, NAN, 0, 0, altitude);
+        mavlink_msg_command_long_pack_chan(m_gcs,
+                                           0,
+                                           m_chanel,
+                                           &message,
+                                           m_id,
+                                           0,
+                                           MAV_CMD_NAV_TAKEOFF,
+                                           1,
+                                           0,
+                                           0,
+                                           0,
+                                           NAN,
+                                           static_cast<float>(target.lat()),
+                                           static_cast<float>(target.lon()),
+                                           static_cast<float>(target.alt()));
     else
         return false;
     m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::HIGHT));
@@ -199,6 +212,7 @@ bool AutopilotPixhawkImpl::requestLand()
     px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_AUTO;
     px4_mode.sub_mode  = px4::PX4_CUSTOM_SUB_MODE_AUTO_LAND;
     sendMode(m_baseMode, px4_mode.data);
+    return true;
 }
 
 uav::UAVControlState AutopilotPixhawkImpl::getState(bool &done) const
