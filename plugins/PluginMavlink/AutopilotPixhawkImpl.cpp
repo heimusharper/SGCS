@@ -177,7 +177,7 @@ bool AutopilotPixhawkImpl::requestTakeOff(const geo::Coords3D &target)
      * Empty | Empty | Yaw angle (if magnetometer present), ignored without magnetometer. NaN to use the current system
      * yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.). | Latitude | Longitude | Altitude|  */
 
-    BOOST_LOG_TRIVIAL(info) << "DO TAKEOFF " << target.lat() << " " << ;
+    BOOST_LOG_TRIVIAL(info) << "DO TAKEOFF " << target.lat() << " " << target.lon() << " " << target.alt();
     mavlink_message_t message;
     union px4::px4_custom_mode px4_mode;
     px4_mode.data = m_customMode;
