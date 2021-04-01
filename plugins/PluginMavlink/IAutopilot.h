@@ -41,6 +41,8 @@ public:
     virtual uav::UAVControlState getState(bool &done) const   = 0;
     virtual bool repositionAzimuth(float az)                  = 0;
 
+    virtual bool requestLand() = 0;
+
     virtual void setMode(uint8_t base, uint32_t custom);
     //
     void setSend(const std::function<void(MavlinkHelper::MavlinkMessageType *)> &send);

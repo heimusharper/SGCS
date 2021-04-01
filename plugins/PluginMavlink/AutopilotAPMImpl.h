@@ -16,6 +16,10 @@ public:
     virtual bool repositionOffboard(const geo::Coords3D &pos) override final;
     virtual bool repositionAzimuth(float az) override final;
 
+    virtual bool requestLand()
+    {
+    }
+
 private:
     int m_srid = 0;
 };

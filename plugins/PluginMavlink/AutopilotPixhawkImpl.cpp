@@ -5,8 +5,8 @@ AutopilotPixhawkImpl::AutopilotPixhawkImpl(int chan, int gcsID, int id, MavlinkH
 , m_waitPrepareToARM()
 , m_waitPrepareToARMTimer(std::chrono::system_clock::now())
 , m_waitForRepositionOFFBOARD(false)
-, target_main_mode(0)
-, target_sub_mode(0)
+, m_target_main_mode(0)
+, m_target_sub_mode(0)
 , target_force_arm(false)
 , m_lastRepositionPos(geo::Coords3D())
 , m_lastYaw(NAN)
@@ -151,8 +151,8 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
                 px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_ALTCTL; // px4::PX4_CUSTOM_MAIN_MODE_POSCTL ;
                 px4_mode.sub_mode  = 0;
             }
-            target_main_mode        = px4_mode.main_mode;
-            target_sub_mode         = px4_mode.sub_mode;
+            m_target_main_mode      = px4_mode.main_mode;
+            m_target_sub_mode       = px4_mode.sub_mode;
             target_force_arm        = force;
             m_waitPrepareToARM      = true;
             m_waitPrepareToARMTimer = std::chrono::system_clock::now();
@@ -172,18 +172,33 @@ bool AutopilotPixhawkImpl::requestDisARM(bool force)
 
 bool AutopilotPixhawkImpl::requestTakeOff(int altitude)
 {
-    BOOST_LOG_TRIVIAL(info) << "DO TAKEOFF";
+    /* Takeoff from ground / hand. Vehicles that support multiple takeoff modes (e.g. VTOL quadplane) should take off
+     * using the currently configured mode. |Minimum pitch (if airspeed sensor present), desired pitch without sensor |
+     * Empty | Empty | Yaw angle (if magnetometer present), ignored without magnetometer. NaN to use the current system
+     * yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.). | Latitude | Longitude | Altitude|  */
+
+    BOOST_LOG_TRIVIAL(info) << "DO TAKEOFF" << altitude;
+    altitude = 50;
     mavlink_message_t message;
     union px4::px4_custom_mode px4_mode;
     px4_mode.data = m_customMode;
     if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_AUTO)
         mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_MISSION_START, 1, 0, 0, 0, 0, 0, 0, 0);
     else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_POSCTL || px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_ALTCTL)
-        mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_NAV_TAKEOFF, 1, 0, altitude, 0, 0, 0, 0, 0);
+        mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_NAV_TAKEOFF, 1, 0, 0, 0, NAN, 0, 0, altitude);
     else
         return false;
     m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::HIGHT));
     return true;
+}
+
+bool AutopilotPixhawkImpl::requestLand()
+{
+    union px4::px4_custom_mode px4_mode;
+    BOOST_LOG_TRIVIAL(info) << "    chnage mode to LAND";
+    px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_AUTO;
+    px4_mode.sub_mode  = px4::PX4_CUSTOM_SUB_MODE_AUTO_LAND;
+    sendMode(m_baseMode, px4_mode.data);
 }
 
 uav::UAVControlState AutopilotPixhawkImpl::getState(bool &done) const
@@ -240,17 +255,7 @@ uav::UAVControlState AutopilotPixhawkImpl::getState(bool &done) const
 bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos)
 {
     m_lastRepositionPos = pos;
-    union px4::px4_custom_mode px4_mode;
-    px4_mode.data = m_customMode;
-    if (px4_mode.main_mode != px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
-    {
-        // goto OFFBOARD
-        m_waitForRepositionOFFBOARD = true;
-        px4_mode.main_mode          = px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD;
-        px4_mode.sub_mode           = 0;
-        sendMode(m_baseMode, px4_mode.data);
-        return true;
-    }
+
     auto mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE |
     POSITION_TARGET_TYPEMASK_VZ_IGNORE | POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE |
     POSITION_TARGET_TYPEMASK_AZ_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_FORCE_SET;
@@ -286,8 +291,21 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos)
                                                          0,
                                                          (std::isnan(m_lastYaw)) ? 0 : (m_lastYaw / 180. * M_PI),
                                                          0);
-    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), -1, 1000, uav::UavSendMessage::Priority::HIGHT)); // every second
+    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), -1, 300, uav::UavSendMessage::Priority::HIGHT)); // every second
     m_lastYaw = NAN;
+
+    union px4::px4_custom_mode px4_mode;
+    px4_mode.data = m_customMode;
+    if (px4_mode.main_mode != px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
+    {
+        // goto OFFBOARD
+        // m_waitForRepositionOFFBOARD = true;
+        px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD;
+        px4_mode.sub_mode  = 0;
+        sendMode(m_baseMode, px4_mode.data);
+        //  return true;
+    }
+
     return true;
 }
 
@@ -322,7 +340,7 @@ void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
         { // rm
             m_remove(MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT);
         }
-        if (target_main_mode == px4_mode.main_mode && target_sub_mode == px4_mode.sub_mode)
+        if (m_target_main_mode == px4_mode.main_mode && m_target_sub_mode == px4_mode.sub_mode)
         {
             m_waitPrepareToARM = false;
             requestARM(false, target_force_arm);
@@ -374,8 +392,8 @@ void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
 
 void AutopilotPixhawkImpl::sendMode(uint8_t base, uint32_t custom)
 {
-    IAutopilot::sendMode(base | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | MAV_MODE_FLAG_MANUAL_INPUT_ENABLED |
-                         MAV_MODE_FLAG_GUIDED_ENABLED | MAV_MODE_FLAG_STABILIZE_ENABLED | MAV_MODE_FLAG_AUTO_ENABLED,
+    IAutopilot::sendMode(base | MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | MAV_MODE_FLAG_GUIDED_ENABLED |
+                         MAV_MODE_FLAG_STABILIZE_ENABLED | MAV_MODE_FLAG_AUTO_ENABLED,
                          custom);
 }
 

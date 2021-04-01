@@ -136,7 +136,7 @@ private:
     class MavlinkARMControl : public uav::UAV::ControlInterface
     {
     public:
-        MavlinkARMControl(IAutopilot *ap) : m_ap(ap)
+        MavlinkARMControl(IAutopilot *ap, uav::UAV *u) : m_ap(ap), m_uav(u)
         {
         }
         virtual void changeState(uav::UAVControlState state, bool force = false) override final
@@ -150,13 +150,13 @@ private:
                     m_ap->requestDisARM(force);
                     break;
                 case uav::UAVControlState::LAND:
-
+                    m_ap->requestLand();
                     break;
                 case uav::UAVControlState::MANUAL_OFFBOARD:
-
+                    m_ap->repositionOffboard(m_uav->position()->gps());
                     break;
                 case uav::UAVControlState::MANUAL_ONBOARD:
-
+                    m_ap->repositionOnboard(m_uav->position()->gps());
                     break;
                 case uav::UAVControlState::PREPARED:
                     m_ap->requestARM(true, force, false);
@@ -176,6 +176,7 @@ private:
         }
 
     private:
+        uav::UAV *m_uav  = nullptr;
         IAutopilot *m_ap = nullptr;
         float altitude   = 10;
     };

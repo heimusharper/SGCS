@@ -169,7 +169,7 @@ void MavlinkProtocol::runMessageReader()
                 }
             }
             //
-            BOOST_LOG_TRIVIAL(info) << "IN MESSAGE " << (int)message.sysid << " " << message.msgid;
+            // BOOST_LOG_TRIVIAL(info) << "IN MESSAGE " << (int)message.sysid << " " << message.msgid;
             if (m_modes.contains(message.sysid))
             {
                 IAutopilot *ap = m_modes[message.sysid];
@@ -321,6 +321,14 @@ void MavlinkProtocol::runMessageReader()
                                 ap->setBootTimeMS(time.time_boot_ms);
                                 break;
                             }
+                            case MAVLINK_MSG_ID_STATUSTEXT:
+                            {
+                                mavlink_statustext_t text;
+                                mavlink_msg_statustext_decode(&message, &text);
+                                std::string data = std::string(text.text, strnlen(text.text, 50));
+                                BOOST_LOG_TRIVIAL(warning) << "STATUS_TEXT " << data;
+                                break;
+                            }
                             default:
                                 break;
                         }
@@ -380,7 +388,7 @@ void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
     MavlinkPositionControl *uavPositionControl = new MavlinkPositionControl(m_modes[id]);
     MavlinkAHRSControl *ahrsPositionControl    = new MavlinkAHRSControl(m_modes[id]);
     MavlinkSpeedControl *speedControl          = new MavlinkSpeedControl(m_modes[id]);
-    MavlinkARMControl *armControl              = new MavlinkARMControl(m_modes[id]);
+    MavlinkARMControl *armControl              = new MavlinkARMControl(m_modes[id], uav);
 
     uav->position()->setControl(uavPositionControl);
     uav->ahrs()->addCallback(ahrsPositionControl);
