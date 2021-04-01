@@ -28,13 +28,12 @@ private:
     bool m_waitPrepareToARM;
     std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> m_waitPrepareToARMTimer;
     bool m_waitForRepositionOFFBOARD;
-
-    uint8_t target_main_mode;
-    uint8_t target_sub_mode;
-    bool target_force_arm = false;
+    uint8_t m_target_main_mode;
+    uint8_t m_target_sub_mode;
+    bool target_force_arm;
 
     geo::Coords3D m_lastRepositionPos;
-    float m_lastYaw;
+    double m_lastYaw;
 
     void printMode(uint32_t custom);
 };

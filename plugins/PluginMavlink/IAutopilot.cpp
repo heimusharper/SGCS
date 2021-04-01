@@ -1,9 +1,29 @@
 #include "IAutopilot.h"
 
 IAutopilot::IAutopilot(int chan, int gcsID, int id, MavlinkHelper::ProcessingMode mode)
-: m_chanel(chan), m_gcs(gcsID), m_id(id), m_processingMode(mode), m_bootTimeMS(0)
+: m_chanel(chan)
+, m_gcs(gcsID)
+, m_id(id)
+, m_baseMode(0)
+, m_customMode(0)
+, m_bootTimeMS(0)
+, m_isFlight(false)
+, m_bootTimeReceived(std::chrono::_V2::system_clock::now())
+, m_processingMode(mode)
+, m_ready(false)
 {
     m_pingThreadStop.store(false);
+}
+
+IAutopilot::~IAutopilot()
+{
+    m_pingThreadStop.store(true);
+    if (m_pingThread)
+    {
+        if (m_pingThread->joinable())
+            m_pingThread->join();
+        delete m_pingThread;
+    }
 }
 
 MavlinkHelper::ProcessingMode IAutopilot::processingMode() const
@@ -82,6 +102,7 @@ void IAutopilot::ping()
             mavlink_message_t message;
             mavlink_msg_heartbeat_pack_chan(m_gcs, 1, m_chanel, &message, m_id, 0, 0, 0, 0);
             m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 1, 1000, uav::UavSendMessage::Priority::HIGHT));
+            BOOST_LOG_TRIVIAL(info) << "PING..";
             usleep(1000000);
         }
     });
@@ -95,8 +116,8 @@ void IAutopilot::setBootTimeMS(const uint32_t &bootTimeMS)
 
 void IAutopilot::setIsFlight(bool value)
 {
-    if (isFlight == value)
+    if (m_isFlight == value)
         return;
     BOOST_LOG_TRIVIAL(info) << "DETECTED FLIGHT IS " << value;
-    isFlight = value;
+    m_isFlight = value;
 }

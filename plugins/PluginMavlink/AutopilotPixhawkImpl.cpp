@@ -5,7 +5,11 @@ AutopilotPixhawkImpl::AutopilotPixhawkImpl(int chan, int gcsID, int id, MavlinkH
 , m_waitPrepareToARM()
 , m_waitPrepareToARMTimer(std::chrono::system_clock::now())
 , m_waitForRepositionOFFBOARD(false)
-, m_lastYaw(0)
+, target_main_mode(0)
+, target_sub_mode(0)
+, target_force_arm(false)
+, m_lastRepositionPos(geo::Coords3D())
+, m_lastYaw(NAN)
 {
 }
 
@@ -115,9 +119,9 @@ bool AutopilotPixhawkImpl::setInterval(IAutopilot::MessageType type, int interva
 bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defaultModeAuto)
 {
     BOOST_LOG_TRIVIAL(info) << "DO ARM";
-    bool readyToStart = false;
     // if (m_baseMode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)
     {
+        bool readyToStart = false;
         BOOST_LOG_TRIVIAL(info) << "    inside";
         union px4::px4_custom_mode px4_mode;
         px4_mode.data = m_customMode;
@@ -163,6 +167,7 @@ bool AutopilotPixhawkImpl::requestDisARM(bool force)
 {
     BOOST_LOG_TRIVIAL(info) << "DO DISARM";
     disarm(force);
+    return true;
 }
 
 bool AutopilotPixhawkImpl::requestTakeOff(int altitude)
@@ -184,7 +189,7 @@ bool AutopilotPixhawkImpl::requestTakeOff(int altitude)
 uav::UAVControlState AutopilotPixhawkImpl::getState(bool &done) const
 {
     done = true;
-    if (!isFlight)
+    if (!m_isFlight)
     {
         return uav::UAVControlState::WAIT;
     }
@@ -249,6 +254,8 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos)
     auto mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE |
     POSITION_TARGET_TYPEMASK_VZ_IGNORE | POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE |
     POSITION_TARGET_TYPEMASK_AZ_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_FORCE_SET;
+    if (!isnan(m_lastYaw))
+        mask |= POSITION_TARGET_TYPEMASK_YAW_IGNORE;
 
     BOOST_LOG_TRIVIAL(info) << "DO REPOSITION" << pos.lat() << ";" << pos.lon() << ";" << pos.alt();
 
@@ -277,9 +284,10 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos)
                                                          0,
                                                          0,
                                                          0,
-                                                         m_lastYaw / 180. * M_PI,
+                                                         (std::isnan(m_lastYaw)) ? 0 : (m_lastYaw / 180. * M_PI),
                                                          0);
-    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), -1, 1000, uav::UavSendMessage::Priority::HIGHT));
+    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), -1, 1000, uav::UavSendMessage::Priority::HIGHT)); // every second
+    m_lastYaw = NAN;
     return true;
 }
 
@@ -291,7 +299,7 @@ bool AutopilotPixhawkImpl::repositionOffboard(const geo::Coords3D &pos)
 bool AutopilotPixhawkImpl::repositionAzimuth(float az)
 {
     m_lastYaw = az;
-    repositionOffboard(m_lastRepositionPos);
+    return repositionOffboard(m_lastRepositionPos);
 }
 
 void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)

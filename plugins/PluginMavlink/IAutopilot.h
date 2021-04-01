@@ -23,6 +23,7 @@ public:
     };
 
     IAutopilot(int chan, int gcsID, int id, MavlinkHelper::ProcessingMode mode);
+    virtual ~IAutopilot();
 
     MavlinkHelper::ProcessingMode processingMode() const;
     void setProcessingMode(const MavlinkHelper::ProcessingMode &processingMode);
@@ -71,7 +72,7 @@ protected:
 
     uint32_t m_bootTimeMS;
 
-    bool isFlight = false;
+    bool m_isFlight = false;
 
     std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> m_bootTimeReceived;
 
