@@ -54,6 +54,7 @@ public:
     class OnChangeGPSCallback
     {
     public:
+        virtual ~OnChangeGPSCallback() = default;
         virtual void updateSatelitesCount()
         {
         }

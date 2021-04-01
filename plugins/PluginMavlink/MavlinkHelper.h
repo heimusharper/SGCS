@@ -1,5 +1,12 @@
 #ifndef MAVLINKHELPER_H
 #define MAVLINKHELPER_H
+
+#if __GNUC__ > 8
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+
 #include "all/mavlink.h"
 #include "mavlink_types.h"
 #include <CharMap.h>

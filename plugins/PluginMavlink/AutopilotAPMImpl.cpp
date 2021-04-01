@@ -62,14 +62,18 @@ bool AutopilotAPMImpl::requestARM(bool autoChangeMode, bool force, bool defaultM
 
 bool AutopilotAPMImpl::requestDisARM(bool force)
 {
+    return false;
 }
 
 bool AutopilotAPMImpl::requestTakeOff(const geo::Coords3D &target)
 {
+    return false;
 }
 
 uav::UAVControlState AutopilotAPMImpl::getState(bool &done) const
 {
+    done = false;
+    return uav::UAVControlState::WAIT;
 }
 
 bool AutopilotAPMImpl::repositionOnboard(const geo::Coords3D &pos)
@@ -105,4 +109,5 @@ bool AutopilotAPMImpl::repositionOffboard(const geo::Coords3D &pos)
 
 bool AutopilotAPMImpl::repositionAzimuth(float az)
 {
+    return false;
 }

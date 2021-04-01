@@ -24,8 +24,10 @@
 #include "MavlinkHelper.h"
 #include <atomic>
 #include <boost/log/trivial.hpp>
+#include <boost/uuid/uuid.hpp>
 #include <chrono>
 #include <connection/UavProtocol.h>
+#include <map>
 #include <queue>
 #include <thread>
 
@@ -131,6 +133,38 @@ private:
 
     private:
         IAutopilot *m_ap = nullptr;
+    };
+
+    class MavlinkMissionControl : public uav::Mission::OnChangeMissionCallback
+    {
+    public:
+        MavlinkMissionControl(IAutopilot *ap, uav::UAV *u) : m_ap(ap), m_uav(u)
+        {
+        }
+
+        virtual void onUpdatePatchs() override final
+        {
+            // TODO: only first
+            if (m_uav->mission()->size() <= 0)
+                return;
+            const uav::MissionPath &mp = m_uav->mission()->patch(0);
+            bool update                = true;
+            if (m_representation.contains(mp.uuid()))
+                if (m_representation.at(mp.uuid()) == mp.touchUuid())
+                    update = false;
+            if (update)
+                m_ap->doWriteMissionPath(mp, 0);
+        }
+        virtual void onUpdateItem(int patch, int item) override final
+        {
+            // TODO: path/item...
+        }
+
+    private:
+        IAutopilot *m_ap = nullptr;
+        uav::UAV *m_uav  = nullptr;
+
+        std::map<boost::uuids::uuid, boost::uuids::uuid> m_representation;
     };
 
     class MavlinkARMControl : public uav::UAV::ControlInterface

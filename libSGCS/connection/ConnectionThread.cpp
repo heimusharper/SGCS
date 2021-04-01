@@ -25,7 +25,8 @@ ConnectionThread::ConnectionThread()
 
 ConnectionThread::~ConnectionThread()
 {
-    delete _router;
+    if (_router)
+        delete _router;
 }
 
 void ConnectionThread::create(Connection *connection,

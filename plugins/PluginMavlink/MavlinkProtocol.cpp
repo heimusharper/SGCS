@@ -395,6 +395,8 @@ void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
     uav->speed()->addCallback(speedControl);
     uav->addControl(armControl);
 
+    uav->mission()->setMaxPatchsCount(1);
+
     UavProtocol::setUAV(id, uav);
 }
 

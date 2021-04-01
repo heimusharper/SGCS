@@ -8,6 +8,8 @@ namespace tools
 class IOObject
 {
 public:
+    virtual ~IOObject() = default;
+
     void addChild(IOObject *child)
     {
         m_childs.push_back(child);

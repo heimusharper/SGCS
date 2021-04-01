@@ -19,6 +19,7 @@
 #include "AHRS.h"
 #include "GPS.h"
 #include "Home.h"
+#include "Mission.h"
 #include "Position.h"
 #include "Power.h"
 #include "Speed.h"
@@ -100,6 +101,8 @@ public:
 
     Speed *speed() const;
 
+    Mission *mission() const;
+
     int takeoffAltitude() const;
     void setTakeoffAltitude(int takeoffAltitude);
 
@@ -138,6 +141,8 @@ private:
     Power *m_power = nullptr;
 
     Speed *m_speed = nullptr;
+
+    Mission *m_mission = nullptr;
 
     UAVControlState m_state;
 

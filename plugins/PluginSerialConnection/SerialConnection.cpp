@@ -78,7 +78,7 @@ void SerialConnection::run()
 {
     SerialDescriptor serialDsc = -1;
     struct termios tty;
-    char read_buf[MAX_READ_BYTES_SIZE];
+    char *read_buf = new char[MAX_READ_BYTES_SIZE];
 
     while (!m_stop.load())
     {
@@ -245,4 +245,5 @@ void SerialConnection::run()
     {
         close(serialDsc);
     }
+    delete[] read_buf;
 }

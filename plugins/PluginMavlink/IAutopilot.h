@@ -58,6 +58,8 @@ public:
 
     void ping();
 
+    void doWriteMissionPath(const uav::MissionPath &path, int from = 0);
+
 protected:
     virtual void sendMode(uint8_t base, uint32_t custom);
     void arm(bool force = false);
@@ -80,6 +82,13 @@ protected:
 
     std::thread *m_pingThread = nullptr;
     std::atomic_bool m_pingThreadStop;
+
+    // mission write stack
+
+    uav::MissionPath m_pathCopy;
+    bool m_writeProcess           = false;
+    bool m_nextMissionIndex       = 0;
+    bool m_nextMissionIndexInPath = 0;
 
 private:
     MavlinkHelper::ProcessingMode m_processingMode;

@@ -108,6 +108,14 @@ void IAutopilot::ping()
     });
 }
 
+void IAutopilot::doWriteMissionPath(const uav::MissionPath &path, int from)
+{
+    m_pathCopy               = uav::MissionPath(path);
+    m_writeProcess           = true;
+    m_nextMissionIndex       = from;
+    m_nextMissionIndexInPath = 0;
+}
+
 void IAutopilot::setBootTimeMS(const uint32_t &bootTimeMS)
 {
     m_bootTimeReceived = std::chrono::_V2::system_clock::now();

@@ -40,7 +40,7 @@ public:
     ConnectionRouter(Connection *connection,
                      const std::vector<sgcs::connection::UavProtocol *> &protos,
                      const std::vector<gcs::LeafInterface *> &leafs);
-    ~ConnectionRouter();
+    virtual ~ConnectionRouter();
 
     virtual void processFromChild(const tools::CharMap &data) override final;
     virtual void processFromParent(const tools::CharMap &data) override final;

@@ -18,6 +18,7 @@ public:
 
     virtual bool requestLand()
     {
+        return false;
     }
 
 private:

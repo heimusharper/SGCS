@@ -28,6 +28,7 @@ UAV::UAV()
 , m_home(new Home())
 , m_power(new Power())
 , m_speed(new Speed())
+, m_mission(new Mission())
 , m_state(UAVControlState::WAIT)
 , m_takeoffAltitude(10)
 {
@@ -41,6 +42,7 @@ UAV::~UAV()
     delete m_home;
     delete m_power;
     delete m_speed;
+    delete m_mission;
 }
 
 void UAV::process(std::unique_ptr<UavTask> message)
@@ -126,6 +128,11 @@ void UAV::setState(const UAVControlState &state)
         for (auto c : m_controls)
             c->onChangeControlState(m_state);
     }
+}
+
+Mission *UAV::mission() const
+{
+    return m_mission;
 }
 
 int UAV::takeoffAltitude() const
