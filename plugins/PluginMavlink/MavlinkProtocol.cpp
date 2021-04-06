@@ -253,11 +253,28 @@ void MavlinkProtocol::runMessageReader()
 
                                 insertMessage(gpsm);
 
+                                // uav::Position::Message *pos = new uav::Position::Message(message.sysid);
+                                // pos->lat                    = ((double)gps.lat) / 1.E7;
+                                // pos->lon                    = ((double)gps.lon) / 1.E7;
+                                // pos->alt                    = ((double)gps.alt) / 1000.;
+                                // insertMessage(pos);
+                                break;
+                            }
+                            case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+                            {
+                                mavlink_global_position_int_t gps;
+                                mavlink_msg_global_position_int_decode(&message, &gps);
                                 uav::Position::Message *pos = new uav::Position::Message(message.sysid);
                                 pos->lat                    = ((double)gps.lat) / 1.E7;
                                 pos->lon                    = ((double)gps.lon) / 1.E7;
                                 pos->alt                    = ((double)gps.alt) / 1000.;
                                 insertMessage(pos);
+                                break;
+                            }
+                            case MAVLINK_MSG_ID_POSITION_TARGET_GLOBAL_INT:
+                            {
+                                mavlink_position_target_global_int_t pt;
+                                mavlink_msg_position_target_global_int_decode(&message, &pt);
                                 break;
                             }
                             case MAVLINK_MSG_ID_HOME_POSITION:
