@@ -41,6 +41,8 @@ public:
     virtual uav::UAVControlState getState(bool &done) const   = 0;
     virtual bool repositionAzimuth(float az)                  = 0;
 
+    void sendRTCM(const tools::CharMap &cm);
+
     virtual bool requestLand() = 0;
 
     virtual void setMode(uint8_t base, uint32_t custom);
@@ -75,6 +77,8 @@ protected:
     uint32_t m_customMode;
 
     uint32_t m_bootTimeMS;
+    const size_t MAX_RTCM_L;
+    uint32_t m_rtcmSeq;
 
     bool m_isFlight = false;
 

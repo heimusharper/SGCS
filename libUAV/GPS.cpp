@@ -105,6 +105,12 @@ void GPS::removeCallback(GPS::OnChangeGPSCallback *call)
     m_GPSCallback.remove(call);
 }
 
+void GPS::sendRTCM(const tools::CharMap &rtcm)
+{
+    for (auto x : m_GPSCallback)
+        x->sendRTCM(rtcm);
+}
+
 void GPS::setFixType(const GPS::FixType &fixType)
 {
     if (m_fixType != fixType)

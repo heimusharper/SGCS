@@ -64,6 +64,9 @@ public:
         virtual void updateFixType()
         {
         }
+        virtual void sendRTCM(const tools::CharMap &rtcm)
+        {
+        }
     };
 
     GPS();
@@ -82,6 +85,9 @@ public:
     //
     void addCallback(OnChangeGPSCallback *call);
     void removeCallback(OnChangeGPSCallback *call);
+
+    // RTCM messages
+    void sendRTCM(const tools::CharMap &rtcm);
 
 protected:
     void setProvGPS(uint8_t provGPS);

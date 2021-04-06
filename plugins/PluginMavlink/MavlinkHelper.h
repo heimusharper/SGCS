@@ -59,6 +59,15 @@ struct MavlinkHelper
                 {
                     switch (m_mavlink.msgid)
                     {
+                        case MAVLINK_MSG_ID_GPS_RTCM_DATA:
+                        {
+                            mavlink_gps_rtcm_data_t rtcm1;
+                            mavlink_msg_gps_rtcm_data_decode(&m_mavlink, &rtcm1);
+                            mavlink_gps_rtcm_data_t rtcm2;
+                            mavlink_msg_gps_rtcm_data_decode(&msgt, &rtcm2);
+                            if (rtcm1.flags != rtcm2.flags)
+                                return false;
+                        }
                         case MAVLINK_MSG_ID_COMMAND_LONG:
                         {
                             mavlink_command_long_t long1;

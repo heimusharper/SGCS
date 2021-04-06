@@ -285,6 +285,7 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos)
     }
 
     mavlink_message_t message;
+    // Global (WGS84) coordinate frame + MSL altitude. First value / x: latitude, second value / y: longitude, third value / z: positive altitude over mean sea level
     mavlink_msg_set_position_target_global_int_pack_chan(m_gcs,
                                                          0,
                                                          m_chanel,
@@ -294,8 +295,8 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos)
                                                          0,
                                                          MAV_FRAME_GLOBAL,
                                                          mask,
-                                                         (int32_t)(pos.lat() * 1.e7),
-                                                         (int32_t)(pos.lon() * 1.e7),
+                                                         (int32_t)(pos.lat() * 1.E7),
+                                                         (int32_t)(pos.lon() * 1.E7),
                                                          pos.alt(),
                                                          0,
                                                          0,

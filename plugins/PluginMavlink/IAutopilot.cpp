@@ -7,6 +7,8 @@ IAutopilot::IAutopilot(int chan, int gcsID, int id, MavlinkHelper::ProcessingMod
 , m_baseMode(0)
 , m_customMode(0)
 , m_bootTimeMS(0)
+, MAX_RTCM_L(180)
+, m_rtcmSeq(0)
 , m_isFlight(false)
 , m_bootTimeReceived(std::chrono::_V2::system_clock::now())
 , m_processingMode(mode)
@@ -44,6 +46,42 @@ bool IAutopilot::ready() const
 void IAutopilot::setReady(bool ready)
 {
     m_ready = ready;
+}
+
+void IAutopilot::sendRTCM(const tools::CharMap &cm)
+{
+    if (cm.size > MAX_RTCM_L * 4)
+        return; // ignore large messages
+    auto createRTCM = [this](int fragment, int seq, const tools::CharMap &map, int from, int size) {
+        mavlink_message_t message;
+        uint8_t flag = 0;
+        if (fragment < 0)
+            flag = 0; // одн пакет
+        else
+            flag = 1; // много пакетов
+        flag += (uint8_t)((((fragment < 0) ? 0 : fragment) & 0x3) << 1);
+        flag += (uint8_t)((seq & 0x1f) << 3);
+        mavlink_msg_gps_rtcm_data_pack_chan(MAV_COMP_ID_USER50, 0, m_chanel, &message, flag, size, (const uint8_t *)map.data + from);
+        m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 3, 50, uav::UavSendMessage::Priority::HIGHT));
+    };
+    if (cm.size > MAX_RTCM_L)
+    {
+        // split
+        int fragment   = 0;
+        size_t pointer = 0;
+        while (pointer < cm.size)
+        {
+            size_t size = cm.size - pointer;
+            if (size > MAX_RTCM_L)
+                size = MAX_RTCM_L;
+            createRTCM(fragment, m_rtcmSeq, cm, pointer, size);
+            pointer += size; // смещаем укзатель
+            fragment++;
+        }
+    }
+    else
+        createRTCM(-1, m_rtcmSeq, cm, 0, cm.size);
+    m_rtcmSeq++;
 }
 
 void IAutopilot::setMode(uint8_t base, uint32_t custom)

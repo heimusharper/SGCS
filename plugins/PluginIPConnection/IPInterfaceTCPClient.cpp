@@ -88,7 +88,7 @@ void IPInterfaceTCPClient::run()
                         BOOST_LOG_TRIVIAL(info) << "Connected TCP socket " << m_hostName << ":" << m_port;
                     else
                     {
-                        shutdown(sock, SHUT_RDWR);
+                        close(sock);
                         sock = -1;
                         BOOST_LOG_TRIVIAL(info) << "Failed bind TCP socket " << m_hostName << ":" << m_port;
                     }
@@ -129,6 +129,6 @@ void IPInterfaceTCPClient::run()
     }
     if (sock > 0)
     {
-        shutdown(sock, SHUT_RDWR);
+        close(sock);
     }
 }

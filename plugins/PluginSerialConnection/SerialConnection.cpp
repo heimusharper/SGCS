@@ -232,6 +232,7 @@ void SerialConnection::run()
                     }
                     else
                     {
+                        BOOST_LOG_TRIVIAL(info) << "Connected device " << m_portName << " " << m_baudRate;
                         m_isDirty.store(false);
                     }
                 }

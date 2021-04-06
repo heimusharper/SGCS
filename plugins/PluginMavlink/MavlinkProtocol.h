@@ -134,7 +134,19 @@ private:
     private:
         IAutopilot *m_ap = nullptr;
     };
-
+    class MavlinkGPSChange : public uav::GPS::OnChangeGPSCallback
+    {
+    public:
+        MavlinkGPSChange(IAutopilot *ap) : m_ap(ap)
+        {
+        }
+        virtual void sendRTCM(const tools::CharMap &rtcm)
+        {
+            m_ap->sendRTCM(rtcm);
+        }
+    private:
+        IAutopilot *m_ap = nullptr;
+    };
     class MavlinkMissionControl : public uav::Mission::OnChangeMissionCallback
     {
     public:
