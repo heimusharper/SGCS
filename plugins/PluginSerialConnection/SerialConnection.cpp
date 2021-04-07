@@ -188,15 +188,13 @@ void SerialConnection::run()
                     fcntl(serialDsc, F_SETFL, FNDELAY);
                     tcgetattr(serialDsc, &tty);
 
-                    tty.c_cflag &= ~(PARENB | CSTOPB | CSIZE);
-                    tty.c_cflag |= (CREAD | CLOCAL | CS8);
-                    tty.c_lflag &= ~(ICANON | ISIG);
-                    tty.c_iflag &= ~(IXON | IXOFF | IXANY); // disable software flow control
-                    // tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);
-                    // tty.c_oflag &= ~OPOST;
-                    // tty.c_oflag &= ~ONLCR;
-                    tty.c_cc[VTIME] = 10;
-                    tty.c_cc[VMIN]  = 10;
+                    tty.c_iflag &= ~(IGNBRK | BRKINT | ICRNL | INLCR | PARMRK | INPCK | ISTRIP | IXON);
+                    tty.c_oflag = 0;
+                    tty.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN | ISIG);
+                    tty.c_cflag &= ~(CSTOPB | PARENB | CRTSCTS);
+
+                    tty.c_cc[VTIME] = 0;
+                    tty.c_cc[VMIN]  = 0;
                     speed_t baudrate;
                     switch (m_baudRate)
                     {
