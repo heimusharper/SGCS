@@ -86,6 +86,8 @@ private:
     std::thread *_messageProcessorThread = nullptr;
     std::mutex _dataTaskMutex;
 
+    bool m_waitForHomePoint = true;
+
     std::map<int, IAutopilot *> m_modes;
 
 private:
@@ -125,9 +127,9 @@ private:
         MavlinkPositionControl(IAutopilot *ap) : m_ap(ap)
         {
         }
-        virtual bool goTo(geo::Coords3D &&target) override final
+        virtual bool goTo(geo::Coords3D &&target, const geo::Coords3D &base) override final
         {
-            m_ap->repositionOffboard(std::move(target));
+            m_ap->repositionOffboard(std::move(target), base);
             return false;
         }
 
@@ -144,6 +146,7 @@ private:
         {
             m_ap->sendRTCM(rtcm);
         }
+
     private:
         IAutopilot *m_ap = nullptr;
     };
@@ -199,10 +202,10 @@ private:
                     m_ap->requestLand();
                     break;
                 case uav::UAVControlState::MANUAL_OFFBOARD:
-                    m_ap->repositionOffboard(m_uav->position()->gps());
+                    m_ap->repositionOffboard(m_uav->position()->gps(), m_uav->home()->position());
                     break;
                 case uav::UAVControlState::MANUAL_ONBOARD:
-                    m_ap->repositionOnboard(m_uav->position()->gps());
+                    m_ap->repositionOnboard(m_uav->position()->gps(), m_uav->home()->position());
                     break;
                 case uav::UAVControlState::PREPARED:
                     m_ap->requestARM(true, force, false);

@@ -38,7 +38,7 @@ public:
         {
         }
 
-        virtual bool goTo(geo::Coords3D &&target) = 0;
+        virtual bool goTo(geo::Coords3D &&target, const geo::Coords3D &base) = 0;
     };
 
     class Message : public UavTask
@@ -68,7 +68,7 @@ public:
 
     // control
     void setControl(PositionControlInterface *control);
-    bool goTo(geo::Coords3D &&target);
+    bool goTo(geo::Coords3D &&target, const geo::Coords3D &base);
 
     void addCallback(OnChangePositionCallback *c);
     void removeCallback(OnChangePositionCallback *c);

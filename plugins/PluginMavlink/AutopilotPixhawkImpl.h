@@ -4,6 +4,18 @@
 #include <UAV.h>
 #include <boost/log/trivial.hpp>
 #include <chrono>
+#include <cmath>
+
+#define USE_GLOBAL_POSITION
+#undef USE_GLOBAL_POSITION
+
+#define M_DEG_TO_RAD M_PI / 180.
+#define CONSTANTS_ONE_G 9.80665f                   /* m/s^2		*/
+#define CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C 1.225f /* kg/m^3		*/
+#define CONSTANTS_AIR_GAS_CONST 287.1f             /* J/(kg * K)		*/
+#define CONSTANTS_ABSOLUTE_NULL_CELSIUS -273.15f   /* °C			*/
+#define CONSTANTS_RADIUS_OF_EARTH 6371000          /* meters (m)		*/
+static const float epsilon = std::numeric_limits<double>::epsilon();
 
 class AutopilotPixhawkImpl : public IAutopilot
 {
@@ -17,8 +29,8 @@ public:
 
     virtual uav::UAVControlState getState(bool &done) const override final;
 
-    virtual bool repositionOnboard(const geo::Coords3D &pos) override final;
-    virtual bool repositionOffboard(const geo::Coords3D &pos) override final;
+    virtual bool repositionOnboard(const geo::Coords3D &pos, const geo::Coords3D &base) override final;
+    virtual bool repositionOffboard(const geo::Coords3D &pos, const geo::Coords3D &base) override final;
     virtual bool repositionAzimuth(float az) override final;
 
     virtual void setMode(uint8_t base, uint32_t custom) override final;
@@ -35,6 +47,7 @@ private:
     bool target_force_arm;
 
     geo::Coords3D m_lastRepositionPos;
+    geo::Coords3D m_lastBasePos;
     double m_lastYaw;
 
     void printMode(uint32_t custom);

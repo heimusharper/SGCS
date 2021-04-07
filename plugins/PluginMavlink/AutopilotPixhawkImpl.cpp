@@ -266,11 +266,17 @@ uav::UAVControlState AutopilotPixhawkImpl::getState(bool &done) const
     done = false;
 }
 
-bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos)
+bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos, const geo::Coords3D &base)
 {
+    if (!pos.valid())
+        return false;
+#ifndef USE_GLOBAL_POSITION
+    if (!base.valid())
+        return false;
+#endif
     m_lastRepositionPos = pos;
-
-    auto mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE |
+    m_lastBasePos       = base;
+    auto mask           = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE |
     POSITION_TARGET_TYPEMASK_VZ_IGNORE | POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE |
     POSITION_TARGET_TYPEMASK_AZ_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_FORCE_SET;
     if (!isnan(m_lastYaw))
@@ -285,6 +291,7 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos)
     }
 
     mavlink_message_t message;
+#ifdef USE_GLOBAL_POSITION
     // Global (WGS84) coordinate frame + MSL altitude. First value / x: latitude, second value / y: longitude, third value / z: positive altitude over mean sea level
     mavlink_msg_set_position_target_global_int_pack_chan(m_gcs,
                                                          0,
@@ -306,6 +313,50 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos)
                                                          0,
                                                          (std::isnan(m_lastYaw)) ? 0 : (m_lastYaw / 180. * M_PI),
                                                          0);
+
+#else
+
+    double lat_rad = pos.lat() * M_DEG_TO_RAD;
+    double lon_rad = pos.lon() * M_DEG_TO_RAD;
+
+    double ref_lon_rad = base.lon() * M_DEG_TO_RAD;
+    double ref_lat_rad = base.lat() * M_DEG_TO_RAD;
+
+    double sin_lat   = sin(lat_rad);
+    double cos_lat   = cos(lat_rad);
+    double cos_d_lon = cos(lon_rad - ref_lon_rad);
+
+    double ref_sin_lat = sin(ref_lat_rad);
+    double ref_cos_lat = cos(ref_lat_rad);
+
+    double c = acos(ref_sin_lat * sin_lat + ref_cos_lat * cos_lat * cos_d_lon);
+    double k = (fabs(c) < epsilon) ? 1.0 : (c / sin(c));
+
+    double x = k * (ref_cos_lat * sin_lat - ref_sin_lat * cos_lat * cos_d_lon) * CONSTANTS_RADIUS_OF_EARTH;
+    double y = k * cos_lat * sin(lon_rad - ref_lon_rad) * CONSTANTS_RADIUS_OF_EARTH;
+
+    double z = -(pos.alt() - base.alt());
+    mavlink_msg_set_position_target_local_ned_pack_chan(m_gcs,
+                                                        0,
+                                                        m_chanel,
+                                                        &message,
+                                                        m_bootTimeMS + compensate,
+                                                        m_id,
+                                                        0,
+                                                        MAV_FRAME_LOCAL_NED,
+                                                        mask,
+                                                        x,
+                                                        y,
+                                                        z,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        (std::isnan(m_lastYaw)) ? 0 : (m_lastYaw * M_DEG_TO_RAD),
+                                                        0);
+#endif
     m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), -1, 300, uav::UavSendMessage::Priority::HIGHT)); // every second
     m_lastYaw = NAN;
 
@@ -324,15 +375,15 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos)
     return true;
 }
 
-bool AutopilotPixhawkImpl::repositionOffboard(const geo::Coords3D &pos)
+bool AutopilotPixhawkImpl::repositionOffboard(const geo::Coords3D &pos, const geo::Coords3D &base)
 {
-    return repositionOnboard(pos);
+    return repositionOnboard(pos, base);
 }
 
 bool AutopilotPixhawkImpl::repositionAzimuth(float az)
 {
     m_lastYaw = az;
-    return repositionOffboard(m_lastRepositionPos);
+    return repositionOffboard(m_lastRepositionPos, m_lastRepositionPos);
 }
 
 void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
@@ -362,7 +413,7 @@ void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
         }
         else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD && m_waitForRepositionOFFBOARD)
         {
-            repositionOffboard(m_lastRepositionPos);
+            repositionOffboard(m_lastRepositionPos, m_lastBasePos);
         }
     }
 }

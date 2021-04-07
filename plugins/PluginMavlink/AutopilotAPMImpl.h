@@ -12,8 +12,8 @@ public:
     virtual bool requestTakeOff(const geo::Coords3D &target) override final;
     virtual uav::UAVControlState getState(bool &done) const override final;
 
-    virtual bool repositionOnboard(const geo::Coords3D &pos) override final;
-    virtual bool repositionOffboard(const geo::Coords3D &pos) override final;
+    virtual bool repositionOnboard(const geo::Coords3D &pos, const geo::Coords3D &base) override final;
+    virtual bool repositionOffboard(const geo::Coords3D &pos, const geo::Coords3D &base) override final;
     virtual bool repositionAzimuth(float az) override final;
 
     virtual bool requestLand()

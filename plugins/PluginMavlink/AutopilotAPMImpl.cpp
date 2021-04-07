@@ -76,7 +76,7 @@ uav::UAVControlState AutopilotAPMImpl::getState(bool &done) const
     return uav::UAVControlState::WAIT;
 }
 
-bool AutopilotAPMImpl::repositionOnboard(const geo::Coords3D &pos)
+bool AutopilotAPMImpl::repositionOnboard(const geo::Coords3D &pos, const geo::Coords3D &base)
 {
     mavlink_message_t message;
     mavlink_msg_mission_item_pack_chan(m_gcs,
@@ -102,9 +102,9 @@ bool AutopilotAPMImpl::repositionOnboard(const geo::Coords3D &pos)
     return true;
 }
 
-bool AutopilotAPMImpl::repositionOffboard(const geo::Coords3D &pos)
+bool AutopilotAPMImpl::repositionOffboard(const geo::Coords3D &pos, const geo::Coords3D &base)
 {
-    return repositionOnboard(pos);
+    return repositionOnboard(pos, base);
 }
 
 bool AutopilotAPMImpl::repositionAzimuth(float az)

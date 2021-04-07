@@ -84,6 +84,13 @@ void IAutopilot::sendRTCM(const tools::CharMap &cm)
     m_rtcmSeq++;
 }
 
+void IAutopilot::sendGetHomePoint()
+{
+    mavlink_message_t message;
+    mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_GET_HOME_POSITION, 0, 0, 0, 0, 0, 1, 0, 0);
+    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 5, 200, uav::UavSendMessage::Priority::HIGHT));
+}
+
 void IAutopilot::setMode(uint8_t base, uint32_t custom)
 {
     m_baseMode   = base;

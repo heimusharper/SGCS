@@ -61,10 +61,10 @@ void Position::setControl(PositionControlInterface *control)
     else
         rmHas(uav::Position::HAS::HAS_POSITION_CONTROL);
 }
-bool Position::goTo(geo::Coords3D &&target)
+bool Position::goTo(geo::Coords3D &&target, const geo::Coords3D &base)
 {
     if (_control && has(uav::Position::HAS::HAS_POSITION_CONTROL))
-        return _control->goTo(std::move(target));
+        return _control->goTo(std::move(target), base);
     return false;
 }
 

@@ -231,15 +231,18 @@ void MavlinkProtocol::runMessageReader()
                                 gpsm->satelitesGPS      = gps.satellites_visible;
                                 gpsm->hdop              = gps.h_acc;
                                 gpsm->vdop              = gps.v_acc;
+                                bool checkHome          = false;
                                 switch (gps.fix_type)
                                 {
                                     case GPS_FIX_TYPE_RTK_FLOAT:
                                     case GPS_FIX_TYPE_RTK_FIXED:
                                         gpsm->fix = uav::GPS::FixType::RTK;
+                                        checkHome = true;
                                         break;
                                     case GPS_FIX_TYPE_3D_FIX:
                                     case GPS_FIX_TYPE_DGPS:
                                         gpsm->fix = uav::GPS::FixType::FIX3D;
+                                        checkHome = true;
                                         break;
                                     case GPS_FIX_TYPE_NO_GPS:
                                     case GPS_FIX_TYPE_NO_FIX:
@@ -250,6 +253,8 @@ void MavlinkProtocol::runMessageReader()
                                         gpsm->fix = uav::GPS::FixType::NOGPS;
                                         break;
                                 }
+                                if (checkHome && m_waitForHomePoint)
+                                    ap->sendGetHomePoint();
 
                                 insertMessage(gpsm);
 
@@ -285,7 +290,8 @@ void MavlinkProtocol::runMessageReader()
                                 geo::Coords3D coord(((double)pos.latitude) / 1.E7,
                                                     ((double)pos.longitude) / 1.E7,
                                                     ((double)pos.altitude) / 1000.);
-                                home->position = coord;
+                                home->position     = coord;
+                                m_waitForHomePoint = false;
                                 insertMessage(home);
                                 break;
                             }
@@ -319,10 +325,22 @@ void MavlinkProtocol::runMessageReader()
                                 switch (ack.result)
                                 {
                                     case MAV_RESULT_ACCEPTED:
+                                    {
                                         BOOST_LOG_TRIVIAL(info)
                                         << "ACK MESSAGE " << ack.command << " ACCEPTED " << (int)ack.progress << " "
                                         << (int)ack.result << " " << ack.result_param2;
+                                        switch (ack.command)
+                                        {
+                                            case MAV_CMD_COMPONENT_ARM_DISARM:
+                                            {
+                                                ap->sendGetHomePoint(); // update home position
+                                                break;
+                                            }
+                                            default:
+                                                break;
+                                        }
                                         break;
+                                    }
                                     default:
                                         BOOST_LOG_TRIVIAL(warning)
                                         << "ACK MESSAGE " << ack.command << " FAILED " << (int)ack.result
