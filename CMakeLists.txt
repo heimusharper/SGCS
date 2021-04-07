@@ -31,3 +31,10 @@ FOREACH(file ${PLUGINS_CONTRIB_PATH})
         ADD_SUBDIRECTORY(${file})
     ENDIF()
 ENDFOREACH()
+message(${PROJECT_BINARY_DIR})
+# cp install scripts
+FILE (COPY install.sh
+    DESTINATION
+    ${PROJECT_BINARY_DIR}/bin)
+
+

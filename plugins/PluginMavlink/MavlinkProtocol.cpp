@@ -303,13 +303,12 @@ void MavlinkProtocol::runMessageReader()
                                 ap->setIsFlight(isFlight);
                                 break;
                             }
-                            case MAVLINK_MSG_ID_GPS_STATUS:
+                            /*case MAVLINK_MSG_ID_GPS_STATUS:
                             {
                                 mavlink_gps_status_t gps;
                                 mavlink_msg_gps_status_decode(&message, &gps);
-
                                 break;
-                            }
+                            }*/
                             case MAVLINK_MSG_ID_PARAM_VALUE:
                             {
                                 mavlink_param_value_t param;
