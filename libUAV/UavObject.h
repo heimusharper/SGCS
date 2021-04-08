@@ -19,14 +19,20 @@
 #include "UavMessage.h"
 #include <boost/log/trivial.hpp>
 #include <cmath>
+
+#if defined(__cpp_concepts)
 #include <concepts>
+#endif
+
 #include <memory>
 #include <numeric>
 
 namespace uav
 {
 template <class T>
+#if defined(__cpp_concepts)
 requires std::integral<T>
+#endif
 
 class UavObject
 {

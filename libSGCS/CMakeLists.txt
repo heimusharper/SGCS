@@ -23,6 +23,7 @@ SET(SRC_LIST
     plugins/PluginsLoader.cpp
     plugins/LeafPlugin.cpp
     plugins/LeafInterface.cpp
+    GCSStatus.cpp
     )
 SET(HEADER_LIST
     config/RunConfiguration.h
@@ -36,6 +37,7 @@ SET(HEADER_LIST
     plugins/PluginsLoader.h
     plugins/LeafPlugin.h
     plugins/LeafInterface.h
+    GCSStatus.h
     version.h
     )
 
