@@ -20,6 +20,8 @@ echo "[Unit]" >> "$SERVICE"
 echo "Description=SGCS" >> "$SERVICE"
 echo "" >> "$SERVICE"
 echo "[Service]" >> "$SERVICE"
+echo "WorkingDirectory=/opt/sgcs" >> "$SERVICE"
+echo "Restart=always" >> "$SERVICE"
 echo "Type=simple" >> "$SERVICE"
 echo "ExecStart=/opt/sgcs/SGCSApp" >> "$SERVICE"
 echo "" >> $SERVICE
