@@ -84,6 +84,7 @@ void IPInterfaceUDPServer::run()
             {
                 if (!m_clients.contains(cliaddr))
                 {
+                    BOOST_LOG_TRIVIAL(info) << "New client " << cliaddr.sin_port;
                     // create new
                     IPChild *c = new IPChild;
                     m_clients.insert(std::pair(cliaddr, c));
@@ -103,6 +104,7 @@ void IPInterfaceUDPServer::run()
                 while (!value.second->m_writeBuffer.empty())
                 {
                     tools::CharMap cm = value.second->m_writeBuffer.front();
+                    value.second->m_writeBuffer.pop();
                     if (cm.size > 0)
                     {
                         sendto(sock,

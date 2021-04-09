@@ -359,7 +359,7 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos, const geo
                                                         (std::isnan(m_lastYaw)) ? 0 : (m_lastYaw * M_DEG_TO_RAD),
                                                         0);
 #endif
-    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), -1, 300, uav::UavSendMessage::Priority::HIGHT)); // every second
+    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), -1, 400, uav::UavSendMessage::Priority::HIGHT)); // every second
     m_lastYaw = NAN;
 
     union px4::px4_custom_mode px4_mode;
