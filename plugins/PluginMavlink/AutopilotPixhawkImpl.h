@@ -7,7 +7,7 @@
 #include <cmath>
 
 #define USE_GLOBAL_POSITION
-#undef USE_GLOBAL_POSITION
+//#undef USE_GLOBAL_POSITION
 
 #define M_DEG_TO_RAD M_PI / 180.
 #define CONSTANTS_ONE_G 9.80665f                   /* m/s^2		*/
