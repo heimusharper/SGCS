@@ -18,34 +18,29 @@
 #define SERIALCONNECTION_H
 #include "IPConfig.h"
 #include "IPInterface.h"
-#include "IPInterfaceTCPClient.h"
-#include "IPInterfaceUDPClient.h"
+// #include "IPInterfaceTCPClient.h"
+// #include "IPInterfaceUDPClient.h"
 #include "IPInterfaceUDPServer.h"
 #include <boost/log/trivial.hpp>
 #include <connection/Connection.h>
+#include <plugins/DataSourcePlugin.h>
 #include <queue>
 
-class IPConnection : public sgcs::connection::Connection, public DoublePipe
+class IPConnection : public IPInterface::CreateChild
 {
 public:
-    explicit IPConnection();
+    explicit IPConnection(sgcs::plugin::DataSourcePlugin::ConnectionFabric *connectionFabric);
     virtual ~IPConnection();
-    virtual void processFromParent(const tools::CharMap &data) override final;
-    virtual void processFromChild(const tools::CharMap &data) override final;
-    virtual void pipeProcessFromParent(const tools::CharMap &data) override final;
-    virtual void pipeProcessFromChild(const tools::CharMap &data) override final;
 
+    virtual void onChild(IPChild *c) override final;
     void doConnectToPort(const std::string &hostName, uint16_t port);
     void doDisconnectFromPort();
 
 private:
     std::string m_hostName;
-    uint16_t m_port           = 0;
-    const int MAX_BUFFER_SIZE = 1024 * 10;
-
-    std::queue<uint8_t> m_readBuffer;
-
+    uint16_t m_port          = 0;
     IPInterface *m_interface = nullptr;
+    sgcs::plugin::DataSourcePlugin::ConnectionFabric *m_connectionFabric;
 };
 
 #endif // SERIALCONNECTION_H

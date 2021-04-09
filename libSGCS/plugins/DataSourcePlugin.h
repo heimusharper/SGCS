@@ -18,6 +18,7 @@
 #define DATASOURCEPLUGIN_H
 
 #include "../connection/Connection.h"
+#include "../connection/ConnectionThread.h"
 #include "PluginInterface.h"
 
 namespace sgcs
@@ -31,6 +32,22 @@ public:
     virtual ~DataSourcePlugin() = default;
 
     virtual sgcs::connection::Connection *instance() = 0;
+
+    class ConnectionFabric
+    {
+    public:
+        virtual ~ConnectionFabric() = default;
+        virtual void onCreate(sgcs::connection::ConnectionThread *thr, sgcs::connection::Connection *instance) = 0;
+    };
+
+    virtual void startConnectionFabric(ConnectionFabric *)
+    {
+    }
+
+    bool hasConnectionFabric() const;
+
+protected:
+    bool m_hasConnectionFabric;
 };
 }
 }

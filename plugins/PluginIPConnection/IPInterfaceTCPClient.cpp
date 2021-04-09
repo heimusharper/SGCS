@@ -2,9 +2,6 @@
 
 IPInterfaceTCPClient::IPInterfaceTCPClient() : IPInterface(), m_hostName(""), m_port(5760), MAX_LINE(1024)
 {
-    m_reconnect.store(true);
-    m_stopThread.store(false);
-    m_thread = new std::thread(&IPInterfaceTCPClient::run, this);
 }
 
 IPInterfaceTCPClient::~IPInterfaceTCPClient()
@@ -13,6 +10,15 @@ IPInterfaceTCPClient::~IPInterfaceTCPClient()
     if (m_thread->joinable())
         m_thread->join();
     delete m_thread;
+    if (m_server)
+        delete m_server;
+}
+
+void IPInterfaceTCPClient::start()
+{
+    m_reconnect.store(true);
+    m_stopThread.store(false);
+    m_thread = new std::thread(&IPInterfaceTCPClient::run, this);
 }
 
 void IPInterfaceTCPClient::closeConnection()
@@ -36,11 +42,6 @@ void IPInterfaceTCPClient::pipeProcessFromParent(const tools::CharMap &data)
     m_bufferMutex.unlock();
 }
 
-void IPInterfaceTCPClient::pipeProcessFromChild(const tools::CharMap &data)
-{
-    pipeWriteToParent(data);
-}
-
 /*std::queue<uint8_t> IPInterfaceTCPClient::readBuffer()
 {
     if (!m_readBuffer.empty())
@@ -59,6 +60,8 @@ void IPInterfaceTCPClient::pipeProcessFromChild(const tools::CharMap &data)
 void IPInterfaceTCPClient::run()
 {
     TCPSocket sock = -1;
+    m_server       = new TCPServerClient("", 0);
+    m_childHandler->onChild(m_server);
 
     while (!m_stopThread.load())
     {

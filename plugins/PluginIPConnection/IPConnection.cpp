@@ -16,87 +16,37 @@
  */
 #include "IPConnection.h"
 
-IPConnection::IPConnection()
-: sgcs::connection::Connection()
+IPConnection::IPConnection(sgcs::plugin::DataSourcePlugin::ConnectionFabric *connectionFabric)
+: IPInterface::CreateChild()
 , m_hostName(RunConfiguration::instance().get<IPConfig>()->hostName())
 , m_port(RunConfiguration::instance().get<IPConfig>()->port())
+, m_connectionFabric(connectionFabric)
 {
     // TODO: tempolary onnly UDP client mode
     // m_interface = new IPInterfaceTCPClient();
     m_interface = new IPInterfaceUDPServer();
-    m_interface->pipeSetParent(this);
-    pipeAddChild(m_interface);
+    m_interface->setChildsHandler(this);
     if (!m_hostName.empty() && m_port >= 1024)
     {
         // ready to connect automaticaly
         doConnectToPort(m_hostName, m_port);
     }
+    m_interface->start();
 }
 
 IPConnection::~IPConnection()
 {
     if (m_interface)
         delete m_interface;
+    if (m_connectionFabric)
+        delete m_connectionFabric;
 }
 
-void IPConnection::processFromParent(const tools::CharMap &data)
+void IPConnection::onChild(IPChild *c)
 {
-    // writeToChild(data);
+    sgcs::connection::ConnectionThread *thr = new sgcs::connection::ConnectionThread;
+    m_connectionFabric->onCreate(thr, c);
 }
-
-void IPConnection::processFromChild(const tools::CharMap &data)
-{ // BOOST_LOG_TRIVIAL(debug) << "WRITE SIZE" << data.size();
-
-    /*if (m_interface)
-    {
-        m_interface->process(data);
-    }*/
-    // writeToParent(data);
-    pipewriteToChilds(data);
-}
-
-void IPConnection::pipeProcessFromParent(const tools::CharMap &data)
-{
-    // nope
-}
-
-void IPConnection::pipeProcessFromChild(const tools::CharMap &data)
-{
-    writeToChild(data);
-}
-
-/*std::vector<uint8_t> IPConnection::collectBytesAndClear()
-{
-    std::vector<uint8_t> bytes;
-    setHasBytes(false);
-    while (!m_readBuffer.empty())
-    {
-        bytes.push_back(m_readBuffer.front());
-        m_readBuffer.pop();
-    }
-    return bytes;
-}*/
-
-/*bool IPConnection::isHasBytes()
-{
-    if (m_interface)
-    {
-        std::queue<uint8_t> buffer = m_interface->readBuffer();
-        while (!buffer.empty())
-        {
-            m_readBuffer.push(buffer.front());
-            buffer.pop();
-        }
-        if (m_readBuffer.size() > MAX_BUFFER_SIZE)
-            while (m_readBuffer.size() > MAX_BUFFER_SIZE - MAX_BUFFER_SIZE / 4)
-                m_readBuffer.pop();
-
-        setHasBytes(!m_readBuffer.empty());
-    }
-    else
-        setHasBytes(false);
-    return sgcs::connection::Connection::isHasBytes();
-}*/
 
 void IPConnection::doConnectToPort(const std::string &hostName, uint16_t port)
 {

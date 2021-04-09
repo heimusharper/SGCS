@@ -11,6 +11,14 @@
 #include <sys/types.h>
 #include <thread>
 
+class TCPServerClient : public IPChild
+{
+public:
+    TCPServerClient(const std::string &host, uint16_t port) : IPChild(host, port)
+    {
+    }
+};
+
 class IPInterfaceTCPClient : public IPInterface
 {
     typedef int TCPSocket;
@@ -19,11 +27,9 @@ public:
     IPInterfaceTCPClient();
     virtual ~IPInterfaceTCPClient();
 
+    virtual void start() override final;
     virtual void closeConnection() override final;
     virtual void doConnect(const std::string &host, uint16_t port) override final;
-
-    virtual void pipeProcessFromParent(const tools::CharMap &data) override final;
-    virtual void pipeProcessFromChild(const tools::CharMap &data) override final;
 
 protected:
     void run();
@@ -39,6 +45,8 @@ private:
 
     std::thread *m_thread = nullptr;
     std::atomic_bool m_stopThread;
+
+    IPChild *m_server = nullptr;
 };
 
 #endif // IPINTERFACETCPCLIENT_H

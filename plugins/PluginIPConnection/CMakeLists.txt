@@ -15,9 +15,9 @@ SET(SRC_LIST
     IPConnection.cpp
     IPConfig.cpp
     IPInterface.cpp
-    IPInterfaceUDPClient.cpp
+    #IPInterfaceUDPClient.cpp
     IPInterfaceUDPServer.cpp
-    IPInterfaceTCPClient.cpp
+    #IPInterfaceTCPClient.cpp
     )
 SET(HEADER_LIST
     DoublePipe.h
@@ -25,9 +25,9 @@ SET(HEADER_LIST
     IPConnection.h
     IPConfig.h
     IPInterface.h
-    IPInterfaceUDPClient.h
+    #IPInterfaceUDPClient.h
     IPInterfaceUDPServer.h
-    IPInterfaceTCPClient.h
+    #IPInterfaceTCPClient.h
     )
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})

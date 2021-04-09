@@ -20,8 +20,13 @@ namespace sgcs
 {
 namespace plugin
 {
-DataSourcePlugin::DataSourcePlugin() : PluginInterface()
+DataSourcePlugin::DataSourcePlugin() : PluginInterface(), m_hasConnectionFabric(false)
 {
+}
+
+bool DataSourcePlugin::hasConnectionFabric() const
+{
+    return m_hasConnectionFabric;
 }
 }
 }

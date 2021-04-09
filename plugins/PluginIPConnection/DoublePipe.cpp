@@ -1,6 +1,5 @@
 #include "DoublePipe.h"
 
-DoublePipe::DoublePipe()
+IPChild::IPChild()
 {
-
 }

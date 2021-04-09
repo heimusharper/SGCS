@@ -1,38 +1,25 @@
 #ifndef DOUBLEPIPE_H
 #define DOUBLEPIPE_H
 #include <CharMap.h>
-#include <list>
+#include <connection/Connection.h>
+#include <queue>
+#include <string>
 
-class DoublePipe
+class IPChild : public sgcs::connection::Connection
 {
 public:
-    DoublePipe();
-
-    void pipeAddChild(DoublePipe *child)
+    IPChild();
+    virtual void processFromParent(const tools::CharMap &)
     {
-        m_childs.push_back(child);
+        // without parent
     }
-    void pipewriteToChilds(const tools::CharMap &data)
+    virtual void processFromChild(const tools::CharMap &data)
     {
-        for (auto c : m_childs)
-            c->pipeProcessFromParent(data);
-    }
-    void pipeSetParent(DoublePipe *parent)
-    {
-        m_parent = parent;
-    }
-    void pipeWriteToParent(const tools::CharMap &data)
-    {
-        if (m_parent)
-            m_parent->pipeProcessFromChild(data);
+        std::lock_guard grd(m_bufferMutex);
+        m_writeBuffer.push(data);
     }
 
-    virtual void pipeProcessFromParent(const tools::CharMap &data) = 0;
-    virtual void pipeProcessFromChild(const tools::CharMap &data)  = 0;
-
-private:
-    std::list<DoublePipe *> m_childs;
-    DoublePipe *m_parent = nullptr;
+    std::mutex m_bufferMutex;
+    std::queue<tools::CharMap> m_writeBuffer;
 };
-
 #endif // DOUBLEPIPE_H

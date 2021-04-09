@@ -18,7 +18,14 @@
 
 PluginIPConnection::PluginIPConnection() : sgcs::plugin::DataSourcePlugin()
 {
+    m_hasConnectionFabric = true;
     RunConfiguration::instance().get<IPConfig>();
+}
+
+PluginIPConnection::~PluginIPConnection()
+{
+    if (m_ipConnection)
+        delete m_ipConnection;
 }
 
 std::string PluginIPConnection::name() const
@@ -28,5 +35,10 @@ std::string PluginIPConnection::name() const
 
 sgcs::connection::Connection *PluginIPConnection::instance()
 {
-    return new IPConnection();
+    return nullptr; // new IPConnection();
+}
+
+void PluginIPConnection::startConnectionFabric(sgcs::plugin::DataSourcePlugin::ConnectionFabric *f)
+{
+    m_ipConnection = new IPConnection(f);
 }

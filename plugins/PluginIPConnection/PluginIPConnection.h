@@ -24,11 +24,16 @@ class PluginIPConnection : public sgcs::plugin::DataSourcePlugin
 {
 public:
     PluginIPConnection();
-    virtual ~PluginIPConnection() = default;
+    virtual ~PluginIPConnection();
 
-    virtual std::string name() const override;
+    virtual std::string name() const override final;
 
-    virtual sgcs::connection::Connection *instance() override;
+    virtual sgcs::connection::Connection *instance() override final;
+
+    virtual void startConnectionFabric(sgcs::plugin::DataSourcePlugin::ConnectionFabric *f) override final;
+
+private:
+    IPConnection *m_ipConnection = nullptr;
 };
 
 extern "C" sgcs::plugin::PluginInterface *dlload(void)

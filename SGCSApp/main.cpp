@@ -55,6 +55,22 @@ void initLogger(bool output, bool trace, const std::string &file)
                                                     : boost::log::trivial::severity >= boost::log::trivial::info);
     }
 }
+class ConnectionFabricImpl : public sgcs::plugin::DataSourcePlugin::ConnectionFabric
+{
+public:
+    virtual ~ConnectionFabricImpl() = default;
+    explicit ConnectionFabricImpl(sgcs::plugin::PluginsLoader *loader) : m_loader(loader)
+    {
+    }
+    virtual void onCreate(sgcs::connection::ConnectionThread *thr, sgcs::connection::Connection *instance) override final
+    {
+        thr->create(instance, m_loader->protocols(), m_loader->leafs());
+    }
+
+private:
+    sgcs::plugin::PluginsLoader *m_loader = nullptr;
+};
+
 int main(int argc, char *argv[])
 {
     boost::program_options::options_description description("SGCS commandline");
@@ -106,7 +122,19 @@ int main(int argc, char *argv[])
             BOOST_LOG_TRIVIAL(debug) << "Plugin" << ds->name();
             if (ds->name() == datasource)
             {
-                thr.create(ds->instance(), loader.protocols(), loader.leafs());
+                auto instance = ds->instance();
+                if (!instance)
+                {
+                    if (ds->hasConnectionFabric())
+                    {
+                        ConnectionFabricImpl *cf = new ConnectionFabricImpl(&loader);
+                        ds->startConnectionFabric(cf);
+                    }
+                    else
+                        BOOST_LOG_TRIVIAL(error) << "Failed create instance of " << ds->name();
+                }
+                else
+                    thr.create(ds->instance(), loader.protocols(), loader.leafs());
                 break;
             }
         }
