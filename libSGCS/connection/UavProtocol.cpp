@@ -74,7 +74,22 @@ void UavProtocol::insertMessage(uav::UavTask *message)
 
 void UavProtocol::sendMessage(uav::UavSendMessage *message)
 {
-    // if (tosend.compare(m, uav::UavSendMessage::CompareMode::HARD)) // TODO: Check exists
+    for (auto tosendvec : m_send)
+    {
+        bool dobrk = false;
+        for (size_t i = 0; i < tosendvec.second->size(); i++)
+        {
+            auto tosend = tosendvec.second->at(i);
+            if (tosend->compare(message, uav::UavSendMessage::CompareMode::LIGHT))
+            {
+                tosendvec.second->erase(tosendvec.second->begin() + i);
+                dobrk = true;
+                break;
+            }
+        }
+        if (dobrk)
+            break;
+    }
     m_send[message->priority()]->push_back(message);
     // requestToSend();
 }
