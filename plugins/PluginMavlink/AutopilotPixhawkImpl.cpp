@@ -15,85 +15,85 @@ AutopilotPixhawkImpl::AutopilotPixhawkImpl(int chan, int gcsID, int id, MavlinkH
 
 bool AutopilotPixhawkImpl::setInterval(IAutopilot::MessageType type, int interval_hz)
 {
-    std::list<int> msg_ids;
     switch (type)
     {
         case MessageType::ADSB:
             // msg_ids.push_back(MAVLINK_MSG_ID_ADSB);
             break;
         case MessageType::EXTRA1:
-            msg_ids.push_back(MAVLINK_MSG_ID_SYSTEM_TIME);
-            msg_ids.push_back(MAVLINK_MSG_ID_ATTITUDE);
-            msg_ids.push_back(MAVLINK_MSG_ID_AHRS2);
-            msg_ids.push_back(MAVLINK_MSG_ID_PID_TUNING);
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_SYSTEM_TIME, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_ATTITUDE, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_AHRS2, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_PID_TUNING, interval_hz));
             break;
         case MessageType::EXTRA2:
-            msg_ids.push_back(MAVLINK_MSG_ID_TIMESYNC);
-            msg_ids.push_back(MAVLINK_MSG_ID_EXTENDED_SYS_STATE);
-            msg_ids.push_back(MAVLINK_MSG_ID_VFR_HUD);
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_TIMESYNC, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_EXTENDED_SYS_STATE, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_VFR_HUD, interval_hz));
             break;
         case MessageType::EXTRA3:
-            msg_ids.push_back(MAVLINK_MSG_ID_AHRS);
-            msg_ids.push_back(MAVLINK_MSG_ID_HWSTATUS);
-            msg_ids.push_back(MAVLINK_MSG_ID_RANGEFINDER);
-            msg_ids.push_back(MAVLINK_MSG_ID_DISTANCE_SENSOR);
-            msg_ids.push_back(MAVLINK_MSG_ID_TERRAIN_REQUEST);
-            msg_ids.push_back(MAVLINK_MSG_ID_BATTERY2);
-            msg_ids.push_back(MAVLINK_MSG_ID_MOUNT_STATUS);
-            msg_ids.push_back(MAVLINK_MSG_ID_OPTICAL_FLOW);
-            msg_ids.push_back(MAVLINK_MSG_ID_GIMBAL_REPORT);
-            msg_ids.push_back(MAVLINK_MSG_ID_MAG_CAL_REPORT);
-            msg_ids.push_back(MAVLINK_MSG_ID_EKF_STATUS_REPORT);
-            msg_ids.push_back(MAVLINK_MSG_ID_VIBRATION);
-            msg_ids.push_back(MAVLINK_MSG_ID_RPM);
-            msg_ids.push_back(MAVLINK_MSG_ID_HIGHRES_IMU);
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_AHRS, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_HWSTATUS, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_RANGEFINDER, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_DISTANCE_SENSOR, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_TERRAIN_REQUEST, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_BATTERY2, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_MOUNT_STATUS, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_OPTICAL_FLOW, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_GIMBAL_REPORT, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_MAG_CAL_REPORT, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_EKF_STATUS_REPORT, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_VIBRATION, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_RPM, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_HIGHRES_IMU, interval_hz));
             break;
         case MessageType::PARAMS:
-            msg_ids.push_back(MAVLINK_MSG_ID_PARAM_VALUE);
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_PARAM_VALUE, interval_hz));
             break;
         case MessageType::POS:
-            msg_ids.push_back(MAVLINK_MSG_ID_ALTITUDE);
-            msg_ids.push_back(MAVLINK_MSG_ID_GLOBAL_POSITION_INT);
-            msg_ids.push_back(MAVLINK_MSG_ID_LOCAL_POSITION_NED);
-            msg_ids.push_back(MAVLINK_MSG_ID_POSITION_TARGET_GLOBAL_INT);
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_ALTITUDE, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_GLOBAL_POSITION_INT, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_LOCAL_POSITION_NED, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_POSITION_TARGET_GLOBAL_INT, interval_hz));
             break;
         case MessageType::RAW:
-            msg_ids.push_back(MAVLINK_MSG_ID_RAW_IMU);
-            msg_ids.push_back(MAVLINK_MSG_ID_SCALED_IMU);
-            msg_ids.push_back(MAVLINK_MSG_ID_SCALED_IMU2);
-            msg_ids.push_back(MAVLINK_MSG_ID_SCALED_IMU3);
-            msg_ids.push_back(MAVLINK_MSG_ID_SCALED_PRESSURE);
-            msg_ids.push_back(MAVLINK_MSG_ID_SCALED_PRESSURE2);
-            msg_ids.push_back(MAVLINK_MSG_ID_SCALED_PRESSURE3);
-            msg_ids.push_back(MAVLINK_MSG_ID_ACTUATOR_CONTROL_TARGET);
-            msg_ids.push_back(MAVLINK_MSG_ID_ODOMETRY);
-            msg_ids.push_back(MAVLINK_MSG_ID_ESTIMATOR_STATUS);
-            msg_ids.push_back(MAVLINK_MSG_ID_ATTITUDE_QUATERNION);
-            msg_ids.push_back(MAVLINK_MSG_ID_ATTITUDE_TARGET);
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_RAW_IMU, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_SCALED_IMU, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_SCALED_IMU2, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_SCALED_IMU3, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_SCALED_PRESSURE, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_SCALED_PRESSURE2, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_SCALED_PRESSURE3, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_ACTUATOR_CONTROL_TARGET, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_ODOMETRY, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_ESTIMATOR_STATUS, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_ATTITUDE_QUATERNION, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_ATTITUDE_TARGET, interval_hz));
             break;
         case MessageType::RC:
-            msg_ids.push_back(MAVLINK_MSG_ID_SERVO_OUTPUT_RAW);
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_SERVO_OUTPUT_RAW, interval_hz));
             break;
         case MessageType::SENSORS:
-            msg_ids.push_back(MAVLINK_MSG_ID_RC_CHANNELS_SCALED);
-            msg_ids.push_back(MAVLINK_MSG_ID_BATTERY_STATUS);
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_RC_CHANNELS_SCALED, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_BATTERY_STATUS, interval_hz));
             break;
         case MessageType::STAT:
-            msg_ids.push_back(MAVLINK_MSG_ID_SYS_STATUS);
-            msg_ids.push_back(MAVLINK_MSG_ID_POWER_STATUS);
-            msg_ids.push_back(MAVLINK_MSG_ID_GPS_RAW_INT);
-            msg_ids.push_back(MAVLINK_MSG_ID_GPS_RTK);
-            msg_ids.push_back(MAVLINK_MSG_ID_GPS2_RAW);
-            msg_ids.push_back(MAVLINK_MSG_ID_GPS2_RTK);
-            msg_ids.push_back(MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT);
-            msg_ids.push_back(MAVLINK_MSG_ID_FENCE_STATUS);
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_SYS_STATUS, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_POWER_STATUS, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_GPS_RAW_INT, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_GPS_RTK, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_GPS2_RAW, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_GPS2_RTK, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT, interval_hz));
+            m_msgInterval.push_back(std::make_pair(MAVLINK_MSG_ID_FENCE_STATUS, interval_hz));
             break;
         default:
             break;
     }
-    if (msg_ids.empty())
-        return false;
-    for (const int &i : msg_ids)
+    MavlinkHelper::MavlinkMessageTypeStack *stack =
+    new MavlinkHelper::MavlinkMessageTypeStack(10, 100, uav::UavSendMessage::Priority::HIGHT);
+
+    for (const std::pair<int, int> &p : m_msgInterval)
     {
         mavlink_message_t message;
         mavlink_msg_command_long_pack_chan(m_gcs,
@@ -104,15 +104,17 @@ bool AutopilotPixhawkImpl::setInterval(IAutopilot::MessageType type, int interva
                                            0,
                                            MAV_CMD_SET_MESSAGE_INTERVAL,
                                            1,
-                                           i,
-                                           (interval_hz < 0) ? -1 : (int)(1000000.f / (float)interval_hz),
+                                           p.first,
+                                           (p.second < 0) ? -1 : (int)(1000000.f / (float)p.second),
                                            0,
                                            0,
                                            0,
                                            0,
                                            0);
-        m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::LOW));
+        stack->push(std::move(message));
     }
+    m_send(stack);
+
     return true;
 }
 

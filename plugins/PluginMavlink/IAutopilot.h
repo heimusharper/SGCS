@@ -31,7 +31,8 @@ public:
     bool ready() const;
     void setReady(bool ready);
 
-    virtual bool setInterval(MessageType type, int interval_hz)                            = 0;
+    virtual bool setInterval(MessageType type, int interval_hz) = 0;
+
     virtual bool requestARM(bool autoChangeMode, bool force, bool defaultModeAuto = false) = 0;
     virtual bool requestDisARM(bool force)                                                 = 0;
     virtual bool requestTakeOff(const geo::Coords3D &target)                               = 0;
@@ -48,7 +49,7 @@ public:
 
     virtual void setMode(uint8_t base, uint32_t custom);
     //
-    void setSend(const std::function<void(MavlinkHelper::MavlinkMessageType *)> &send);
+    void setSend(const std::function<void(MavlinkHelper::MavlinkMessageTypeI *)> &send);
 
     //
     void setIsFlight(bool value);
@@ -68,7 +69,7 @@ protected:
     void arm(bool force = false);
     void disarm(bool force = false);
 
-    std::function<void(MavlinkHelper::MavlinkMessageType *)> m_send;
+    std::function<void(MavlinkHelper::MavlinkMessageTypeI *)> m_send;
     std::function<void(int removeAsId)> m_remove;
     const int m_chanel;
     const int m_gcs;

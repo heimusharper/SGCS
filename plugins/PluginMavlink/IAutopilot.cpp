@@ -97,7 +97,7 @@ void IAutopilot::setMode(uint8_t base, uint32_t custom)
     m_customMode = custom;
 }
 
-void IAutopilot::setSend(const std::function<void(MavlinkHelper::MavlinkMessageType *)> &send)
+void IAutopilot::setSend(const std::function<void(MavlinkHelper::MavlinkMessageTypeI *)> &send)
 {
     m_send = send;
 }

@@ -79,12 +79,16 @@ void UavProtocol::sendMessage(uav::UavSendMessage *message)
         bool dobrk = false;
         for (size_t i = 0; i < tosendvec.second->size(); i++)
         {
-            auto tosend = tosendvec.second->at(i);
+            uav::UavSendMessage *tosend = tosendvec.second->at(i);
             if (tosend->compare(message, uav::UavSendMessage::CompareMode::LIGHT))
             {
-                tosendvec.second->erase(tosendvec.second->begin() + i);
-                dobrk = true;
-                break;
+                tosend->pop();
+                if (tosend->empty())
+                {
+                    tosendvec.second->erase(tosendvec.second->begin() + i);
+                    dobrk = true;
+                    break;
+                }
             }
         }
         if (dobrk)
@@ -132,12 +136,16 @@ void UavProtocol::processFromParent(const tools::CharMap &data)
                 bool dobrk = false;
                 for (size_t i = 0; i < tosendvec.second->size(); i++)
                 {
-                    auto tosend = tosendvec.second->at(i);
+                    uav::UavSendMessage *tosend = tosendvec.second->at(i);
                     if (tosend->compare(m, uav::UavSendMessage::CompareMode::LIGHT))
                     {
-                        tosendvec.second->erase(tosendvec.second->begin() + i);
-                        dobrk = true;
-                        break;
+                        tosend->pop();
+                        if (tosend->empty())
+                        {
+                            tosendvec.second->erase(tosendvec.second->begin() + i);
+                            dobrk = true;
+                            break;
+                        }
                     }
                 }
                 if (dobrk)

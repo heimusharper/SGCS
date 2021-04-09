@@ -23,7 +23,16 @@ UavTask::UavTask(int target) : targetID(target)
 }
 
 UavSendMessage::UavSendMessage(int ticks, int interval, UavSendMessage::Priority priority)
-: m_first(true), m_interval(interval), m_ticks(ticks), m_priority(priority), m_sendTime(std::chrono::_V2::system_clock::now())
+: m_first(true)
+, m_interval(interval)
+, m_ticks(ticks)
+, m_ticksConst(ticks)
+, m_priority(priority)
+, m_sendTime(std::chrono::system_clock::now())
+{
+}
+
+void UavSendMessage::pop()
 {
 }
 
@@ -32,25 +41,41 @@ void UavSendMessage::touch()
     m_first = false;
     if (m_ticks > 0)
         m_ticks--;
-    m_sendTime = std::chrono::_V2::system_clock::now();
+    m_sendTime = std::chrono::system_clock::now();
 }
 
-bool UavSendMessage::isReadyToDelete() const
+bool UavSendMessage::isReadyToDelete()
 {
-    return (!m_first && (m_ticks == 0));
+    if (empty())
+        return true;
+    if ((!m_first && (m_ticks == 0)))
+    {
+        pop();
+        if (empty())
+            reset();
+        return isReadyToDelete();
+    }
+    return false;
 }
 
 bool UavSendMessage::isReadyInterval() const
 {
     if (m_first)
         return true;
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::_V2::system_clock::now() - m_sendTime);
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_sendTime);
     return ms.count() >= m_interval;
 }
 
 UavSendMessage::Priority UavSendMessage::priority() const
 {
     return m_priority;
+}
+
+void UavSendMessage::reset()
+{
+    m_first    = true;
+    m_ticks    = m_ticksConst;
+    m_sendTime = std::chrono::system_clock::now();
 }
 
 }

@@ -14,36 +14,33 @@
 
 struct MavlinkHelper
 {
-    class MavlinkMessageType : public uav::UavSendMessage
+    class MavlinkMessageTypeI : public uav::UavSendMessage
     {
     public:
-        MavlinkMessageType(mavlink_message_t &&mavlink,
-                           int ticks                         = 1,
-                           int interval                      = 0,
-                           UavSendMessage::Priority priority = UavSendMessage::Priority::NORMAL)
-        : uav::UavSendMessage(ticks, interval, priority), m_mavlink(mavlink)
+        MavlinkMessageTypeI(int ticks = 1, int interval = 0, UavSendMessage::Priority priority = UavSendMessage::Priority::NORMAL)
+        : uav::UavSendMessage(ticks, interval, priority)
         {
         }
-        virtual ~MavlinkMessageType() = default;
+        virtual ~MavlinkMessageTypeI() = default;
 
         virtual tools::CharMap pack() const override final
         {
             tools::CharMap cm;
-            cm.data         = new char[MAVLINK_MAX_PACKET_LEN];
-            cm.size         = MAVLINK_MAX_PACKET_LEN;
-            uint16_t lenght = mavlink_msg_to_send_buffer((uint8_t *)cm.data, &m_mavlink);
+            if (empty())
+                return cm;
+            cm.data             = new char[MAVLINK_MAX_PACKET_LEN];
+            cm.size             = MAVLINK_MAX_PACKET_LEN;
+            mavlink_message_t m = mavlink();
+            uint16_t lenght     = mavlink_msg_to_send_buffer((uint8_t *)cm.data, &m);
             if (lenght > 0)
             {
-                BOOST_LOG_TRIVIAL(info) << "PACKING " << m_mavlink.msgid;
+                BOOST_LOG_TRIVIAL(info) << "PACKING " << mavlink().msgid;
                 cm.size = lenght;
                 return cm;
             }
             return tools::CharMap();
         }
-        mavlink_message_t mavlink() const
-        {
-            return m_mavlink;
-        }
+        virtual mavlink_message_t mavlink() const = 0;
 
     protected:
         virtual bool compare(const UavSendMessage *message) const override final
@@ -51,18 +48,19 @@ struct MavlinkHelper
             const MavlinkHelper::MavlinkMessageType *msg = dynamic_cast<const MavlinkHelper::MavlinkMessageType *>(message);
             if (msg)
             {
+                mavlink_message_t msrc = mavlink();
                 mavlink_message_t msgt = msg->mavlink();
-                if (m_mavlink.msgid == MAVLINK_MSG_ID_HEARTBEAT || msgt.msgid == MAVLINK_MSG_ID_HEARTBEAT ||
-                    m_mavlink.msgid == MAVLINK_MSG_ID_PING || msgt.msgid == MAVLINK_MSG_ID_PING)
+                if (mavlink().msgid == MAVLINK_MSG_ID_HEARTBEAT || msgt.msgid == MAVLINK_MSG_ID_HEARTBEAT ||
+                    mavlink().msgid == MAVLINK_MSG_ID_PING || msgt.msgid == MAVLINK_MSG_ID_PING)
                     return false;
-                if (m_mavlink.msgid == msgt.msgid)
+                if (mavlink().msgid == msgt.msgid)
                 {
-                    switch (m_mavlink.msgid)
+                    switch (mavlink().msgid)
                     {
                         case MAVLINK_MSG_ID_GPS_RTCM_DATA:
                         {
                             mavlink_gps_rtcm_data_t rtcm1;
-                            mavlink_msg_gps_rtcm_data_decode(&m_mavlink, &rtcm1);
+                            mavlink_msg_gps_rtcm_data_decode(&msrc, &rtcm1);
                             mavlink_gps_rtcm_data_t rtcm2;
                             mavlink_msg_gps_rtcm_data_decode(&msgt, &rtcm2);
                             if (rtcm1.flags != rtcm2.flags)
@@ -71,7 +69,7 @@ struct MavlinkHelper
                         case MAVLINK_MSG_ID_COMMAND_LONG:
                         {
                             mavlink_command_long_t long1;
-                            mavlink_msg_command_long_decode(&m_mavlink, &long1);
+                            mavlink_msg_command_long_decode(&msrc, &long1);
                             mavlink_command_long_t long2;
                             mavlink_msg_command_long_decode(&msgt, &long2);
                             if (long1.command != long2.command)
@@ -81,7 +79,7 @@ struct MavlinkHelper
                         case MAVLINK_MSG_ID_PARAM_SET:
                         {
                             mavlink_param_set_t rsp1;
-                            mavlink_msg_param_set_decode(&m_mavlink, &rsp1);
+                            mavlink_msg_param_set_decode(&msrc, &rsp1);
                             mavlink_param_set_t rsp2;
                             mavlink_msg_param_set_decode(&msgt, &rsp2);
                             std::string first  = std::string(rsp1.param_id, strnlen(rsp1.param_id, 16));
@@ -93,7 +91,7 @@ struct MavlinkHelper
                         case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
                         {
                             mavlink_param_request_read_t rsp1;
-                            mavlink_msg_param_request_read_decode(&m_mavlink, &rsp1);
+                            mavlink_msg_param_request_read_decode(&msrc, &rsp1);
                             mavlink_param_request_read_t rsp2;
                             mavlink_msg_param_request_read_decode(&msgt, &rsp2);
 
@@ -106,7 +104,7 @@ struct MavlinkHelper
                         case MAVLINK_MSG_ID_DATA32:
                         {
                             mavlink_data32_t data1;
-                            mavlink_msg_data32_decode(&m_mavlink, &data1);
+                            mavlink_msg_data32_decode(&msrc, &data1);
                             mavlink_data32_t data2;
                             mavlink_msg_data32_decode(&msgt, &data2);
                             if (data1.type != data2.type)
@@ -120,14 +118,14 @@ struct MavlinkHelper
                 }
                 else
                 {
-                    switch (m_mavlink.msgid)
+                    switch (mavlink().msgid)
                     {
                         case MAVLINK_MSG_ID_COMMAND_LONG:
                         {
                             if (msgt.msgid == MAVLINK_MSG_ID_COMMAND_ACK)
                             {
                                 mavlink_command_long_t longd;
-                                mavlink_msg_command_long_decode(&m_mavlink, &longd);
+                                mavlink_msg_command_long_decode(&msrc, &longd);
                                 mavlink_command_ack_t ack;
                                 mavlink_msg_command_ack_decode(&msgt, &ack);
                                 if (ack.command == longd.command)
@@ -155,14 +153,14 @@ struct MavlinkHelper
                                 mavlink_command_long_t longd;
                                 mavlink_msg_command_long_decode(&msgt, &longd);
                                 mavlink_command_ack_t ack;
-                                mavlink_msg_command_ack_decode(&m_mavlink, &ack);
+                                mavlink_msg_command_ack_decode(&msrc, &ack);
                                 if (ack.command == longd.command)
                                     return true;
                             }
                             if (msgt.msgid == MAVLINK_MSG_ID_SET_MODE)
                             {
                                 mavlink_command_ack_t ack;
-                                mavlink_msg_command_ack_decode(&m_mavlink, &ack);
+                                mavlink_msg_command_ack_decode(&msrc, &ack);
                                 if (ack.command == MAV_CMD_DO_SET_MODE)
                                     return true;
                             }
@@ -181,7 +179,7 @@ struct MavlinkHelper
                                 mavlink_mission_item_t it;
                                 mavlink_msg_mission_item_decode(&msgt, &it);
                                 mavlink_mission_request_t itx;
-                                mavlink_msg_mission_request_decode(&m_mavlink, &itx);
+                                mavlink_msg_mission_request_decode(&msrc, &itx);
                                 if (it.seq == itx.seq)
                                     return true;
                             }
@@ -194,7 +192,7 @@ struct MavlinkHelper
                                 mavlink_mission_current_t itin;
                                 mavlink_msg_mission_current_decode(&msgt, &itin);
                                 mavlink_mission_set_current_t it;
-                                mavlink_msg_mission_set_current_decode(&m_mavlink, &it);
+                                mavlink_msg_mission_set_current_decode(&msrc, &it);
                                 if (itin.seq == it.seq)
                                     return true;
                             }
@@ -206,7 +204,7 @@ struct MavlinkHelper
                                 mavlink_param_value_t rsp;
                                 mavlink_msg_param_value_decode(&msgt, &rsp);
                                 mavlink_param_set_t rq;
-                                mavlink_msg_param_set_decode(&m_mavlink, &rq);
+                                mavlink_msg_param_set_decode(&msrc, &rq);
                                 std::string first  = std::string(rsp.param_id, strnlen(rsp.param_id, 16));
                                 std::string second = std::string(rq.param_id, strnlen(rq.param_id, 16));
                                 if (first.compare(second) == 0)
@@ -221,7 +219,7 @@ struct MavlinkHelper
                                 mavlink_param_value_t rsp;
                                 mavlink_msg_param_value_decode(&msgt, &rsp);
                                 mavlink_param_request_read_t rq;
-                                mavlink_msg_param_request_read_decode(&m_mavlink, &rq);
+                                mavlink_msg_param_request_read_decode(&msrc, &rq);
                                 std::string first  = std::string(rsp.param_id, strnlen(rsp.param_id, 16));
                                 std::string second = std::string(rq.param_id, strnlen(rq.param_id, 16));
                                 if (first.compare(second) == 0)
@@ -275,7 +273,7 @@ struct MavlinkHelper
                             if (msgt.msgid == MAVLINK_MSG_ID_MISSION_REQUEST)
                             {
                                 mavlink_mission_item_t item;
-                                mavlink_msg_mission_item_decode(&m_mavlink, &item);
+                                mavlink_msg_mission_item_decode(&msrc, &item);
                                 mavlink_mission_request_t rq;
                                 mavlink_msg_mission_request_decode(&msgt, &rq);
                                 if (item.seq < rq.seq)
@@ -297,9 +295,67 @@ struct MavlinkHelper
             }
             return false;
         }
+    };
+
+    class MavlinkMessageType : public MavlinkMessageTypeI
+    {
+    public:
+        MavlinkMessageType(mavlink_message_t &&mavlink,
+                           int ticks                         = 1,
+                           int interval                      = 0,
+                           UavSendMessage::Priority priority = UavSendMessage::Priority::NORMAL)
+        : MavlinkMessageTypeI(ticks, interval, priority), m_mavlink(mavlink)
+        {
+        }
+        virtual bool empty() const override final
+        {
+            return isEmpty;
+        }
+        virtual void pop() override final
+        {
+            isEmpty = true;
+            MavlinkMessageTypeI::pop();
+        }
+        mavlink_message_t mavlink() const
+        {
+            return m_mavlink;
+        }
 
     private:
+        bool isEmpty = false;
         mavlink_message_t m_mavlink;
+    };
+    class MavlinkMessageTypeStack : public MavlinkMessageTypeI
+    {
+    public:
+        MavlinkMessageTypeStack(int ticks = 1, int interval = 0, UavSendMessage::Priority priority = UavSendMessage::Priority::NORMAL)
+        : MavlinkMessageTypeI(ticks, interval, priority)
+        {
+        }
+        virtual bool empty() const override final
+        {
+            return m_mavlink.empty();
+        }
+        virtual void pop() override final
+        {
+            m_mavlink.pop_front();
+
+            BOOST_LOG_TRIVIAL(warning) << "MESSAGES AFTER POP " << m_mavlink.size();
+            MavlinkMessageTypeI::pop();
+        }
+        void push(mavlink_message_t &&m)
+        {
+            m_mavlink.push_back(m);
+        }
+        mavlink_message_t mavlink() const
+        {
+            if (m_mavlink.empty())
+                return mavlink_message_t();
+            return m_mavlink.front();
+        }
+
+    private:
+        std::list<mavlink_message_t> m_mavlink;
     };
 
     enum class ProcessingMode

@@ -43,9 +43,11 @@ public:
     UavSendMessage(int ticks = 1, int interval = 0, UavSendMessage::Priority priority = UavSendMessage::Priority::NORMAL);
     virtual ~UavSendMessage()           = default;
     virtual tools::CharMap pack() const = 0;
+    virtual bool empty() const          = 0;
+    virtual void pop();
 
     void touch();
-    bool isReadyToDelete() const;
+    bool isReadyToDelete();
     bool isReadyInterval() const;
 
     UavSendMessage::Priority priority() const;
@@ -75,11 +77,14 @@ protected:
     virtual bool compare(const UavSendMessage *message) const = 0;
 
 private:
+    void reset();
+
     bool m_first = true;
     int m_interval;
     int m_ticks;
+    const int m_ticksConst;
     Priority m_priority;
-    std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> m_sendTime;
+    std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> m_sendTime;
 };
 }
 

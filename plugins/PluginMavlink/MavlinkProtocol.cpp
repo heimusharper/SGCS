@@ -131,7 +131,7 @@ void MavlinkProtocol::runMessageReader()
                                 rmx(m_send[uav::UavSendMessage::Priority::NORMAL]);
                                 m_sendMutex.unlock();
                             });
-                            ap->setSend([this](MavlinkHelper::MavlinkMessageType *message) {
+                            ap->setSend([this](MavlinkHelper::MavlinkMessageTypeI *message) {
                                 // BOOST_LOG_TRIVIAL(info) << "WRITE" << message->mavlink().msgid;
                                 sendMessage(message);
                             });
@@ -169,7 +169,7 @@ void MavlinkProtocol::runMessageReader()
                 }
             }
             //
-            // BOOST_LOG_TRIVIAL(info) << "IN MESSAGE " << (int)message.sysid << " " << message.msgid;
+            BOOST_LOG_TRIVIAL(info) << "IN MESSAGE " << (int)message.sysid << " " << message.msgid;
             if (m_modes.contains(message.sysid))
             {
                 IAutopilot *ap = m_modes[message.sysid];
@@ -225,6 +225,7 @@ void MavlinkProtocol::runMessageReader()
                             }
                             case MAVLINK_MSG_ID_GPS_RAW_INT:
                             {
+                                BOOST_LOG_TRIVIAL(info) << "MAVLINK_MSG_ID_GPS_RAW_INT";
                                 mavlink_gps_raw_int_t gps;
                                 mavlink_msg_gps_raw_int_decode(&message, &gps);
                                 uav::GPS::Message *gpsm = new uav::GPS::Message(message.sysid);
@@ -253,6 +254,8 @@ void MavlinkProtocol::runMessageReader()
                                         gpsm->fix = uav::GPS::FixType::NOGPS;
                                         break;
                                 }
+                                BOOST_LOG_TRIVIAL(info) << "GPS " << gps.satellites_visible << " " << gps.h_acc << " "
+                                                        << gps.v_acc << " " << gps.fix_type << " " << gps.time_usec;
                                 if (checkHome && m_waitForHomePoint)
                                     ap->sendGetHomePoint();
 
@@ -303,12 +306,13 @@ void MavlinkProtocol::runMessageReader()
                                 ap->setIsFlight(isFlight);
                                 break;
                             }
-                            /*case MAVLINK_MSG_ID_GPS_STATUS:
+                            case MAVLINK_MSG_ID_GPS_STATUS:
                             {
+                                BOOST_LOG_TRIVIAL(info) << "MAVLINK_MSG_ID_GPS_STATUS";
                                 mavlink_gps_status_t gps;
                                 mavlink_msg_gps_status_decode(&message, &gps);
                                 break;
-                            }*/
+                            }
                             case MAVLINK_MSG_ID_PARAM_VALUE:
                             {
                                 mavlink_param_value_t param;

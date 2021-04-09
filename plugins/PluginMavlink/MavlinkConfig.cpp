@@ -23,10 +23,10 @@ MavlinkConfig::MavlinkConfig(ConfigInterface *parent)
 , m_rateExtra2(1)
 , m_rateExtra3(1)
 , m_rateParams(-1)
-, m_ratePos(3)
+, m_ratePos(4)
 , m_rateRaw(-1)
 , m_rateRC(-1)
-, m_rateSensors(-1)
+, m_rateSensors(1)
 , m_rateStat(1)
 {
 }

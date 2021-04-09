@@ -50,6 +50,8 @@ private:
     geo::Coords3D m_lastBasePos;
     double m_lastYaw;
 
+    std::list<std::pair<int, int>> m_msgInterval;
+
     void printMode(uint32_t custom);
 };
 
