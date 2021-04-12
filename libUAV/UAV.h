@@ -23,6 +23,7 @@
 #include "Position.h"
 #include "Power.h"
 #include "Speed.h"
+#include "Status.h"
 #include "UavObject.h"
 
 namespace uav
@@ -103,6 +104,8 @@ public:
 
     Mission *mission() const;
 
+    Status *status() const;
+
     int takeoffAltitude() const;
     void setTakeoffAltitude(int takeoffAltitude);
 
@@ -143,6 +146,8 @@ private:
     Speed *m_speed = nullptr;
 
     Mission *m_mission = nullptr;
+
+    Status *m_status = nullptr;
 
     UAVControlState m_state;
 

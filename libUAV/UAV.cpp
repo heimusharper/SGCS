@@ -29,6 +29,7 @@ UAV::UAV()
 , m_power(new Power())
 , m_speed(new Speed())
 , m_mission(new Mission())
+, m_status(new Status())
 , m_state(UAVControlState::WAIT)
 , m_takeoffAltitude(10)
 {
@@ -43,6 +44,7 @@ UAV::~UAV()
     delete m_power;
     delete m_speed;
     delete m_mission;
+    delete m_status;
 }
 
 void UAV::process(std::unique_ptr<UavTask> message)
@@ -72,6 +74,8 @@ void UAV::process(std::unique_ptr<UavTask> message)
         m_power->process(poewermsg);
     else if (Speed::Message *speedmsg = dynamic_cast<Speed::Message *>(task))
         m_speed->process(speedmsg);
+    else if (Status::Message *statmsg = dynamic_cast<Status::Message *>(task))
+        m_status->process(statmsg);
 }
 int UAV::id() const
 {
@@ -128,6 +132,11 @@ void UAV::setState(const UAVControlState &state)
         for (auto c : m_controls)
             c->onChangeControlState(m_state);
     }
+}
+
+Status *UAV::status() const
+{
+    return m_status;
 }
 
 Mission *UAV::mission() const

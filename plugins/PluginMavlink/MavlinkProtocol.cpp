@@ -281,6 +281,39 @@ void MavlinkProtocol::runMessageReader()
                                 insertMessage(pos);
                                 break;
                             }
+                            case MAVLINK_MSG_ID_SYS_STATUS:
+                            {
+                                mavlink_sys_status_t stat;
+                                mavlink_msg_sys_status_decode(&message, &stat);
+                                uav::Power::Message *power   = new uav::Power::Message(message.sysid);
+                                uav::Status::Message *status = new uav::Status::Message(message.sysid);
+
+                                {
+                                    power->voltage.set((double)stat.voltage_battery / 1000.);
+                                }
+                                {
+                                    MavlinkHelper::MavlinkSensors health;
+                                    health.value = stat.onboard_control_sensors_health;
+                                    MavlinkHelper::MavlinkSensors enabled;
+                                    enabled.value = stat.onboard_control_sensors_enabled;
+                                    MavlinkHelper::MavlinkSensors present;
+                                    present.value = stat.onboard_control_sensors_present;
+                                    uint16_t err  = 0;
+                                    {
+                                        if (!health.mag3d && present.mag3d && enabled.mag3d)
+                                            err |= uav::Status::MAG;
+                                        if ((!health.accel3d && present.accel3d && enabled.accel3d) ||
+                                            (!health.accel23d && present.accel23d && enabled.accel23d))
+                                            err |= uav::Status::ACCEL;
+                                        if (!health.gps && present.gps && enabled.gps)
+                                            err |= uav::Status::GPS;
+                                    }
+                                    status->failure.set(std::move(err));
+                                }
+                                insertMessage(power);
+                                insertMessage(status);
+                                break;
+                            }
                             case MAVLINK_MSG_ID_POSITION_TARGET_GLOBAL_INT:
                             {
                                 mavlink_position_target_global_int_t pt;
@@ -418,7 +451,7 @@ void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
     uav->gps()->setHas(uav::GPS::HAS::HAS_HV_DOP | uav::GPS::HAS::HAS_PROVIDER_GPS);
     uav->position()->setHas(uav::Position::HAS::HAS_SOURCE_GPS);
     uav->speed()->setHas(uav::Speed::HAS_GROUND_SPEED);
-    uav->setTakeoffAltitude(10);
+    uav->status()->setHas(uav::Status::MAG | uav::Status::GPS | uav::Status::ACCEL);
 
     MavlinkPositionControl *uavPositionControl = new MavlinkPositionControl(m_modes[id]);
     MavlinkAHRSControl *ahrsPositionControl    = new MavlinkAHRSControl(m_modes[id]);
@@ -432,8 +465,8 @@ void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
     uav->addControl(armControl);
     uav->gps()->addCallback(gpsChange);
 
+    uav->setTakeoffAltitude(10);
     uav->mission()->setMaxPatchsCount(1);
-
     UavProtocol::setUAV(id, uav);
 }
 

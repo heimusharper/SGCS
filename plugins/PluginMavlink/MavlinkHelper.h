@@ -370,6 +370,42 @@ struct MavlinkHelper
         UNDEFINED
     };
 
+    union MavlinkSensors
+    {
+#pragma pack(push, 1)
+        struct
+        {
+            uint8_t gyro3d : 1;              // MAV_SYS_STATUS_SENSOR_3D_GYRO
+            uint8_t accel3d : 1;             // MAV_SYS_STATUS_SENSOR_3D_ACCEL
+            uint8_t mag3d : 1;               // MAV_SYS_STATUS_SENSOR_3D_MAG
+            uint8_t absPressure : 1;         // MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE
+            uint8_t diffPressure : 1;        // MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE
+            uint8_t gps : 1;                 // MAV_SYS_STATUS_SENSOR_GPS
+            uint8_t opticalFlow : 1;         // MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW
+            uint8_t visionPos : 1;           // MAV_SYS_STATUS_SENSOR_VISION_POSITION
+            uint8_t laserPos : 1;            // MAV_SYS_STATUS_SENSOR_LASER_POSITION
+            uint8_t externalGroundTruth : 1; // MAV_SYS_STATUS_SENSOR_EXTERNAL_GROUND_TRUTH
+            uint8_t angularRateControl : 1;  // MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL
+            uint8_t attStab : 1;             // MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION
+            uint8_t yawPos : 1;              // MAV_SYS_STATUS_SENSOR_YAW_POSITION
+            uint8_t zAltCtrl : 1;            // MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL
+            uint8_t xyPosCtrl : 1;           // MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL
+            uint8_t motorOutputs : 1;        // MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS
+            uint8_t rc : 1;                  // MAV_SYS_STATUS_SENSOR_RC_RECEIVER
+            uint8_t gyro23d : 1;             // MAV_SYS_STATUS_SENSOR_3D_GYRO2
+            uint8_t accel23d : 1;            // MAV_SYS_STATUS_SENSOR_3D_ACCEL2
+            uint8_t mag23d : 1;              // MAV_SYS_STATUS_SENSOR_3D_MAG2
+            uint8_t geofence : 1;            // MAV_SYS_STATUS_GEOFENCE
+            uint8_t ahrs : 1;                // MAV_SYS_STATUS_AHRS
+            uint8_t terrain : 1;             // MAV_SYS_STATUS_TERRAIN
+            uint8_t reverseMotor : 1;        // MAV_SYS_STATUS_REVERSE_MOTOR
+            uint8_t logging : 1;             // MAV_SYS_STATUS_LOGGING
+            uint8_t battery : 1;             // MAV_SYS_STATUS_SENSOR_BATTERY
+        };
+#pragma pack(pop)
+        uint32_t value;
+    };
+
     static ProcessingMode mavlinkUavType2SGCS(MAV_TYPE type)
     {
         switch (type)
