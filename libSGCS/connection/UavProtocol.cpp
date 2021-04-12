@@ -55,7 +55,7 @@ tools::CharMap UavProtocol::hello() const
 
 void UavProtocol::setUAV(int id, uav::UAV *uav)
 {
-    BOOST_LOG_TRIVIAL(info) << "NEW UAV" << id;
+    // BOOST_LOG_TRIVIAL(info) << "NEW UAV" << id;
     m_uavs.insert({id, uav});
     for (auto handler : _uavCreateHandlers)
         handler->onCreateUav(uav);
@@ -83,6 +83,7 @@ void UavProtocol::sendMessage(uav::UavSendMessage *message)
             if (tosend->compare(message, uav::UavSendMessage::CompareMode::LIGHT))
             {
                 tosend->pop();
+                // BOOST_LOG_TRIVIAL(warning) << "EXISTS REMOVE";
                 if (tosend->empty())
                 {
                     tosendvec.second->erase(tosendvec.second->begin() + i);
@@ -139,6 +140,7 @@ void UavProtocol::processFromParent(const tools::CharMap &data)
                     uav::UavSendMessage *tosend = tosendvec.second->at(i);
                     if (tosend->compare(m, uav::UavSendMessage::CompareMode::LIGHT))
                     {
+                        // BOOST_LOG_TRIVIAL(info) << "ACCEPTED";
                         tosend->pop();
                         if (tosend->empty())
                         {
@@ -181,14 +183,14 @@ bool UavProtocol::requestToSend(std::vector<uav::UavSendMessage *> *fromlist)
                 // << "    MESSAGE " << message->isReadyInterval() << " " << message->isReadyToDelete() << " " << message;
                 if (!writed && message->isReadyInterval())
                 {
-                    BOOST_LOG_TRIVIAL(info) << "        SEND...";
+                    // BOOST_LOG_TRIVIAL(info) << "        SEND...";
                     writeToParent(message->pack());
                     message->touch();
                     writed = true;
                 }
                 if (message->isReadyToDelete())
                 {
-                    BOOST_LOG_TRIVIAL(info) << "        REMOVE...";
+                    // BOOST_LOG_TRIVIAL(info) << "        REMOVE...";
                     fromlist->erase(fromlist->begin() + i);
                     delete message;
                 }

@@ -113,7 +113,7 @@ void GPS::sendRTCM(const tools::CharMap &rtcm)
 
 void GPS::setFixType(const GPS::FixType &fixType)
 {
-    if (m_fixType != fixType)
+    if (m_fixType == fixType)
         return;
     m_fixType = fixType;
     for (auto x : m_GPSCallback)
