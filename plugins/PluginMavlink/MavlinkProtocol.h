@@ -70,8 +70,6 @@ private:
 
     void doConfigure(int uav);
 
-    void doConfigureMessageInterval(int uav, IAutopilot::MessageType msg, int interval_ms);
-
 private:
     bool check(char c, mavlink_message_t *msg);
 

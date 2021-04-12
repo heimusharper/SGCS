@@ -51,7 +51,7 @@ bool UavSendMessage::isReadyToDelete()
     if ((!m_first && (m_ticks == 0)))
     {
         pop();
-        if (empty())
+        if (!empty())
             reset();
         return isReadyToDelete();
     }

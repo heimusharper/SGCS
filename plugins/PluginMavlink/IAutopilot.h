@@ -8,20 +8,6 @@
 class IAutopilot
 {
 public:
-    enum class MessageType
-    {
-        SENSORS,
-        STAT,
-        RC,
-        RAW,
-        POS,
-        EXTRA1,
-        EXTRA2,
-        EXTRA3,
-        ADSB,
-        PARAMS
-    };
-
     IAutopilot(int chan, int gcsID, int id, MavlinkHelper::ProcessingMode mode);
     virtual ~IAutopilot();
 
@@ -31,7 +17,8 @@ public:
     bool ready() const;
     void setReady(bool ready);
 
-    virtual bool setInterval(MessageType type, int interval_hz) = 0;
+    virtual bool
+    setInterval(int sensors, int stat, int rc, int raw, int pos, int extra1, int extra2, int extra3, int adbs, int params) = 0;
 
     virtual bool requestARM(bool autoChangeMode, bool force, bool defaultModeAuto = false) = 0;
     virtual bool requestDisARM(bool force)                                                 = 0;

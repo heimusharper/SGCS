@@ -21,7 +21,8 @@ class AutopilotPixhawkImpl : public IAutopilot
 {
 public:
     AutopilotPixhawkImpl(int chan, int gcsID, int id, MavlinkHelper::ProcessingMode mode);
-    virtual bool setInterval(MessageType type, int interval_hz) override final;
+    virtual bool
+    setInterval(int sensors, int stat, int rc, int raw, int pos, int extra1, int extra2, int extra3, int adbs, int params) override final;
     virtual bool requestARM(bool autoChangeMode, bool force, bool defaultModeAuto = false) override final;
     virtual bool requestDisARM(bool force) override final;
     virtual bool requestTakeOff(const geo::Coords3D &target) override final;
