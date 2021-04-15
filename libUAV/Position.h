@@ -38,31 +38,19 @@ public:
         {
         }
 
-        virtual bool goTo(geo::Coords3D &&target, const geo::Coords3D &base) = 0;
-    };
-
-    class Message : public UavTask
-    {
-    public:
-        Message(int target) : UavTask(target), lat(0.), lon(0.), alt(0.)
-        {
-        }
-        tools::optional<double> lat;
-        tools::optional<double> lon;
-        tools::optional<double> alt;
-    };
-    class OnChangePositionCallback
-    {
-    public:
         virtual void updateGPS()
         {
+        }
+        virtual bool goTo(geo::Coords3D &&target, const geo::Coords3D &base)
+        {
+            return false;
         }
     };
 
     Position();
     virtual ~Position();
 
-    void process(Position::Message *message);
+    void setGps(geo::Coords3D &&gps);
 
     geo::Coords3D gps() const;
 
@@ -70,18 +58,10 @@ public:
     void setControl(PositionControlInterface *control);
     bool goTo(geo::Coords3D &&target, const geo::Coords3D &base);
 
-    void addCallback(OnChangePositionCallback *c);
-    void removeCallback(OnChangePositionCallback *c);
-
-protected:
-    void setGps(geo::Coords3D &&gps);
-
 private:
-    tools::optional<geo::Coords3D> m_gps;
+    tools::optional_safe<geo::Coords3D> m_gps;
 
-    PositionControlInterface *_control = nullptr;
-
-    std::list<OnChangePositionCallback *> m_callbacks;
+    std::list<PositionControlInterface *> m_control;
 };
 }
 

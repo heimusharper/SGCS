@@ -24,17 +24,6 @@ namespace uav
 class AHRS : public UavObject<uint16_t>
 {
 public:
-    class Message : public UavTask
-    {
-    public:
-        Message(int target) : UavTask(target), roll(0.f), pitch(0.f), yaw(0.f)
-        {
-        }
-        tools::optional<float> roll;
-        tools::optional<float> pitch;
-        tools::optional<float> yaw;
-    };
-
     class OnChangeAHRSCallback
     {
     public:
@@ -50,9 +39,8 @@ public:
     AHRS();
     virtual ~AHRS();
 
-    void process(AHRS::Message *message);
-
     void get(float &roll, float &pitch, float &yaw);
+    void set(const float &roll, const float &pitch, const float &yaw);
 
     void addCallback(OnChangeAHRSCallback *call);
     void removeCallback(OnChangeAHRSCallback *call);
@@ -65,6 +53,7 @@ private:
     bool setYaw(float yaw);
 
 private:
+    std::mutex m_anglesMutex;
     float m_roll;
     float m_pitch;
     float m_yaw;

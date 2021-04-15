@@ -17,6 +17,7 @@
 #ifndef UAVGPS_H
 #define UAVGPS_H
 #include "UavObject.h"
+#include <mutex>
 
 namespace uav
 {
@@ -35,20 +36,6 @@ public:
         NOGPS,
         FIX3D,
         RTK
-    };
-
-    class Message : public UavTask
-    {
-    public:
-        Message(int target)
-        : UavTask(target), satelitesGPS(0), satelitesGLONASS(0), hdop(255), vdop(255), fix(FixType::NOGPS)
-        {
-        }
-        tools::optional<uint8_t> satelitesGPS;
-        tools::optional<uint8_t> satelitesGLONASS;
-        tools::optional<uint8_t> hdop;
-        tools::optional<uint8_t> vdop;
-        tools::optional<FixType> fix;
     };
 
     class OnChangeGPSCallback
@@ -72,15 +59,18 @@ public:
     GPS();
     virtual ~GPS();
 
-    void process(GPS::Message *message);
-
     uint8_t provGPS() const;
     uint8_t provGLONASS() const;
+    void setProvGPS(uint8_t provGPS);
+    void setProvGLONASS(uint8_t provGLONASS);
 
-    uint8_t hdop() const;
-    uint8_t vdop() const;
+    float hdop() const;
+    float vdop() const;
+    void setHdop(float &&hdop);
+    void setVdop(float &&vdop);
 
-    GPS::FixType fixType() const;
+    GPS::FixType fixType();
+    void setFixType(const GPS::FixType &fixType);
 
     //
     void addCallback(OnChangeGPSCallback *call);
@@ -89,20 +79,14 @@ public:
     // RTCM messages
     void sendRTCM(const tools::CharMap &rtcm);
 
-protected:
-    void setProvGPS(uint8_t provGPS);
-    void setProvGLONASS(uint8_t provGLONASS);
-    void setHdop(const uint8_t &hdop);
-    void setVdop(const uint8_t &vdop);
-    void setFixType(const GPS::FixType &fixType);
-
 private:
-    uint8_t m_provGPS     = 0;
-    uint8_t m_provGLONASS = 0;
+    tools::optional_safe<uint8_t> m_provGPS;
+    tools::optional_safe<uint8_t> m_provGLONASS;
 
-    uint8_t m_hdop = 255;
-    uint8_t m_vdop = 255;
+    tools::optional_safe<float> m_hdop = 255;
+    tools::optional_safe<float> m_vdop = 255;
 
+    std::mutex m_fixTypeMtx;
     FixType m_fixType;
 
     std::list<OnChangeGPSCallback *> m_GPSCallback;

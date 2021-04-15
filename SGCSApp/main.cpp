@@ -90,10 +90,10 @@ int main(int argc, char *argv[])
         BOOST_LOG_TRIVIAL(debug) << description << "\n";
         return 1;
     }
-    if (vm.count("output"))
-        debugOutput = true;
-    if (vm.count("trace"))
-        trace = true;
+    // if (vm.count("output"))
+    debugOutput = true;
+    // if (vm.count("trace"))
+    trace = true;
     std::string logFile;
     if (vm.count("log"))
         logFile = "sample_%N.log";

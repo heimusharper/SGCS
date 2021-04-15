@@ -28,7 +28,7 @@ public:
     void setPosition(geo::Coords3D &&position);
 
 private:
-    tools::optional<geo::Coords3D> m_position;
+    tools::optional_safe<geo::Coords3D> m_position;
 };
 }
 #endif // UAVHOME_H

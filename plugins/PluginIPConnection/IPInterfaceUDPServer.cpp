@@ -7,8 +7,12 @@ IPInterfaceUDPServer::IPInterfaceUDPServer() : IPInterface(), m_hostName(""), m_
 IPInterfaceUDPServer::~IPInterfaceUDPServer()
 {
     m_stopThread.store(true);
-    m_thread->join();
-    delete m_thread;
+    if (m_thread)
+    {
+        if (m_thread->joinable())
+            m_thread->join();
+        delete m_thread;
+    }
 }
 
 void IPInterfaceUDPServer::start()

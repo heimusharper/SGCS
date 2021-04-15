@@ -59,14 +59,18 @@ void MavlinkProtocol::runMessageReader()
 {
     while (!_stopThread.load())
     {
-        while (!_mavlinkMessages.empty())
+        while (true)
         {
-            _mavlinkStoreMutex.lock();
-            uav::UavSendMessage *messageref = _mavlinkMessages.back();
-            _mavlinkMessages.pop_back();
-            _mavlinkStoreMutex.unlock();
+            uav::UavSendMessage *messageref = nullptr;
+            {
+                std::lock_guard grd(_mavlinkStoreMutex);
+                if (_mavlinkMessages.empty())
+                    continue;
+                messageref = _mavlinkMessages.back();
+                _mavlinkMessages.pop_back();
+            }
             mavlink_message_t message = dynamic_cast<MavlinkHelper::MavlinkMessageType *>(messageref)->mavlink();
-            delete messageref;
+            delete messageref; // clear
 
             if (!m_modes.contains(message.sysid))
             {
@@ -173,7 +177,8 @@ void MavlinkProtocol::runMessageReader()
             if (m_modes.contains(message.sysid))
             {
                 IAutopilot *ap = m_modes[message.sysid];
-                if (!ap)
+                uav::UAV *uv   = m_uavs[message.sysid];
+                if (!ap || !uv)
                     return;
                 // MavlinkHelper::Autopilot ap               = m_modes[message.sysid]->ap;
 
@@ -216,11 +221,9 @@ void MavlinkProtocol::runMessageReader()
                             {
                                 mavlink_attitude_t att;
                                 mavlink_msg_attitude_decode(&message, &att);
-                                uav::AHRS::Message *ahrs = new uav::AHRS::Message(message.sysid);
-                                ahrs->pitch.set(static_cast<float>(att.pitch / M_PI * 180.));
-                                ahrs->roll.set(static_cast<float>(att.roll / M_PI * 180.));
-                                ahrs->yaw.set(static_cast<float>(att.yaw / M_PI * 180.));
-                                insertMessage(ahrs);
+                                uv->ahrs()->set(static_cast<float>(att.pitch / M_PI * 180.),
+                                                static_cast<float>(att.roll / M_PI * 180.),
+                                                static_cast<float>(att.yaw / M_PI * 180.));
                                 break;
                             }
                             case MAVLINK_MSG_ID_GPS_RAW_INT:
@@ -228,23 +231,25 @@ void MavlinkProtocol::runMessageReader()
                                 // BOOST_LOG_TRIVIAL(info) << "MAVLINK_MSG_ID_GPS_RAW_INT";
                                 mavlink_gps_raw_int_t gps;
                                 mavlink_msg_gps_raw_int_decode(&message, &gps);
-                                uav::GPS::Message *gpsm = new uav::GPS::Message(message.sysid);
-                                gpsm->satelitesGPS.set(std::move(gps.satellites_visible));
-                                uint8_t hacc = gps.h_acc / 100.;
-                                uint8_t vacc = gps.v_acc / 100.;
-                                gpsm->hdop.set(std::move(hacc));
-                                gpsm->vdop.set(std::move(vacc));
+
+                                float hacc = (float)gps.h_acc / 100.;
+                                float vacc = (float)gps.v_acc / 100.;
+                                uv->gps()->setHdop(std::move(hacc));
+                                uv->gps()->setVdop(std::move(vacc));
+
+                                uv->gps()->setProvGPS(gps.satellites_visible);
+
                                 bool checkHome = false;
                                 switch (gps.fix_type)
                                 {
                                     case GPS_FIX_TYPE_RTK_FIXED:
-                                        gpsm->fix.set(uav::GPS::FixType::RTK);
+                                        uv->gps()->setFixType(uav::GPS::FixType::RTK);
                                         checkHome = true;
                                         break;
                                     case GPS_FIX_TYPE_RTK_FLOAT:
                                     case GPS_FIX_TYPE_3D_FIX:
                                     case GPS_FIX_TYPE_DGPS:
-                                        gpsm->fix.set(uav::GPS::FixType::FIX3D);
+                                        uv->gps()->setFixType(uav::GPS::FixType::FIX3D);
                                         checkHome = true;
                                         break;
                                     case GPS_FIX_TYPE_NO_GPS:
@@ -253,32 +258,19 @@ void MavlinkProtocol::runMessageReader()
                                     case GPS_FIX_TYPE_STATIC:
                                     case GPS_FIX_TYPE_PPP:
                                     default:
-                                        gpsm->fix.set(uav::GPS::FixType::NOGPS);
+                                        uv->gps()->setFixType(uav::GPS::FixType::NOGPS);
                                         break;
                                 }
-                                // BOOST_LOG_TRIVIAL(info) << "GPS " << (int)gps.satellites_visible << " " << gps.h_acc << " "
-                                //                        << gps.v_acc << " " << (int)gps.fix_type << " " << gps.time_usec;
                                 if (checkHome && m_waitForHomePoint)
                                     ap->sendGetHomePoint();
-
-                                insertMessage(gpsm);
-
-                                // uav::Position::Message *pos = new uav::Position::Message(message.sysid);
-                                // pos->lat                    = ((double)gps.lat) / 1.E7;
-                                // pos->lon                    = ((double)gps.lon) / 1.E7;
-                                // pos->alt                    = ((double)gps.alt) / 1000.;
-                                // insertMessage(pos);
                                 break;
                             }
                             case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
                             {
                                 mavlink_global_position_int_t gps;
                                 mavlink_msg_global_position_int_decode(&message, &gps);
-                                uav::Position::Message *pos = new uav::Position::Message(message.sysid);
-                                pos->lat.set(((double)gps.lat) / 1.E7);
-                                pos->lon.set(((double)gps.lon) / 1.E7);
-                                pos->alt.set(((double)gps.alt) / 1000.);
-                                insertMessage(pos);
+                                geo::Coords3D coord(((double)gps.lat) / 1.E7, ((double)gps.lon) / 1.E7, ((double)gps.alt) / 1000.);
+                                uv->position()->setGps(std::move(coord));
                                 break;
                             }
                             case MAVLINK_MSG_ID_SYS_STATUS:

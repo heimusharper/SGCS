@@ -25,7 +25,7 @@ void Home::setPosition(geo::Coords3D &&position)
 {
     if (m_position.get() == position)
         return;
-    m_position = position;
+    m_position.set(std::move(position));
     BOOST_LOG_TRIVIAL(info)
     << "New home position " << m_position.get().lat() << " " << m_position.get().lon() << " " << m_position.get().alt();
 }

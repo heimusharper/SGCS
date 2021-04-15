@@ -26,18 +26,6 @@ Position::~Position()
 {
 }
 
-void Position::process(Position::Message *message)
-{
-    if (has(uav::Position::HAS::HAS_SOURCE_GPS))
-    {
-        if (message->lat.dirty() || message->lon.dirty() || message->alt.dirty())
-        {
-            geo::Coords3D c3d(message->lat.get(), message->lon.get(), message->alt.get());
-            setGps(std::move(c3d));
-        }
-    }
-}
-
 geo::Coords3D Position::gps() const
 {
     return m_gps.get();
@@ -45,37 +33,32 @@ geo::Coords3D Position::gps() const
 
 void Position::setGps(geo::Coords3D &&gps)
 {
-    if (m_gps == gps)
+    if (m_gps.get() == gps)
         return;
-    m_gps = gps;
-    for (auto c : m_callbacks)
+    m_gps.set(std::move(gps));
+    for (auto c : m_control)
         c->updateGPS();
     BOOST_LOG_TRIVIAL(info) << "GPS POS {" << m_gps.get().lat() << "; " << m_gps.get().lon() << "; " << m_gps.get().alt() << "}";
 }
 
 void Position::setControl(PositionControlInterface *control)
 {
-    _control = control;
-    if (_control)
+    m_control.push_back(control);
+    if (!m_control.empty())
         setHas(uav::Position::HAS::HAS_POSITION_CONTROL);
     else
         rmHas(uav::Position::HAS::HAS_POSITION_CONTROL);
 }
 bool Position::goTo(geo::Coords3D &&target, const geo::Coords3D &base)
 {
-    if (_control && has(uav::Position::HAS::HAS_POSITION_CONTROL))
-        return _control->goTo(std::move(target), base);
+    if (has(uav::Position::HAS::HAS_POSITION_CONTROL))
+    {
+        for (auto c : m_control)
+        {
+            c->goTo(std::move(target), base);
+        }
+        return true;
+    }
     return false;
 }
-
-void Position::addCallback(Position::OnChangePositionCallback *c)
-{
-    m_callbacks.push_back(c);
-}
-
-void Position::removeCallback(Position::OnChangePositionCallback *c)
-{
-    m_callbacks.remove(c);
-}
-
 }

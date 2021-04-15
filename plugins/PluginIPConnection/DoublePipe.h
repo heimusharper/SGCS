@@ -9,15 +9,8 @@ class IPChild : public sgcs::connection::Connection
 {
 public:
     IPChild();
-    virtual void processFromParent(const tools::CharMap &)
-    {
-        // without parent
-    }
-    virtual void processFromChild(const tools::CharMap &data)
-    {
-        std::lock_guard grd(m_bufferMutex);
-        m_writeBuffer.push(data);
-    }
+    virtual void processFromParent(const tools::CharMap &);
+    virtual void processFromChild(const tools::CharMap &data);
 
     std::mutex m_bufferMutex;
     std::queue<tools::CharMap> m_writeBuffer;

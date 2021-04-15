@@ -18,7 +18,7 @@
 
 namespace uav
 {
-GPS::GPS() : UavObject(), m_provGPS(0), m_provGLONASS(0), m_hdop(250), m_vdop(250), m_fixType(FixType::NOGPS)
+GPS::GPS() : UavObject(), m_provGPS(0), m_provGLONASS(0), m_hdop(0), m_vdop(0), m_fixType(FixType::NOGPS)
 {
 }
 
@@ -26,72 +26,51 @@ GPS::~GPS()
 {
 }
 
-void GPS::process(GPS::Message *message)
-{
-    if (has(HAS::HAS_PROVIDER_GLONASS))
-        if (message->satelitesGLONASS.dirty())
-            setProvGLONASS(message->satelitesGLONASS.get());
-    if (has(HAS::HAS_PROVIDER_GPS))
-        if (message->satelitesGPS.dirty())
-            setProvGPS(message->satelitesGPS.get());
-    if (has(HAS::HAS_HV_DOP))
-    {
-        if (message->hdop.dirty())
-            setHdop(message->hdop.get());
-        if (message->vdop.dirty())
-            setVdop(message->vdop.get());
-    }
-    if (message->fix.dirty())
-        setFixType(message->fix.get());
-}
-
 uint8_t GPS::provGPS() const
 {
-    return m_provGPS;
+    return m_provGPS.get();
 }
 
 void GPS::setProvGPS(uint8_t provGPS)
 {
-    if (m_provGPS == provGPS)
+    if (m_provGPS.get() == provGPS)
         return;
-    m_provGPS = provGPS;
+    m_provGPS.set(std::move(provGPS));
     for (auto x : m_GPSCallback)
         x->updateSatelitesCount();
-    BOOST_LOG_TRIVIAL(info) << "GPS " << (int)m_provGPS;
 }
 
 uint8_t GPS::provGLONASS() const
 {
-    return m_provGLONASS;
+    return m_provGLONASS.get();
 }
 
 void GPS::setProvGLONASS(uint8_t provGLONASS)
 {
-    if (m_provGLONASS == provGLONASS)
+    if (m_provGLONASS.get() == provGLONASS)
         return;
-    m_provGLONASS = provGLONASS;
+    m_provGLONASS.set(std::move(provGLONASS));
     for (auto x : m_GPSCallback)
         x->updateSatelitesCount();
-    BOOST_LOG_TRIVIAL(info) << "GLONASS " << (int)m_provGLONASS;
 }
 
-uint8_t GPS::vdop() const
+float GPS::vdop() const
 {
-    return m_vdop;
+    return m_vdop.get();
 }
 
-void GPS::setVdop(const uint8_t &vdop)
+void GPS::setVdop(float &&vdop)
 {
-    if (m_vdop == vdop)
+    if (m_vdop.get() == vdop)
         return;
-    m_vdop = vdop;
+    m_vdop.set(std::move(vdop));
     for (auto x : m_GPSCallback)
         x->updateErros();
-    BOOST_LOG_TRIVIAL(info) << "VDOP " << (int)m_vdop;
 }
 
-GPS::FixType GPS::fixType() const
+GPS::FixType GPS::fixType()
 {
+    // std::lock_guard grd(m_fixTypeMtx);
     return m_fixType;
 }
 
@@ -113,25 +92,27 @@ void GPS::sendRTCM(const tools::CharMap &rtcm)
 
 void GPS::setFixType(const GPS::FixType &fixType)
 {
-    if (m_fixType == fixType)
-        return;
-    m_fixType = fixType;
+    std::lock_guard grd(m_fixTypeMtx);
+    {
+        if (m_fixType == fixType)
+            return;
+        m_fixType = fixType;
+    }
     for (auto x : m_GPSCallback)
         x->updateFixType();
 }
 
-uint8_t GPS::hdop() const
+float GPS::hdop() const
 {
-    return m_hdop;
+    return m_hdop.get();
 }
 
-void GPS::setHdop(const uint8_t &hdop)
+void GPS::setHdop(float &&hdop)
 {
-    if (m_hdop == hdop)
+    if (m_hdop.get() == hdop)
         return;
-    m_hdop = hdop;
+    m_hdop.set(std::move(hdop));
     for (auto x : m_GPSCallback)
         x->updateErros();
-    BOOST_LOG_TRIVIAL(info) << "HDOP " << (int)m_hdop;
 }
 }

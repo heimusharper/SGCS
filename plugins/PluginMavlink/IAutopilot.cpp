@@ -54,8 +54,8 @@ void IAutopilot::sendRTCM(const tools::CharMap &cm)
         return; // ignore large messages
 
     auto createRTCM = [this](int fragment, int seq, const tools::CharMap &map, int from, int size) -> mavlink_message_t {
-        BOOST_LOG_TRIVIAL(info)
-        << "RTCM " << fragment << " sq " << seq << " map " << map.size << " [" << from << "; " << size << "]";
+        // BOOST_LOG_TRIVIAL(info)
+        // << "RTCM " << fragment << " sq " << seq << " map " << map.size << " [" << from << "; " << size << "]";
         mavlink_message_t message;
         uint8_t flag = 0;
         if (fragment < 0)
@@ -70,7 +70,7 @@ void IAutopilot::sendRTCM(const tools::CharMap &cm)
     if (cm.size > MAX_RTCM_L)
     {
         MavlinkHelper::MavlinkMessageTypeStack *stack =
-        new MavlinkHelper::MavlinkMessageTypeStack(3, 70, uav::UavSendMessage::Priority::HIGHT);
+        new MavlinkHelper::MavlinkMessageTypeStack(1, 50, uav::UavSendMessage::Priority::HIGHT);
         // split
         int fragment   = 0;
         size_t pointer = 0;
@@ -88,7 +88,7 @@ void IAutopilot::sendRTCM(const tools::CharMap &cm)
     else
     {
         auto message = createRTCM(-1, m_rtcmSeq, cm, 0, cm.size);
-        m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 3, 70, uav::UavSendMessage::Priority::HIGHT));
+        m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 1, 50, uav::UavSendMessage::Priority::HIGHT));
     }
     m_rtcmSeq++;
 }

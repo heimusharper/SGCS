@@ -256,7 +256,7 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos, const geo
     auto mask           = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE |
     POSITION_TARGET_TYPEMASK_VZ_IGNORE | POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE |
     POSITION_TARGET_TYPEMASK_AZ_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_FORCE_SET;
-    if (isnan(m_lastYaw))
+    if (std::isnan(m_lastYaw))
         mask |= POSITION_TARGET_TYPEMASK_YAW_IGNORE;
 
     BOOST_LOG_TRIVIAL(info) << "DO REPOSITION" << pos.lat() << ";" << pos.lon() << ";" << pos.alt() << " YAW " << m_lastYaw;

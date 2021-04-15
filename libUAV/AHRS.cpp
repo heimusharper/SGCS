@@ -26,28 +26,28 @@ AHRS::~AHRS()
 {
 }
 
-void AHRS::process(AHRS::Message *message)
-{
-    bool update = false;
-    if (message->roll.dirty())
-        if (setRoll(message->roll.get()))
-            update = true;
-    if (message->pitch.dirty())
-        if (setPitch(message->pitch.get()))
-            update = true;
-    if (message->yaw.dirty())
-        if (setYaw(message->yaw.get()))
-            update = true;
-    if (update)
-        for (auto c : m_callbacks)
-            c->updateAngles();
-}
-
 void AHRS::get(float &roll, float &pitch, float &yaw)
 {
+    std::lock_guard grd(m_anglesMutex);
     roll  = m_roll;
     pitch = m_pitch;
     yaw   = m_yaw;
+}
+
+void AHRS::set(const float &roll, const float &pitch, const float &yaw)
+{
+    m_anglesMutex.lock();
+    if (std::abs(m_roll - roll) < 0.01 || std::abs(m_pitch - pitch) < 0.01 || std::abs(m_yaw - yaw) < 0.01)
+    {
+        m_roll  = roll;
+        m_pitch = pitch;
+        m_yaw   = yaw;
+        m_anglesMutex.unlock();
+        for (auto c : m_callbacks)
+            c->updateAngles();
+    }
+    else
+        m_anglesMutex.unlock();
 }
 
 void AHRS::addCallback(AHRS::OnChangeAHRSCallback *call)

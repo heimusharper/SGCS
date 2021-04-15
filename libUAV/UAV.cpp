@@ -62,12 +62,6 @@ void UAV::process(std::unique_ptr<UavTask> message)
         if (uavmessage->state.dirty())
             setState(uavmessage->state.get());
     }
-    else if (AHRS::Message *ahrsmsg = dynamic_cast<AHRS::Message *>(task))
-        m_ahrs->process(ahrsmsg);
-    else if (GPS::Message *gpsmsg = dynamic_cast<GPS::Message *>(task))
-        m_gps->process(gpsmsg);
-    else if (Position::Message *posgpsmsg = dynamic_cast<Position::Message *>(task))
-        m_position->process(posgpsmsg);
     else if (Home::Message *homemsg = dynamic_cast<Home::Message *>(task))
         m_home->process(homemsg);
     else if (Power::Message *poewermsg = dynamic_cast<Power::Message *>(task))
