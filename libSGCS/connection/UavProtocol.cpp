@@ -74,6 +74,7 @@ void UavProtocol::insertMessage(uav::UavTask *message)
 
 void UavProtocol::sendMessage(uav::UavSendMessage *message)
 {
+    std::lock_guard grd(m_sendMutex);
     for (auto tosendvec : m_send)
     {
         bool dobrk = false;
@@ -132,26 +133,29 @@ void UavProtocol::processFromParent(const tools::CharMap &data)
         while (!messages.empty())
         {
             auto m = messages.front();
-            for (auto tosendvec : m_send)
             {
-                bool dobrk = false;
-                for (size_t i = 0; i < tosendvec.second->size(); i++)
+                std::lock_guard grd(m_sendMutex);
+                for (auto tosendvec : m_send)
                 {
-                    uav::UavSendMessage *tosend = tosendvec.second->at(i);
-                    if (tosend->compare(m, uav::UavSendMessage::CompareMode::LIGHT))
+                    bool dobrk = false;
+                    for (size_t i = 0; i < tosendvec.second->size(); i++)
                     {
-                        // BOOST_LOG_TRIVIAL(info) << "ACCEPTED";
-                        tosend->pop();
-                        if (tosend->empty())
+                        uav::UavSendMessage *tosend = tosendvec.second->at(i);
+                        if (tosend->compare(m, uav::UavSendMessage::CompareMode::LIGHT))
                         {
-                            tosendvec.second->erase(tosendvec.second->begin() + i);
-                            dobrk = true;
-                            break;
+                            // BOOST_LOG_TRIVIAL(info) << "ACCEPTED";
+                            tosend->pop();
+                            if (tosend->empty())
+                            {
+                                tosendvec.second->erase(tosendvec.second->begin() + i);
+                                dobrk = true;
+                                break;
+                            }
                         }
                     }
+                    if (dobrk)
+                        break;
                 }
-                if (dobrk)
-                    break;
             }
             messages.pop_front();
             delete m;
@@ -172,32 +176,29 @@ bool UavProtocol::requestToSend(std::vector<uav::UavSendMessage *> *fromlist)
 {
     if (!fromlist->empty())
     {
-        if (m_sendMutex.try_lock())
+        std::lock_guard grd(m_sendMutex);
+        bool writed = false;
+        // BOOST_LOG_TRIVIAL(info) << "START " << fromlist->size();
+        for (size_t i = 0; i < fromlist->size(); i++)
         {
-            bool writed = false;
-            // BOOST_LOG_TRIVIAL(info) << "START " << fromlist->size();
-            for (size_t i = 0; i < fromlist->size(); i++)
+            auto message = fromlist->at(i);
+            // BOOST_LOG_TRIVIAL(info)
+            // << "    MESSAGE " << message->isReadyInterval() << " " << message->isReadyToDelete() << " " << message;
+            if (!writed && message->isReadyInterval())
             {
-                auto message = fromlist->at(i);
-                // BOOST_LOG_TRIVIAL(info)
-                // << "    MESSAGE " << message->isReadyInterval() << " " << message->isReadyToDelete() << " " << message;
-                if (!writed && message->isReadyInterval())
-                {
-                    // BOOST_LOG_TRIVIAL(info) << "        SEND...";
-                    writeToParent(message->pack());
-                    message->touch();
-                    writed = true;
-                }
-                if (message->isReadyToDelete())
-                {
-                    // BOOST_LOG_TRIVIAL(info) << "        REMOVE...";
-                    fromlist->erase(fromlist->begin() + i);
-                    delete message;
-                }
+                // BOOST_LOG_TRIVIAL(info) << "        SEND...";
+                writeToParent(message->pack());
+                message->touch();
+                writed = true;
             }
-            m_sendMutex.unlock();
-            return writed;
+            if (message->isReadyToDelete())
+            {
+                // BOOST_LOG_TRIVIAL(info) << "        REMOVE...";
+                fromlist->erase(fromlist->begin() + i);
+                delete message;
+            }
         }
+        return writed;
     }
     return false;
 }
