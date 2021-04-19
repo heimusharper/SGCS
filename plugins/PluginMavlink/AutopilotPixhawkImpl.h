@@ -5,6 +5,7 @@
 #include <boost/log/trivial.hpp>
 #include <chrono>
 #include <cmath>
+#include <thread>
 
 #define USE_GLOBAL_POSITION
 //#undef USE_GLOBAL_POSITION
@@ -21,6 +22,7 @@ class AutopilotPixhawkImpl : public IAutopilot
 {
 public:
     AutopilotPixhawkImpl(int chan, int gcsID, int id, MavlinkHelper::ProcessingMode mode);
+    ~AutopilotPixhawkImpl();
     virtual bool
     setInterval(int sensors, int stat, int rc, int raw, int pos, int extra1, int extra2, int extra3, int adbs, int params) override final;
     virtual bool requestARM(bool autoChangeMode, bool force, bool defaultModeAuto = false) override final;
@@ -54,6 +56,13 @@ private:
     std::list<std::pair<int, int>> m_msgInterval;
 
     void printMode(uint32_t custom);
+
+    void doRepositionTick();
+
+    std::mutex m_repositionLock;
+    std::atomic_bool m_repositionThreadWorks;
+    std::atomic_bool m_repositionThreadStop;
+    std::thread *m_repositionThread;
 };
 
 namespace px4

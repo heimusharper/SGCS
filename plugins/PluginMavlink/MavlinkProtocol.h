@@ -83,6 +83,7 @@ private:
     std::atomic_bool _stopThread;
     std::thread *_messageProcessorThread = nullptr;
     std::mutex _dataTaskMutex;
+    bool m_isCheckType = false;
 
     bool m_waitForHomePoint = true;
 
@@ -200,11 +201,23 @@ private:
                     m_ap->requestLand();
                     break;
                 case uav::UAVControlState::MANUAL_OFFBOARD:
-                    m_ap->repositionOffboard(m_uav->position()->gps(), m_uav->home()->position());
+                {
+                    geo::Coords3D coord;
+                    m_uav->position()->gps(coord);
+                    geo::Coords3D home;
+                    m_uav->home()->position(home);
+                    m_ap->repositionOffboard(coord, home);
                     break;
+                }
                 case uav::UAVControlState::MANUAL_ONBOARD:
-                    m_ap->repositionOnboard(m_uav->position()->gps(), m_uav->home()->position());
+                {
+                    geo::Coords3D coord;
+                    m_uav->position()->gps(coord);
+                    geo::Coords3D home;
+                    m_uav->home()->position(home);
+                    m_ap->repositionOnboard(coord, home);
                     break;
+                }
                 case uav::UAVControlState::PREPARED:
                     m_ap->requestARM(true, force, false);
                     break;
@@ -213,9 +226,10 @@ private:
                     break;
                 case uav::UAVControlState::STARTED:
                 {
-                    geo::Coords3D gps = m_uav->position()->gps();
-                    gps.setAlt(gps.alt() + m_uav->takeoffAltitude());
-                    m_ap->requestTakeOff(gps);
+                    geo::Coords3D coord;
+                    m_uav->position()->gps(coord);
+                    coord.setAlt(coord.alt() + m_uav->takeoffAltitude());
+                    m_ap->requestTakeOff(coord);
                     break;
                 }
                 case uav::UAVControlState::WAIT:

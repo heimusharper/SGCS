@@ -18,9 +18,9 @@
 
 namespace uav
 {
-UAV::UAV()
+UAV::UAV(int id)
 : UavObject()
-, m_id(-1)
+, m_id(id)
 , m_type(UAVType::UNDEFINED)
 , m_ahrs(new AHRS())
 , m_gps(new GPS())
@@ -47,53 +47,22 @@ UAV::~UAV()
     delete m_status;
 }
 
-void UAV::process(std::unique_ptr<UavTask> message)
-{
-    UavTask *task = message.get();
-    if (UAV::Message *uavmessage = dynamic_cast<UAV::Message *>(task))
-    {
-        if (uavmessage->id.dirty())
-            setId(uavmessage->id.get());
-        if (uavmessage->type.dirty())
-            setType(uavmessage->type.get());
-    }
-    else if (UAV::MessageFlight *uavmessage = dynamic_cast<UAV::MessageFlight *>(task))
-    {
-        if (uavmessage->state.dirty())
-            setState(uavmessage->state.get());
-    }
-    else if (Home::Message *homemsg = dynamic_cast<Home::Message *>(task))
-        m_home->process(homemsg);
-    else if (Power::Message *poewermsg = dynamic_cast<Power::Message *>(task))
-        m_power->process(poewermsg);
-    else if (Speed::Message *speedmsg = dynamic_cast<Speed::Message *>(task))
-        m_speed->process(speedmsg);
-    else if (Status::Message *statmsg = dynamic_cast<Status::Message *>(task))
-        m_status->process(statmsg);
-}
 int UAV::id() const
 {
     return m_id;
 }
 
-UAVType UAV::type() const
+void UAV::type(UAVType &type)
 {
-    return m_type;
-}
-
-void UAV::setId(int id)
-{
-    if (m_id == id)
-        return;
-    BOOST_LOG_TRIVIAL(info) << "UAV ID " << id;
-    m_id = id;
+    std::lock_guard grd(m_typeLock);
+    type = m_type;
 }
 
 void UAV::setType(UAVType type)
 {
+    std::lock_guard grd(m_typeLock);
     if (m_type == type)
         return;
-    BOOST_LOG_TRIVIAL(info) << "UAV TYPE " << (int)type;
     m_type = type;
 }
 
@@ -107,9 +76,10 @@ void UAV::removeControl(UAV::ControlInterface *i)
     m_controls.remove(i);
 }
 
-UAVControlState UAV::state() const
+void UAV::state(UAVControlState &s)
 {
-    return m_state;
+    std::lock_guard grd(m_typeLock);
+    s = m_state;
 }
 
 void UAV::sendControlState(UAVControlState newState, bool force)
@@ -120,12 +90,10 @@ void UAV::sendControlState(UAVControlState newState, bool force)
 
 void UAV::setState(const UAVControlState &state)
 {
-    if (m_state != state)
-    {
-        m_state = state;
-        for (auto c : m_controls)
-            c->onChangeControlState(m_state);
-    }
+    std::lock_guard grd(m_typeLock);
+    if (m_state == state)
+        return;
+    m_state = state;
 }
 
 Status *UAV::status() const

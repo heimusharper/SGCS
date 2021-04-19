@@ -22,14 +22,6 @@
 
 namespace uav
 {
-class UavTask
-{
-public:
-    UavTask(int target);
-    virtual ~UavTask() = default;
-
-    int targetID = 0;
-};
 class UavSendMessage
 {
 public:

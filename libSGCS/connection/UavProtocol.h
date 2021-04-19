@@ -69,7 +69,7 @@ protected:
     bool requestToSend(std::vector<uav::UavSendMessage *> *fromlist);
 
     virtual void setUAV(int id, uav::UAV *uav);
-    void insertMessage(uav::UavTask *message);
+    void checkUAV(int id);
 
     std::map<uav::UavSendMessage::Priority, std::vector<uav::UavSendMessage *> *> m_send;
     std::map<int, uav::UAV *> m_uavs;

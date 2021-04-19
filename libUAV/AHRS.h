@@ -27,9 +27,9 @@ public:
     class OnChangeAHRSCallback
     {
     public:
-        virtual void updateAngles()
+        /*virtual void updateAngles()
         {
-        }
+        }*/
 
         virtual void sendYaw(float yaw)
         {
@@ -46,11 +46,6 @@ public:
     void removeCallback(OnChangeAHRSCallback *call);
 
     void doSendYaw(float yaw);
-
-private:
-    bool setRoll(float roll);
-    bool setPitch(float pitch);
-    bool setYaw(float yaw);
 
 private:
     std::mutex m_anglesMutex;

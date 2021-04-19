@@ -18,10 +18,6 @@
 
 namespace uav
 {
-UavTask::UavTask(int target) : targetID(target)
-{
-}
-
 UavSendMessage::UavSendMessage(int ticks, int interval, UavSendMessage::Priority priority)
 : m_first(true)
 , m_interval(interval)

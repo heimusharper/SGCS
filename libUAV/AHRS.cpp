@@ -36,18 +36,19 @@ void AHRS::get(float &roll, float &pitch, float &yaw)
 
 void AHRS::set(const float &roll, const float &pitch, const float &yaw)
 {
-    m_anglesMutex.lock();
-    if (std::abs(m_roll - roll) < 0.01 || std::abs(m_pitch - pitch) < 0.01 || std::abs(m_yaw - yaw) < 0.01)
     {
-        m_roll  = roll;
-        m_pitch = pitch;
-        m_yaw   = yaw;
-        m_anglesMutex.unlock();
-        for (auto c : m_callbacks)
-            c->updateAngles();
+        std::lock_guard grd(m_anglesMutex);
+        if (std::abs(m_roll - roll) < 0.01 || std::abs(m_pitch - pitch) < 0.01 || std::abs(m_yaw - yaw) < 0.01)
+        {
+            m_roll  = roll;
+            m_pitch = pitch;
+            m_yaw   = yaw;
+        }
+        else
+            return;
     }
-    else
-        m_anglesMutex.unlock();
+    // for (auto c : m_callbacks)
+    //    c->updateAngles();
 }
 
 void AHRS::addCallback(AHRS::OnChangeAHRSCallback *call)
@@ -64,33 +65,6 @@ void AHRS::doSendYaw(float yaw)
 {
     for (auto x : m_callbacks)
         x->sendYaw(yaw);
-}
-
-bool AHRS::setRoll(float roll)
-{
-    if (fabs(m_roll - roll) < 0.1)
-        return false;
-    m_roll = roll;
-    return true;
-    // BOOST_LOG_TRIVIAL(info) << "ROLL " << m_roll;
-}
-
-bool AHRS::setPitch(float pitch)
-{
-    if (fabs(m_pitch - pitch) < 0.1)
-        return false;
-    m_pitch = pitch;
-    return true;
-    // BOOST_LOG_TRIVIAL(info) << "PITCH " << m_pitch;
-}
-
-bool AHRS::setYaw(float yaw)
-{
-    if (fabs(m_yaw - yaw) < 0.1)
-        return false;
-    m_yaw = yaw;
-    return true;
-    // BOOST_LOG_TRIVIAL(info) << "YAW " << m_yaw;
 }
 
 }

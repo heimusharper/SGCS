@@ -26,52 +26,30 @@ GPS::~GPS()
 {
 }
 
-uint8_t GPS::provGPS() const
+void GPS::getProv(uint8_t &gps, uint8_t &glonass)
 {
-    return m_provGPS.get();
+    std::lock_guard grd(m_provLock);
+    gps     = m_provGPS;
+    glonass = m_provGLONASS;
 }
 
-void GPS::setProvGPS(uint8_t provGPS)
+void GPS::setProv(uint8_t provGPS, uint8_t provGLONASS)
 {
-    if (m_provGPS.get() == provGPS)
-        return;
-    m_provGPS.set(std::move(provGPS));
-    for (auto x : m_GPSCallback)
-        x->updateSatelitesCount();
+    {
+        std::lock_guard grd(m_provLock);
+        if (m_provGPS == provGPS && m_provGLONASS == provGLONASS)
+            return;
+        m_provGPS     = provGPS;
+        m_provGLONASS = provGLONASS;
+    }
+    // for (auto x : m_GPSCallback)
+    //    x->updateSatelitesCount(provGPS, provGLONASS);
 }
 
-uint8_t GPS::provGLONASS() const
+void GPS::fixType(GPS::FixType &type)
 {
-    return m_provGLONASS.get();
-}
-
-void GPS::setProvGLONASS(uint8_t provGLONASS)
-{
-    if (m_provGLONASS.get() == provGLONASS)
-        return;
-    m_provGLONASS.set(std::move(provGLONASS));
-    for (auto x : m_GPSCallback)
-        x->updateSatelitesCount();
-}
-
-float GPS::vdop() const
-{
-    return m_vdop.get();
-}
-
-void GPS::setVdop(float &&vdop)
-{
-    if (m_vdop.get() == vdop)
-        return;
-    m_vdop.set(std::move(vdop));
-    for (auto x : m_GPSCallback)
-        x->updateErros();
-}
-
-GPS::FixType GPS::fixType()
-{
-    // std::lock_guard grd(m_fixTypeMtx);
-    return m_fixType;
+    std::lock_guard grd(m_fixTypeMtx);
+    type = m_fixType;
 }
 
 void GPS::addCallback(GPS::OnChangeGPSCallback *call)
@@ -92,27 +70,34 @@ void GPS::sendRTCM(const tools::CharMap &rtcm)
 
 void GPS::setFixType(const GPS::FixType &fixType)
 {
-    std::lock_guard grd(m_fixTypeMtx);
     {
+        std::lock_guard grd(m_fixTypeMtx);
         if (m_fixType == fixType)
             return;
         m_fixType = fixType;
     }
-    for (auto x : m_GPSCallback)
-        x->updateFixType();
+    // for (auto x : m_GPSCallback)
+    //    x->updateFixType();
 }
 
-float GPS::hdop() const
+void GPS::dop(float &h, float &v)
 {
-    return m_hdop.get();
+    std::lock_guard grd(m_dopLock);
+    h = m_hdop;
+    v = m_vdop;
 }
 
-void GPS::setHdop(float &&hdop)
+void GPS::setDop(float h, float v)
 {
-    if (m_hdop.get() == hdop)
-        return;
-    m_hdop.set(std::move(hdop));
-    for (auto x : m_GPSCallback)
-        x->updateErros();
+    {
+        std::lock_guard grd(m_dopLock);
+        if (m_hdop == h && m_vdop == v)
+            return;
+        m_hdop = h;
+        m_vdop = v;
+    }
+    // for (auto x : m_GPSCallback)
+    //    x->updateErros();
 }
+
 }

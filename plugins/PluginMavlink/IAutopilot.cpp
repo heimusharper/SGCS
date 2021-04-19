@@ -88,7 +88,7 @@ void IAutopilot::sendRTCM(const tools::CharMap &cm)
     else
     {
         auto message = createRTCM(-1, m_rtcmSeq, cm, 0, cm.size);
-        m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 1, 50, uav::UavSendMessage::Priority::HIGHT));
+        m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 2, 50, uav::UavSendMessage::Priority::HIGHT));
     }
     m_rtcmSeq++;
 }
@@ -156,7 +156,7 @@ void IAutopilot::ping()
             mavlink_message_t message;
             mavlink_msg_heartbeat_pack_chan(m_gcs, 1, m_chanel, &message, m_id, 0, 0, 0, 0);
             m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 1, 1000, uav::UavSendMessage::Priority::HIGHT));
-            BOOST_LOG_TRIVIAL(info) << "PING..";
+            // BOOST_LOG_TRIVIAL(info) << "PING..";
             usleep(1000000);
         }
     });
@@ -172,6 +172,7 @@ void IAutopilot::doWriteMissionPath(const uav::MissionPath &path, int from)
 
 void IAutopilot::setBootTimeMS(const uint32_t &bootTimeMS)
 {
+    std::lock_guard grd(m_bootTimeLock);
     m_bootTimeReceived = std::chrono::_V2::system_clock::now();
     m_bootTimeMS       = bootTimeMS;
 }
@@ -180,6 +181,6 @@ void IAutopilot::setIsFlight(bool value)
 {
     if (m_isFlight == value)
         return;
-    BOOST_LOG_TRIVIAL(info) << "DETECTED FLIGHT IS " << value;
+    // BOOST_LOG_TRIVIAL(info) << "DETECTED FLIGHT IS " << value;
     m_isFlight = value;
 }

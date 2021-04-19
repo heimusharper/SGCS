@@ -38,9 +38,9 @@ public:
         {
         }
 
-        virtual void updateGPS()
+        /*virtual void updateGPS()
         {
-        }
+        }*/
         virtual bool goTo(geo::Coords3D &&target, const geo::Coords3D &base)
         {
             return false;
@@ -50,16 +50,17 @@ public:
     Position();
     virtual ~Position();
 
-    void setGps(geo::Coords3D &&gps);
+    void setGps(const geo::Coords3D &gps);
 
-    geo::Coords3D gps() const;
+    void gps(geo::Coords3D &coord);
 
     // control
     void setControl(PositionControlInterface *control);
     bool goTo(geo::Coords3D &&target, const geo::Coords3D &base);
 
 private:
-    tools::optional_safe<geo::Coords3D> m_gps;
+    std::mutex m_gpsLock;
+    geo::Coords3D m_gps;
 
     std::list<PositionControlInterface *> m_control;
 };

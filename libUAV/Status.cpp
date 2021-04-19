@@ -2,23 +2,22 @@
 
 namespace uav
 {
-Status::Status()
+Status::Status() : m_failures(0)
 {
 }
 
-uint16_t Status::failures() const
+void Status::failures(uint16_t &f)
 {
-    return m_failures;
+    std::lock_guard grd(m_failuresLock);
+    f = m_failures;
 }
 
-void Status::setFailures(const uint16_t &failures)
+void Status::setFailures(uint16_t failures)
 {
+    std::lock_guard grd(m_failuresLock);
     if (m_failures == failures)
         return;
     m_failures = failures;
-}
-void Status::process(Status::Message *message)
-{
 }
 
 }

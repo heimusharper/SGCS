@@ -34,7 +34,7 @@ struct MavlinkHelper
             uint16_t lenght     = mavlink_msg_to_send_buffer((uint8_t *)cm.data, &m);
             if (lenght > 0)
             {
-                BOOST_LOG_TRIVIAL(info) << "PACKING " << mavlink().msgid;
+                // BOOST_LOG_TRIVIAL(info) << "PACKING " << mavlink().msgid;
                 cm.size = lenght;
                 return cm;
             }
@@ -340,7 +340,7 @@ struct MavlinkHelper
         {
             m_mavlink.pop_front();
 
-            BOOST_LOG_TRIVIAL(warning) << "MESSAGES AFTER POP " << m_mavlink.size();
+            // BOOST_LOG_TRIVIAL(warning) << "MESSAGES AFTER POP " << m_mavlink.size();
             MavlinkMessageTypeI::pop();
         }
         void push(mavlink_message_t &&m)

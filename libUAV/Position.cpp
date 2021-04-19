@@ -26,19 +26,21 @@ Position::~Position()
 {
 }
 
-geo::Coords3D Position::gps() const
+void Position::gps(geo::Coords3D &coord)
 {
-    return m_gps.get();
+    std::lock_guard grd(m_gpsLock);
+    coord = m_gps;
 }
 
-void Position::setGps(geo::Coords3D &&gps)
+void Position::setGps(const geo::Coords3D &gps)
 {
-    if (m_gps.get() == gps)
+    std::lock_guard grd(m_gpsLock);
+    if (m_gps == gps)
         return;
-    m_gps.set(std::move(gps));
-    for (auto c : m_control)
-        c->updateGPS();
-    BOOST_LOG_TRIVIAL(info) << "GPS POS {" << m_gps.get().lat() << "; " << m_gps.get().lon() << "; " << m_gps.get().alt() << "}";
+    m_gps = gps;
+    // for (auto c : m_control)
+    //    c->updateGPS();
+    // BOOST_LOG_TRIVIAL(info) << "GPS POS {" << m_gps.get().lat() << "; " << m_gps.get().lon() << "; " << m_gps.get().alt() << "}";
 }
 
 void Position::setControl(PositionControlInterface *control)

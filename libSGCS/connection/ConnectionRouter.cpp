@@ -81,7 +81,7 @@ void ConnectionRouter::runConection()
                     m_connection->removeChild(this); // end protocol creation
                     m_buffer.clear();
                     m_protocol = *iter;
-                    BOOST_LOG_TRIVIAL(info) << "Ready " << m_protocol->name() << " protocol";
+                    // BOOST_LOG_TRIVIAL(info) << "Ready " << m_protocol->name() << " protocol";
                     while (!m_protos.empty())
                     {
                         auto obj = m_protos.back();

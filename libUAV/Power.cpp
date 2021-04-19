@@ -10,35 +10,18 @@ Power::~Power()
 {
 }
 
-void Power::process(uav::Power::Message *message)
+void Power::voltage(float &v)
 {
-    if (message->voltage.dirty())
-        setVoltage(message->voltage.get());
-}
-
-float Power::voltage() const
-{
-    return m_voltage.get();
-}
-
-void Power::addCallback(Power::OnChangePowerCallback *cb)
-{
-    m_callbacks.push_back(cb);
-}
-
-void Power::removeCallback(Power::OnChangePowerCallback *cb)
-{
-    m_callbacks.remove(cb);
+    std::lock_guard grd(m_voltageLock);
+    v = m_voltage;
 }
 
 void Power::setVoltage(float voltage)
 {
-    if (m_voltage.dirty())
-        if (std::abs(m_voltage.get() - voltage) < 0.01)
-            return;
+    std::lock_guard grd(m_voltageLock);
+    if (std::abs(m_voltage - voltage) < 0.01)
+        return;
     m_voltage = voltage;
-    for (auto c : m_callbacks)
-        c->updateVoltage();
 }
 
 }

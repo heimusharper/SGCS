@@ -61,14 +61,12 @@ void UavProtocol::setUAV(int id, uav::UAV *uav)
         handler->onCreateUav(uav);
 }
 
-void UavProtocol::insertMessage(uav::UavTask *message)
+void UavProtocol::checkUAV(int id)
 {
     m_valid.store(true);
     m_mutex.lock();
-    if (!m_uavs.contains(message->targetID))
-        setUAV(message->targetID, new uav::UAV());
-
-    m_uavs.at(message->targetID)->process(std::unique_ptr<uav::UavTask>(message));
+    if (!m_uavs.contains(id))
+        setUAV(id, new uav::UAV(id));
     m_mutex.unlock();
 }
 

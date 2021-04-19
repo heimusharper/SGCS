@@ -10,25 +10,15 @@ namespace uav
 class Home : public UavObject<uint8_t>
 {
 public:
-    class Message : public UavTask
-    {
-    public:
-        Message(int target) : UavTask(target), position(geo::Coords3D())
-        {
-        }
-        tools::optional<geo::Coords3D> position;
-    };
-
     Home();
     virtual ~Home();
 
-    void process(Home::Message *message);
-
-    geo::Coords3D position() const;
-    void setPosition(geo::Coords3D &&position);
+    void position(geo::Coords3D &pos);
+    void setPosition(const geo::Coords3D &position);
 
 private:
-    tools::optional_safe<geo::Coords3D> m_position;
+    std::mutex m_positionLock;
+    geo::Coords3D m_position;
 };
 }
 #endif // UAVHOME_H

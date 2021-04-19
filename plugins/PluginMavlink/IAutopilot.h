@@ -71,6 +71,7 @@ protected:
 
     bool m_isFlight = false;
 
+    std::mutex m_bootTimeLock;
     std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> m_bootTimeReceived;
 
     std::thread *m_pingThread = nullptr;

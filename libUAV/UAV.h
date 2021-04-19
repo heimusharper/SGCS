@@ -52,25 +52,6 @@ enum class UAVControlState
 class UAV : public UavObject<uint8_t>
 {
 public:
-    class Message : public UavTask
-    {
-    public:
-        Message(int target) : UavTask(target), id(-1), type(UAVType::UNDEFINED)
-        {
-        }
-        tools::optional<int> id;
-        tools::optional<UAVType> type;
-    };
-
-    class MessageFlight : public UavTask
-    {
-    public:
-        MessageFlight(int target) : UavTask(target), state(UAVControlState::WAIT)
-        {
-        }
-        tools::optional<UAVControlState> state;
-    };
-
     class ControlInterface
     {
     public:
@@ -82,13 +63,13 @@ public:
         }
     };
 
-    UAV();
+    UAV(int id);
     virtual ~UAV();
-    void process(std::unique_ptr<uav::UavTask> message);
 
     int id() const;
 
-    UAVType type() const;
+    void type(UAVType &type);
+    void setType(UAVType type);
 
     AHRS *ahrs() const;
 
@@ -113,22 +94,18 @@ public:
     void addControl(ControlInterface *i);
     void removeControl(ControlInterface *i);
 
-    UAVControlState state() const;
+    void state(UAVControlState &s);
+    void setState(const UAVControlState &state);
 
     // control
 
     void sendControlState(UAVControlState newState, bool force = false);
 
 private:
-    void setId(int id);
-
-    void setType(UAVType type);
-
-    void setState(const UAVControlState &state);
-
 private:
-    int m_id;
+    const int m_id;
 
+    std::mutex m_typeLock;
     UAVType m_type;
 
     // Objs

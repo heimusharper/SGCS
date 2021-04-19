@@ -42,7 +42,7 @@ public:
     {
     public:
         virtual ~OnChangeGPSCallback() = default;
-        virtual void updateSatelitesCount()
+        /*virtual void updateSatelitesCount(uint8_t gps, uint8_t glonass)
         {
         }
         virtual void updateErros()
@@ -50,7 +50,7 @@ public:
         }
         virtual void updateFixType()
         {
-        }
+        }*/
         virtual void sendRTCM(const tools::CharMap &rtcm)
         {
         }
@@ -59,17 +59,13 @@ public:
     GPS();
     virtual ~GPS();
 
-    uint8_t provGPS() const;
-    uint8_t provGLONASS() const;
-    void setProvGPS(uint8_t provGPS);
-    void setProvGLONASS(uint8_t provGLONASS);
+    void getProv(uint8_t &gps, uint8_t &glonass);
+    void setProv(uint8_t provGPS, uint8_t provGLONASS);
 
-    float hdop() const;
-    float vdop() const;
-    void setHdop(float &&hdop);
-    void setVdop(float &&vdop);
+    void dop(float &h, float &v);
+    void setDop(float h, float v);
 
-    GPS::FixType fixType();
+    void fixType(GPS::FixType &type);
     void setFixType(const GPS::FixType &fixType);
 
     //
@@ -80,11 +76,13 @@ public:
     void sendRTCM(const tools::CharMap &rtcm);
 
 private:
-    tools::optional_safe<uint8_t> m_provGPS;
-    tools::optional_safe<uint8_t> m_provGLONASS;
+    std::mutex m_provLock;
+    uint8_t m_provGPS;
+    uint8_t m_provGLONASS;
 
-    tools::optional_safe<float> m_hdop = 255;
-    tools::optional_safe<float> m_vdop = 255;
+    std::mutex m_dopLock;
+    float m_hdop;
+    float m_vdop;
 
     std::mutex m_fixTypeMtx;
     FixType m_fixType;

@@ -16,22 +16,13 @@ public:
         GPS   = 0b1 << 1,
         ACCEL = 0b1 << 2
     };
-    class Message : public UavTask
-    {
-    public:
-        Message(int target) : UavTask(target), failure(0)
-        {
-        }
-        tools::optional<uint16_t> failure;
-    };
-
-    void process(Status::Message *message);
     Status();
 
-    uint16_t failures() const;
-    void setFailures(const uint16_t &failures);
+    void failures(uint16_t &f);
+    void setFailures(uint16_t failures);
 
 private:
+    std::mutex m_failuresLock;
     uint16_t m_failures;
 };
 }

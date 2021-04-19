@@ -11,6 +11,20 @@ AutopilotPixhawkImpl::AutopilotPixhawkImpl(int chan, int gcsID, int id, MavlinkH
 , m_lastRepositionPos(geo::Coords3D())
 , m_lastYaw(NAN)
 {
+    m_repositionThreadWorks.store(false);
+    m_repositionThreadStop.store(false);
+    m_repositionThread = new std::thread(&AutopilotPixhawkImpl::doRepositionTick, this);
+}
+
+AutopilotPixhawkImpl::~AutopilotPixhawkImpl()
+{
+    if (m_repositionThread)
+    {
+        m_repositionThreadStop.store(true);
+        if (m_repositionThread->joinable())
+            m_repositionThread->join();
+        delete m_repositionThread;
+    }
 }
 
 bool AutopilotPixhawkImpl::setInterval(int sensors, int stat, int rc, int raw, int pos, int extra1, int extra2, int extra3, int adbs, int params)
@@ -95,11 +109,10 @@ bool AutopilotPixhawkImpl::setInterval(int sensors, int stat, int rc, int raw, i
 
 bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defaultModeAuto)
 {
-    BOOST_LOG_TRIVIAL(info) << "DO ARM";
+    // BOOST_LOG_TRIVIAL(info) << "DO ARM";
     // if (m_baseMode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)
     {
         bool readyToStart = false;
-        BOOST_LOG_TRIVIAL(info) << "    inside";
         union px4::px4_custom_mode px4_mode;
         px4_mode.data = m_customMode;
         if ((defaultModeAuto && px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_AUTO) ||
@@ -107,7 +120,6 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
             readyToStart = true;
         if (readyToStart)
         {
-            BOOST_LOG_TRIVIAL(info) << "    ARM";
             // arm
             arm(force);
             return true;
@@ -118,13 +130,11 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
             union px4::px4_custom_mode px4_mode;
             if (defaultModeAuto)
             {
-                BOOST_LOG_TRIVIAL(info) << "    chnage mode to AUTO";
                 px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_AUTO;
                 px4_mode.sub_mode  = px4::PX4_CUSTOM_SUB_MODE_AUTO_MISSION;
             }
             else
             {
-                BOOST_LOG_TRIVIAL(info) << "    chnage mode to ALTCTRL";
                 px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_ALTCTL; // px4::PX4_CUSTOM_MAIN_MODE_POSCTL ;
                 px4_mode.sub_mode  = 0;
             }
@@ -247,95 +257,12 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos, const geo
 {
     if (!pos.valid())
         return false;
-#ifndef USE_GLOBAL_POSITION
-    if (!base.valid())
-        return false;
-#endif
+
+    std::lock_guard grd(m_repositionLock);
+
     m_lastRepositionPos = pos;
     m_lastBasePos       = base;
-    auto mask           = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE |
-    POSITION_TARGET_TYPEMASK_VZ_IGNORE | POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE |
-    POSITION_TARGET_TYPEMASK_AZ_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_FORCE_SET;
-    if (std::isnan(m_lastYaw))
-        mask |= POSITION_TARGET_TYPEMASK_YAW_IGNORE;
-
     BOOST_LOG_TRIVIAL(info) << "DO REPOSITION" << pos.lat() << ";" << pos.lon() << ";" << pos.alt() << " YAW " << m_lastYaw;
-
-    uint32_t compensate = 0;
-    {
-        std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> now = std::chrono::system_clock::now();
-        compensate = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_bootTimeReceived).count();
-    }
-
-    mavlink_message_t message;
-#ifdef USE_GLOBAL_POSITION
-    // Global (WGS84) coordinate frame + MSL altitude. First value / x: latitude, second value / y: longitude, third value / z: positive altitude over mean sea level
-    mavlink_msg_set_position_target_global_int_pack_chan(m_gcs,
-                                                         0,
-                                                         m_chanel,
-                                                         &message,
-                                                         m_bootTimeMS + compensate,
-                                                         m_id,
-                                                         0,
-                                                         MAV_FRAME_GLOBAL,
-                                                         mask,
-                                                         (int32_t)(pos.lat() * 1.E7),
-                                                         (int32_t)(pos.lon() * 1.E7),
-                                                         pos.alt(),
-                                                         0,
-                                                         0,
-                                                         0,
-                                                         0,
-                                                         0,
-                                                         0,
-                                                         (std::isnan(m_lastYaw)) ? 0 : (m_lastYaw / 180. * M_PI),
-                                                         0);
-
-#else
-
-    double lat_rad = pos.lat() * M_DEG_TO_RAD;
-    double lon_rad = pos.lon() * M_DEG_TO_RAD;
-
-    double ref_lon_rad = base.lon() * M_DEG_TO_RAD;
-    double ref_lat_rad = base.lat() * M_DEG_TO_RAD;
-
-    double sin_lat   = sin(lat_rad);
-    double cos_lat   = cos(lat_rad);
-    double cos_d_lon = cos(lon_rad - ref_lon_rad);
-
-    double ref_sin_lat = sin(ref_lat_rad);
-    double ref_cos_lat = cos(ref_lat_rad);
-
-    double c = acos(ref_sin_lat * sin_lat + ref_cos_lat * cos_lat * cos_d_lon);
-    double k = (fabs(c) < epsilon) ? 1.0 : (c / sin(c));
-
-    double x = k * (ref_cos_lat * sin_lat - ref_sin_lat * cos_lat * cos_d_lon) * CONSTANTS_RADIUS_OF_EARTH;
-    double y = k * cos_lat * sin(lon_rad - ref_lon_rad) * CONSTANTS_RADIUS_OF_EARTH;
-
-    double z = -(pos.alt() - base.alt());
-    mavlink_msg_set_position_target_local_ned_pack_chan(m_gcs,
-                                                        0,
-                                                        m_chanel,
-                                                        &message,
-                                                        m_bootTimeMS + compensate,
-                                                        m_id,
-                                                        0,
-                                                        MAV_FRAME_LOCAL_NED,
-                                                        mask,
-                                                        x,
-                                                        y,
-                                                        z,
-                                                        0,
-                                                        0,
-                                                        0,
-                                                        0,
-                                                        0,
-                                                        0,
-                                                        (std::isnan(m_lastYaw)) ? 0 : (m_lastYaw * M_DEG_TO_RAD),
-                                                        0);
-#endif
-    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), -1, 400, uav::UavSendMessage::Priority::HIGHT)); // every second
-    m_lastYaw = NAN;
 
     union px4::px4_custom_mode px4_mode;
     px4_mode.data = m_customMode;
@@ -381,6 +308,7 @@ void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
         px4_mode.data = custom;
         if (px4_mode.main_mode != px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
         { // rm
+            m_repositionThreadWorks.store(false);
             m_remove(MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT);
         }
         if (m_target_main_mode == px4_mode.main_mode && m_target_sub_mode == px4_mode.sub_mode)
@@ -390,6 +318,7 @@ void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
         }
         else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD && m_waitForRepositionOFFBOARD)
         {
+            m_repositionThreadWorks.store(true);
             repositionOffboard(m_lastRepositionPos, m_lastBasePos);
         }
     }
@@ -502,5 +431,123 @@ void AutopilotPixhawkImpl::printMode(uint32_t custom)
         default:
             BOOST_LOG_TRIVIAL(info) << "Mode now: undefined";
             break;
+    }
+}
+
+void AutopilotPixhawkImpl::doRepositionTick()
+{
+    while (!m_repositionThreadStop.load())
+    {
+        if (m_repositionThreadWorks.load())
+        {
+            double lat   = NAN;
+            double lon   = NAN;
+            double alt   = NAN;
+            double yaw   = NAN;
+            bool breakit = false;
+            {
+                std::lock_guard grd(m_repositionLock);
+                if (!m_lastRepositionPos.valid())
+                    breakit = true;
+                else
+                {
+                    lat = m_lastRepositionPos.lat();
+                    lon = m_lastRepositionPos.lon();
+                    alt = m_lastRepositionPos.alt();
+                }
+#ifndef USE_GLOBAL_POSITION
+                if (!base.valid())
+                    breakit = true;
+#endif
+                yaw = m_lastYaw;
+            }
+            if (!breakit)
+            {
+                auto mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE |
+                POSITION_TARGET_TYPEMASK_VZ_IGNORE | POSITION_TARGET_TYPEMASK_AX_IGNORE |
+                POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
+                POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_FORCE_SET;
+                if (std::isnan(yaw))
+                    mask |= POSITION_TARGET_TYPEMASK_YAW_IGNORE;
+
+                uint32_t compensate = 0;
+                {
+                    std::lock_guard grd(m_bootTimeLock);
+                    std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> now =
+                    std::chrono::system_clock::now();
+                    compensate = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_bootTimeReceived).count();
+                }
+
+                mavlink_message_t message;
+#ifdef USE_GLOBAL_POSITION
+                // Global (WGS84) coordinate frame + MSL altitude. First value / x: latitude, second value / y: longitude, third value / z: positive altitude over mean sea level
+                mavlink_msg_set_position_target_global_int_pack_chan(m_gcs,
+                                                                     0,
+                                                                     m_chanel,
+                                                                     &message,
+                                                                     m_bootTimeMS + compensate,
+                                                                     m_id,
+                                                                     0,
+                                                                     MAV_FRAME_GLOBAL,
+                                                                     mask,
+                                                                     (int32_t)(lat * 1.E7),
+                                                                     (int32_t)(lon * 1.E7),
+                                                                     alt,
+                                                                     0,
+                                                                     0,
+                                                                     0,
+                                                                     0,
+                                                                     0,
+                                                                     0,
+                                                                     (std::isnan(yaw)) ? 0 : (yaw / 180. * M_PI),
+                                                                     0);
+
+#else
+
+                double lat_rad = pos.lat() * M_DEG_TO_RAD;
+                double lon_rad = pos.lon() * M_DEG_TO_RAD;
+
+                double ref_lon_rad = base.lon() * M_DEG_TO_RAD;
+                double ref_lat_rad = base.lat() * M_DEG_TO_RAD;
+
+                double sin_lat   = sin(lat_rad);
+                double cos_lat   = cos(lat_rad);
+                double cos_d_lon = cos(lon_rad - ref_lon_rad);
+
+                double ref_sin_lat = sin(ref_lat_rad);
+                double ref_cos_lat = cos(ref_lat_rad);
+
+                double c = acos(ref_sin_lat * sin_lat + ref_cos_lat * cos_lat * cos_d_lon);
+                double k = (fabs(c) < epsilon) ? 1.0 : (c / sin(c));
+
+                double x = k * (ref_cos_lat * sin_lat - ref_sin_lat * cos_lat * cos_d_lon) * CONSTANTS_RADIUS_OF_EARTH;
+                double y = k * cos_lat * sin(lon_rad - ref_lon_rad) * CONSTANTS_RADIUS_OF_EARTH;
+
+                double z = -(pos.alt() - base.alt());
+                mavlink_msg_set_position_target_local_ned_pack_chan(m_gcs,
+                                                                    0,
+                                                                    m_chanel,
+                                                                    &message,
+                                                                    m_bootTimeMS + compensate,
+                                                                    m_id,
+                                                                    0,
+                                                                    MAV_FRAME_LOCAL_NED,
+                                                                    mask,
+                                                                    x,
+                                                                    y,
+                                                                    z,
+                                                                    0,
+                                                                    0,
+                                                                    0,
+                                                                    0,
+                                                                    0,
+                                                                    0,
+                                                                    (std::isnan(m_lastYaw)) ? 0 : (m_lastYaw * M_DEG_TO_RAD),
+                                                                    0);
+#endif
+                m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 1, 0, uav::UavSendMessage::Priority::HIGHT)); // every second
+            }
+        }
+        usleep(100000);
     }
 }

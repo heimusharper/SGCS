@@ -33,7 +33,6 @@
 bool exitbool = false;
 void onExit()
 {
-    BOOST_LOG_TRIVIAL(warning) << "Close signal";
     exitbool = true;
 }
 
@@ -87,7 +86,6 @@ int main(int argc, char *argv[])
     if (vm.count("help"))
     {
         initLogger(true, false, "");
-        BOOST_LOG_TRIVIAL(debug) << description << "\n";
         return 1;
     }
     // if (vm.count("output"))
@@ -99,8 +97,6 @@ int main(int argc, char *argv[])
         logFile = "sample_%N.log";
 
     initLogger(debugOutput, trace, logFile);
-    //
-    BOOST_LOG_TRIVIAL(debug) << "processing...";
 
     if (!RunConfiguration::instance().create("default.yaml"))
     {
@@ -119,7 +115,6 @@ int main(int argc, char *argv[])
         auto dss = loader.datasources();
         for (auto ds : dss)
         {
-            BOOST_LOG_TRIVIAL(debug) << "Plugin" << ds->name();
             if (ds->name() == datasource)
             {
                 auto instance = ds->instance();
