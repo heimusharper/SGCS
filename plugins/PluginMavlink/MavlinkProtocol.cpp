@@ -154,7 +154,7 @@ void MavlinkProtocol::runMessageReader()
             {
                 IAutopilot *ap = m_modes2.at(message.sysid);
                 uav::UAV *uv   = m_uavs.at(message.sysid);
-                BOOST_LOG_TRIVIAL(warning) << "HASAP " << ((ap) ? "TRUE" : "FALSE") << " HASUV " << ((uv) ? "TRUE" : "FALSE");
+                // BOOST_LOG_TRIVIAL(warning) << "HASAP " << ((ap) ? "TRUE" : "FALSE") << " HASUV " << ((uv) ? "TRUE" : "FALSE");
                 if (!ap || !uv)
                     continue;
                 // MavlinkHelper::Autopilot ap               = m_modes[message.sysid]->ap;

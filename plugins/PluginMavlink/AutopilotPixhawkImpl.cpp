@@ -445,7 +445,7 @@ void AutopilotPixhawkImpl::doRepositionTick()
     {
         if (m_repositionThreadWorks.load())
         {
-            BOOST_LOG_TRIVIAL(info) << "DOREPOS";
+            // BOOST_LOG_TRIVIAL(info) << "DOREPOS";
             double lat   = NAN;
             double lon   = NAN;
             double alt   = NAN;
