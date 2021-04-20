@@ -87,7 +87,8 @@ private:
 
     bool m_waitForHomePoint = true;
 
-    std::map<int, IAutopilot *> m_modes;
+    // std::map<int, IAutopilot *> m_modes;
+    std::map<int, IAutopilot *> m_modes2;
 
 private:
     class MavlinkAHRSControl : public uav::AHRS::OnChangeAHRSCallback

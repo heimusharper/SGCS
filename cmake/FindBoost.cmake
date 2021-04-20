@@ -13,6 +13,7 @@ MACRO ( FIND_Boost_LIBRARY MYLIBRARY MYLIBRARYNAME )
         NAMES
             ${MYLIBRARYNAME}
         PATHS
+            /usr/lib/x86_64-linux-gnu
             /usr/local/lib64
             /usr/local/lib
             /usr/lib

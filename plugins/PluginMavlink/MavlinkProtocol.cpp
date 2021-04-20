@@ -65,22 +65,20 @@ void MavlinkProtocol::runMessageReader()
             {
                 std::lock_guard grd(_mavlinkStoreMutex);
                 if (_mavlinkMessages.empty())
-                    break;
+                    continue;
                 messageref = _mavlinkMessages.back();
                 _mavlinkMessages.pop_back();
             }
             mavlink_message_t message = dynamic_cast<MavlinkHelper::MavlinkMessageType *>(messageref)->mavlink();
             delete messageref; // clear
-
-            if (!m_modes.contains(message.sysid))
+            BOOST_LOG_TRIVIAL(warning) << "MSGID " << message.msgid;
+            if (!m_modes2.contains(message.sysid))
             {
                 switch (message.msgid)
                 {
                     case MAVLINK_MSG_ID_HEARTBEAT:
                     {
                         int id = message.sysid;
-
-                        checkUAV(id);
 
                         mavlink_heartbeat_t hrt;
                         mavlink_msg_heartbeat_decode(&message, &hrt);
@@ -115,9 +113,12 @@ void MavlinkProtocol::runMessageReader()
                             default:
                                 ap = new AutopilotPixhawkImpl(DIFFERENT_CHANNEL, GCS_ID, message.sysid, mode);
                         }
-                        m_modes.insert(std::pair(message.sysid, ap));
                         if (ap)
                         {
+                            // m_modes.insert(std::make_pair(message.sysid, ap));
+                            m_modes2.insert(std::make_pair(message.sysid, ap));
+                            BOOST_LOG_TRIVIAL(warning) << "INSERTMODE" << message.sysid;
+
                             ap->setRemove([this](int id) {
                                 m_sendMutex.lock();
                                 auto rmx = [id](std::vector<uav::UavSendMessage *> *msgs) {
@@ -141,6 +142,7 @@ void MavlinkProtocol::runMessageReader()
                                 sendMessage(message);
                             });
                             ap->ping();
+                            checkUAV(id);
                         }
                         break;
                     }
@@ -150,12 +152,13 @@ void MavlinkProtocol::runMessageReader()
             }
             //
             // BOOST_LOG_TRIVIAL(info) << "IN MESSAGE " << (int)message.sysid << " " << message.msgid;
-            if (m_modes.contains(message.sysid))
+            if (m_modes2.contains(message.sysid))
             {
-                IAutopilot *ap = m_modes[message.sysid];
-                uav::UAV *uv   = m_uavs[message.sysid];
+                IAutopilot *ap = m_modes2.at(message.sysid);
+                uav::UAV *uv   = m_uavs.at(message.sysid);
+                BOOST_LOG_TRIVIAL(warning) << "HASAP " << ((ap) ? "TRUE" : "FALSE") << " HASUV " << ((uv) ? "TRUE" : "FALSE");
                 if (!ap || !uv)
-                    return;
+                    continue;
                 // MavlinkHelper::Autopilot ap               = m_modes[message.sysid]->ap;
 
                 switch (ap->processingMode())
@@ -180,8 +183,7 @@ void MavlinkProtocol::runMessageReader()
                                 ap->setMode(hrt.base_mode, hrt.custom_mode);
                                 if (!m_isCheckType)
                                 {
-                                    m_isCheckType     = true;
-                                    uav::UAVType type = uav::UAVType::UNDEFINED;
+                                    m_isCheckType = true;
                                     switch (MavlinkHelper::mavlinkUavType2SGCS((MAV_TYPE)hrt.type))
                                     {
                                         case MavlinkHelper::ProcessingMode::ANT:
@@ -223,6 +225,7 @@ void MavlinkProtocol::runMessageReader()
                             {
                                 mavlink_attitude_t att;
                                 mavlink_msg_attitude_decode(&message, &att);
+                                BOOST_LOG_TRIVIAL(warning) << "SETATT " << att.pitch;
                                 uv->ahrs()->set(static_cast<float>(att.pitch / M_PI * 180.),
                                                 static_cast<float>(att.roll / M_PI * 180.),
                                                 static_cast<float>(att.yaw / M_PI * 180.));
@@ -412,9 +415,9 @@ void MavlinkProtocol::runPing()
 
 void MavlinkProtocol::doConfigure(int uav)
 {
-    if (!m_modes.contains(uav))
+    if (!m_modes2.contains(uav))
         return;
-    IAutopilot *ap = m_modes[uav];
+    IAutopilot *ap = m_modes2.at(uav);
     if (ap)
     {
         ap->setInterval(RunConfiguration::instance().get<MavlinkConfig>()->rateSensors(),
@@ -438,11 +441,11 @@ void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
     uav->speed()->setHas(uav::Speed::HAS_GROUND_SPEED);
     uav->status()->setHas(uav::Status::MAG | uav::Status::GPS | uav::Status::ACCEL);
 
-    MavlinkPositionControl *uavPositionControl = new MavlinkPositionControl(m_modes[id]);
-    MavlinkAHRSControl *ahrsPositionControl    = new MavlinkAHRSControl(m_modes[id]);
-    MavlinkSpeedControl *speedControl          = new MavlinkSpeedControl(m_modes[id]);
-    MavlinkARMControl *armControl              = new MavlinkARMControl(m_modes[id], uav);
-    MavlinkGPSChange *gpsChange                = new MavlinkGPSChange(m_modes[id]);
+    MavlinkPositionControl *uavPositionControl = new MavlinkPositionControl(m_modes2.at(id));
+    MavlinkAHRSControl *ahrsPositionControl    = new MavlinkAHRSControl(m_modes2.at(id));
+    MavlinkSpeedControl *speedControl          = new MavlinkSpeedControl(m_modes2.at(id));
+    MavlinkARMControl *armControl              = new MavlinkARMControl(m_modes2.at(id), uav);
+    MavlinkGPSChange *gpsChange                = new MavlinkGPSChange(m_modes2.at(id));
 
     uav->position()->setControl(uavPositionControl);
     uav->ahrs()->addCallback(ahrsPositionControl);

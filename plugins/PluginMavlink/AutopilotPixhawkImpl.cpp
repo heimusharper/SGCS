@@ -12,6 +12,7 @@ AutopilotPixhawkImpl::AutopilotPixhawkImpl(int chan, int gcsID, int id, MavlinkH
 , m_lastYaw(NAN)
 {
     m_repositionThreadWorks.store(false);
+    m_repositionThreadWorks.store(true);
     m_repositionThreadStop.store(false);
     m_repositionThread = new std::thread(&AutopilotPixhawkImpl::doRepositionTick, this);
 }
@@ -308,7 +309,7 @@ void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
         px4_mode.data = custom;
         if (px4_mode.main_mode != px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
         { // rm
-            m_repositionThreadWorks.store(false);
+            // m_repositionThreadWorks.store(false);
             m_remove(MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT);
         }
         if (m_target_main_mode == px4_mode.main_mode && m_target_sub_mode == px4_mode.sub_mode)
@@ -318,7 +319,7 @@ void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
         }
         else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD && m_waitForRepositionOFFBOARD)
         {
-            m_repositionThreadWorks.store(true);
+            // m_repositionThreadWorks.store(true);
             repositionOffboard(m_lastRepositionPos, m_lastBasePos);
         }
     }
@@ -440,6 +441,7 @@ void AutopilotPixhawkImpl::doRepositionTick()
     {
         if (m_repositionThreadWorks.load())
         {
+            BOOST_LOG_TRIVIAL(info) << "DOREPOS";
             double lat   = NAN;
             double lon   = NAN;
             double alt   = NAN;

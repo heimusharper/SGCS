@@ -10,6 +10,7 @@ FIND_LIBRARY(Yaml_LIBRARY_DIR
     NAMES
         yaml-cpp
     PATHS
+        /usr/lib/x86_64-linux-gnu
         /usr/local/lib64
         /usr/local/lib
         /usr/lib

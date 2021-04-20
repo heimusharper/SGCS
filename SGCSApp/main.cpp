@@ -38,21 +38,7 @@ void onExit()
 
 void initLogger(bool output, bool trace, const std::string &file)
 {
-    if (!output)
-        boost::log::core::get()->set_filter((trace) ? boost::log::trivial::severity >= boost::log::trivial::trace
-                                                    : boost::log::trivial::severity >= boost::log::trivial::info);
-
-    if (!file.empty())
-    {
-        boost::log::add_file_log(boost::log::keywords::file_name     = file,
-                                 boost::log::keywords::rotation_size = 10 * 1024 * 1024,
-                                 boost::log::keywords::time_based_rotation =
-                                 boost::log::sinks::file::rotation_at_time_point(0, 0, 0),
-                                 boost::log::keywords::format = "[%TimeStamp%]: %Message%");
-
-        boost::log::core::get()->set_filter((trace) ? boost::log::trivial::severity >= boost::log::trivial::trace
-                                                    : boost::log::trivial::severity >= boost::log::trivial::info);
-    }
+    boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::trace);
 }
 class ConnectionFabricImpl : public sgcs::plugin::DataSourcePlugin::ConnectionFabric
 {
