@@ -12,7 +12,7 @@ AutopilotPixhawkImpl::AutopilotPixhawkImpl(int chan, int gcsID, int id, MavlinkH
 , m_lastYaw(NAN)
 {
     m_repositionThreadWorks.store(false);
-    m_repositionThreadWorks.store(true);
+    // m_repositionThreadWorks.store(true);
     m_repositionThreadStop.store(false);
     m_repositionThread = new std::thread(&AutopilotPixhawkImpl::doRepositionTick, this);
 }
@@ -110,6 +110,7 @@ bool AutopilotPixhawkImpl::setInterval(int sensors, int stat, int rc, int raw, i
 
 bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defaultModeAuto)
 {
+    m_repositionThreadWorks.store(false);
     // BOOST_LOG_TRIVIAL(info) << "DO ARM";
     // if (m_baseMode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)
     {
@@ -153,6 +154,7 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
 
 bool AutopilotPixhawkImpl::requestDisARM(bool force)
 {
+    m_repositionThreadWorks.store(false);
     BOOST_LOG_TRIVIAL(info) << "DO DISARM";
     disarm(force);
     return true;
@@ -195,6 +197,7 @@ bool AutopilotPixhawkImpl::requestTakeOff(const geo::Coords3D &target)
 
 bool AutopilotPixhawkImpl::requestLand()
 {
+    m_repositionThreadWorks.store(false);
     union px4::px4_custom_mode px4_mode;
     BOOST_LOG_TRIVIAL(info) << "    chnage mode to LAND";
     px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_AUTO;
@@ -258,13 +261,14 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos, const geo
 {
     if (!pos.valid())
         return false;
+    m_repositionThreadWorks.store(true);
+    {
+        std::lock_guard grd(m_repositionLock);
 
-    std::lock_guard grd(m_repositionLock);
-
-    m_lastRepositionPos = pos;
-    m_lastBasePos       = base;
-    BOOST_LOG_TRIVIAL(info) << "DO REPOSITION" << pos.lat() << ";" << pos.lon() << ";" << pos.alt() << " YAW " << m_lastYaw;
-
+        m_lastRepositionPos = pos;
+        m_lastBasePos       = base;
+        BOOST_LOG_TRIVIAL(info) << "DO REPOSITION" << pos.lat() << ";" << pos.lon() << ";" << pos.alt() << " YAW " << m_lastYaw;
+    }
     union px4::px4_custom_mode px4_mode;
     px4_mode.data = m_customMode;
     if (px4_mode.main_mode != px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
@@ -276,12 +280,12 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos, const geo
         sendMode(m_baseMode, px4_mode.data);
         //  return true;
     }
-
     return true;
 }
 
 bool AutopilotPixhawkImpl::repositionOffboard(const geo::Coords3D &pos, const geo::Coords3D &base)
 {
+    m_repositionThreadWorks.store(true);
     return repositionOnboard(pos, base);
 }
 
@@ -297,6 +301,9 @@ void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
 
     BOOST_LOG_TRIVIAL(info) << "DO MODE " << (int)base << " " << custom;
     IAutopilot::setMode(m_baseMode, custom);
+    union px4::px4_custom_mode px4_mode;
+    px4_mode.data = custom;
+
     if (m_waitPrepareToARM)
     {
         // 2 seconds to start
@@ -305,23 +312,20 @@ void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
         {
             m_waitPrepareToARM = false;
         }
-        union px4::px4_custom_mode px4_mode;
-        px4_mode.data = custom;
-        if (px4_mode.main_mode != px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
-        { // rm
-            // m_repositionThreadWorks.store(false);
-            m_remove(MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT);
-        }
+
         if (m_target_main_mode == px4_mode.main_mode && m_target_sub_mode == px4_mode.sub_mode)
         {
             m_waitPrepareToARM = false;
             requestARM(false, target_force_arm);
         }
-        else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD && m_waitForRepositionOFFBOARD)
-        {
-            // m_repositionThreadWorks.store(true);
-            repositionOffboard(m_lastRepositionPos, m_lastBasePos);
-        }
+    }
+    if (px4_mode.main_mode != px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
+    { // rm
+      // m_remove(MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT);
+    }
+    else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD && m_waitForRepositionOFFBOARD)
+    {
+        repositionOffboard(m_lastRepositionPos, m_lastBasePos);
     }
 }
 /*

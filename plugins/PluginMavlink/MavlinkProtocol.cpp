@@ -71,7 +71,6 @@ void MavlinkProtocol::runMessageReader()
             }
             mavlink_message_t message = dynamic_cast<MavlinkHelper::MavlinkMessageType *>(messageref)->mavlink();
             delete messageref; // clear
-            BOOST_LOG_TRIVIAL(warning) << "MSGID " << message.msgid;
             if (!m_modes2.contains(message.sysid))
             {
                 switch (message.msgid)
@@ -117,7 +116,6 @@ void MavlinkProtocol::runMessageReader()
                         {
                             // m_modes.insert(std::make_pair(message.sysid, ap));
                             m_modes2.insert(std::make_pair(message.sysid, ap));
-                            BOOST_LOG_TRIVIAL(warning) << "INSERTMODE" << message.sysid;
 
                             ap->setRemove([this](int id) {
                                 m_sendMutex.lock();
