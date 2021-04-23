@@ -38,7 +38,7 @@ void AHRS::set(const float &roll, const float &pitch, const float &yaw)
 {
     {
         std::lock_guard grd(m_anglesMutex);
-        if (std::abs(m_roll - roll) < 0.01 || std::abs(m_pitch - pitch) < 0.01 || std::abs(m_yaw - yaw) < 0.01)
+        if (std::abs(m_roll - roll) > 0.01 || std::abs(m_pitch - pitch) > 0.01 || std::abs(m_yaw - yaw) > 0.01)
         {
             m_roll  = roll;
             m_pitch = pitch;
