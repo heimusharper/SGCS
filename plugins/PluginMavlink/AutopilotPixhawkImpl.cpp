@@ -262,11 +262,13 @@ bool AutopilotPixhawkImpl::repositionOnboard(const geo::Coords3D &pos, const geo
     if (!pos.valid())
         return false;
     m_repositionThreadWorks.store(true);
+    // if (pos.valid() && base.valid())
     {
         std::lock_guard grd(m_repositionLock);
-
-        m_lastRepositionPos = pos;
-        m_lastBasePos       = base;
+        if (pos.valid())
+            m_lastRepositionPos = pos;
+        if (base.valid())
+            m_lastBasePos = base;
         BOOST_LOG_TRIVIAL(info) << "DO REPOSITION" << pos.lat() << ";" << pos.lon() << ";" << pos.alt() << " YAW " << m_lastYaw;
     }
     union px4::px4_custom_mode px4_mode;
@@ -291,8 +293,11 @@ bool AutopilotPixhawkImpl::repositionOffboard(const geo::Coords3D &pos, const ge
 
 bool AutopilotPixhawkImpl::repositionAzimuth(float az)
 {
-    m_lastYaw = az;
-    return repositionOffboard(m_lastRepositionPos, m_lastRepositionPos);
+    {
+        std::lock_guard grd(m_repositionLock);
+        m_lastYaw = az;
+    }
+    return repositionOffboard(geo::Coords3D(), geo::Coords3D());
 }
 
 void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
@@ -325,7 +330,7 @@ void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
     }
     else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD && m_waitForRepositionOFFBOARD)
     {
-        repositionOffboard(m_lastRepositionPos, m_lastBasePos);
+        repositionOffboard(geo::Coords3D(), geo::Coords3D());
     }
 }
 /*
@@ -505,7 +510,7 @@ void AutopilotPixhawkImpl::doRepositionTick()
                                                                      0,
                                                                      0,
                                                                      0,
-                                                                     (std::isnan(yaw)) ? 0 : (yaw / 180. * M_PI),
+                                                                     (std::isnan(yaw)) ? 0 : (yaw / 180. * ((float)M_PI)),
                                                                      0);
 
 #else
