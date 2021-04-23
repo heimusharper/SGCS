@@ -26,9 +26,9 @@ UavProtocol::UavProtocol() : tools::IOObject()
     m_send.insert(std::pair(uav::UavSendMessage::Priority::NORMAL, new std::vector<uav::UavSendMessage *>()));
     m_send.insert(std::pair(uav::UavSendMessage::Priority::LOW, new std::vector<uav::UavSendMessage *>()));
 
-    m_send[uav::UavSendMessage::Priority::HIGHT]->reserve(50);
-    m_send[uav::UavSendMessage::Priority::NORMAL]->reserve(50);
-    m_send[uav::UavSendMessage::Priority::LOW]->reserve(50);
+    // m_send[uav::UavSendMessage::Priority::HIGHT]->reserve(50);
+    // m_send[uav::UavSendMessage::Priority::NORMAL]->reserve(50);
+    // m_send[uav::UavSendMessage::Priority::LOW]->reserve(50);
 
     m_valid.store(false);
     m_sendTickStop.store(false);
@@ -116,7 +116,7 @@ void UavProtocol::startMessaging()
         while (!m_sendTickStop.load())
         {
             if (requestToSend())
-                usleep(10000);
+                usleep(5000);
             else
                 usleep(100);
         }
@@ -194,6 +194,7 @@ bool UavProtocol::requestToSend(std::vector<uav::UavSendMessage *> *fromlist)
                 // BOOST_LOG_TRIVIAL(info) << "        REMOVE...";
                 fromlist->erase(fromlist->begin() + i);
                 delete message;
+                break;
             }
         }
         return writed;

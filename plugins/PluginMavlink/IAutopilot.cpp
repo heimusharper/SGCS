@@ -70,7 +70,7 @@ void IAutopilot::sendRTCM(const tools::CharMap &cm)
     if (cm.size > MAX_RTCM_L)
     {
         MavlinkHelper::MavlinkMessageTypeStack *stack =
-        new MavlinkHelper::MavlinkMessageTypeStack(1, 50, uav::UavSendMessage::Priority::HIGHT);
+        new MavlinkHelper::MavlinkMessageTypeStack(3, 50, uav::UavSendMessage::Priority::HIGHT);
         // split
         int fragment   = 0;
         size_t pointer = 0;
@@ -88,7 +88,7 @@ void IAutopilot::sendRTCM(const tools::CharMap &cm)
     else
     {
         auto message = createRTCM(-1, m_rtcmSeq, cm, 0, cm.size);
-        m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 2, 50, uav::UavSendMessage::Priority::HIGHT));
+        m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 3, 50, uav::UavSendMessage::Priority::HIGHT));
     }
     m_rtcmSeq++;
 }
