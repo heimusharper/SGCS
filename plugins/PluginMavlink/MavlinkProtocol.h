@@ -22,6 +22,7 @@
 #include "IAutopilot.h"
 #include "MavlinkConfig.h"
 #include "MavlinkHelper.h"
+#include <GCSStatus.h>
 #include <atomic>
 #include <boost/log/trivial.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -136,13 +137,13 @@ private:
     private:
         IAutopilot *m_ap = nullptr;
     };
-    class MavlinkGPSChange : public uav::GPS::OnChangeGPSCallback
+    class MavlinkRTCMSend : public sgcs::GCSRTK::RTCMCallback
     {
     public:
-        MavlinkGPSChange(IAutopilot *ap) : m_ap(ap)
+        MavlinkRTCMSend(IAutopilot *ap) : m_ap(ap)
         {
         }
-        virtual void sendRTCM(const tools::CharMap &rtcm)
+        virtual void sendRTCM(const tools::CharMap &rtcm) override final
         {
             m_ap->sendRTCM(rtcm);
         }

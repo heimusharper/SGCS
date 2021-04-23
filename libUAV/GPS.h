@@ -38,24 +38,6 @@ public:
         RTK
     };
 
-    class OnChangeGPSCallback
-    {
-    public:
-        virtual ~OnChangeGPSCallback() = default;
-        /*virtual void updateSatelitesCount(uint8_t gps, uint8_t glonass)
-        {
-        }
-        virtual void updateErros()
-        {
-        }
-        virtual void updateFixType()
-        {
-        }*/
-        virtual void sendRTCM(const tools::CharMap &rtcm)
-        {
-        }
-    };
-
     GPS();
     virtual ~GPS();
 
@@ -68,13 +50,6 @@ public:
     void fixType(GPS::FixType &type);
     void setFixType(const GPS::FixType &fixType);
 
-    //
-    void addCallback(OnChangeGPSCallback *call);
-    void removeCallback(OnChangeGPSCallback *call);
-
-    // RTCM messages
-    void sendRTCM(const tools::CharMap &rtcm);
-
 private:
     std::mutex m_provLock;
     uint8_t m_provGPS;
@@ -86,8 +61,6 @@ private:
 
     std::mutex m_fixTypeMtx;
     FixType m_fixType;
-
-    std::list<OnChangeGPSCallback *> m_GPSCallback;
 };
 }
 

@@ -443,13 +443,13 @@ void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
     MavlinkAHRSControl *ahrsPositionControl    = new MavlinkAHRSControl(m_modes2.at(id));
     MavlinkSpeedControl *speedControl          = new MavlinkSpeedControl(m_modes2.at(id));
     MavlinkARMControl *armControl              = new MavlinkARMControl(m_modes2.at(id), uav);
-    MavlinkGPSChange *gpsChange                = new MavlinkGPSChange(m_modes2.at(id));
+    MavlinkRTCMSend *rtcmSend                  = new MavlinkRTCMSend(m_modes2.at(id));
 
     uav->position()->setControl(uavPositionControl);
     uav->ahrs()->addCallback(ahrsPositionControl);
     uav->speed()->addCallback(speedControl);
     uav->addControl(armControl);
-    uav->gps()->addCallback(gpsChange);
+    sgcs::GCSStatus::instance().rtk()->addCallback(rtcmSend);
 
     uav->setTakeoffAltitude(10);
     uav->mission()->setMaxPatchsCount(1);

@@ -35,15 +35,11 @@ void GPS::getProv(uint8_t &gps, uint8_t &glonass)
 
 void GPS::setProv(uint8_t provGPS, uint8_t provGLONASS)
 {
-    {
-        std::lock_guard grd(m_provLock);
-        if (m_provGPS == provGPS && m_provGLONASS == provGLONASS)
-            return;
-        m_provGPS     = provGPS;
-        m_provGLONASS = provGLONASS;
-    }
-    // for (auto x : m_GPSCallback)
-    //    x->updateSatelitesCount(provGPS, provGLONASS);
+    std::lock_guard grd(m_provLock);
+    if (m_provGPS == provGPS && m_provGLONASS == provGLONASS)
+        return;
+    m_provGPS     = provGPS;
+    m_provGLONASS = provGLONASS;
 }
 
 void GPS::fixType(GPS::FixType &type)
@@ -52,32 +48,12 @@ void GPS::fixType(GPS::FixType &type)
     type = m_fixType;
 }
 
-void GPS::addCallback(GPS::OnChangeGPSCallback *call)
-{
-    m_GPSCallback.push_back(call);
-}
-
-void GPS::removeCallback(GPS::OnChangeGPSCallback *call)
-{
-    m_GPSCallback.remove(call);
-}
-
-void GPS::sendRTCM(const tools::CharMap &rtcm)
-{
-    for (auto x : m_GPSCallback)
-        x->sendRTCM(rtcm);
-}
-
 void GPS::setFixType(const GPS::FixType &fixType)
 {
-    {
-        std::lock_guard grd(m_fixTypeMtx);
-        if (m_fixType == fixType)
-            return;
-        m_fixType = fixType;
-    }
-    // for (auto x : m_GPSCallback)
-    //    x->updateFixType();
+    std::lock_guard grd(m_fixTypeMtx);
+    if (m_fixType == fixType)
+        return;
+    m_fixType = fixType;
 }
 
 void GPS::dop(float &h, float &v)
@@ -89,15 +65,11 @@ void GPS::dop(float &h, float &v)
 
 void GPS::setDop(float h, float v)
 {
-    {
-        std::lock_guard grd(m_dopLock);
-        if (m_hdop == h && m_vdop == v)
-            return;
-        m_hdop = h;
-        m_vdop = v;
-    }
-    // for (auto x : m_GPSCallback)
-    //    x->updateErros();
+    std::lock_guard grd(m_dopLock);
+    if (m_hdop == h && m_vdop == v)
+        return;
+    m_hdop = h;
+    m_vdop = v;
 }
 
 }

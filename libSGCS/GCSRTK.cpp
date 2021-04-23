@@ -66,4 +66,20 @@ void GCSRTK::setStatus(Status &&status)
         return;
     m_status.set(std::move(status));
 }
+
+void GCSRTK::addCallback(GCSRTK::RTCMCallback *call)
+{
+    m_RTCMCallback.push_back(call);
+}
+
+void GCSRTK::removeCallback(GCSRTK::RTCMCallback *call)
+{
+    m_RTCMCallback.remove(call);
+}
+
+void GCSRTK::sendRTCM(const tools::CharMap &rtcm)
+{
+    for (auto x : m_RTCMCallback)
+        x->sendRTCM(rtcm);
+}
 }
