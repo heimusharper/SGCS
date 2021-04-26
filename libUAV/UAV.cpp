@@ -94,6 +94,8 @@ void UAV::setState(const UAVControlState &state)
     if (m_state == state)
         return;
     m_state = state;
+    for (auto c : m_controls)
+        c->onChangeControlState(m_state);
 }
 
 Status *UAV::status() const

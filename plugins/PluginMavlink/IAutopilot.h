@@ -33,6 +33,7 @@ public:
     void sendGetHomePoint();
 
     virtual bool requestLand() = 0;
+    virtual bool requestRTL()  = 0;
 
     virtual void setMode(uint8_t base, uint32_t custom);
     //

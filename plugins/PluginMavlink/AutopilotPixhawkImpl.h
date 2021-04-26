@@ -29,6 +29,7 @@ public:
     virtual bool requestDisARM(bool force) override final;
     virtual bool requestTakeOff(const geo::Coords3D &target) override final;
     virtual bool requestLand() override final;
+    virtual bool requestRTL() override final;
 
     virtual uav::UAVControlState getState(bool &done) const override final;
 

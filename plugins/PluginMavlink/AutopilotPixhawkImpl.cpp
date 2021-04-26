@@ -206,6 +206,17 @@ bool AutopilotPixhawkImpl::requestLand()
     return true;
 }
 
+bool AutopilotPixhawkImpl::requestRTL()
+{
+    m_repositionThreadWorks.store(false);
+    union px4::px4_custom_mode px4_mode;
+    BOOST_LOG_TRIVIAL(info) << "    chnage mode to RTL";
+    px4_mode.main_mode = px4::PX4_CUSTOM_MAIN_MODE_AUTO;
+    px4_mode.sub_mode  = px4::PX4_CUSTOM_SUB_MODE_AUTO_RTL;
+    sendMode(m_baseMode, px4_mode.data);
+    return true;
+}
+
 uav::UAVControlState AutopilotPixhawkImpl::getState(bool &done) const
 {
     done = true;
