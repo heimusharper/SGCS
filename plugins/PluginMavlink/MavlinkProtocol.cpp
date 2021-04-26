@@ -65,7 +65,7 @@ void MavlinkProtocol::runMessageReader()
             {
                 std::lock_guard grd(_mavlinkStoreMutex);
                 if (_mavlinkMessages.empty())
-                    continue;
+                    break;
                 messageref = _mavlinkMessages.back();
                 _mavlinkMessages.pop_back();
             }
@@ -223,9 +223,8 @@ void MavlinkProtocol::runMessageReader()
                             {
                                 mavlink_attitude_t att;
                                 mavlink_msg_attitude_decode(&message, &att);
-                                BOOST_LOG_TRIVIAL(warning) << "SETATT " << att.pitch;
-                                uv->ahrs()->set(static_cast<float>(att.pitch / M_PI * 180.),
-                                                static_cast<float>(att.roll / M_PI * 180.),
+                                uv->ahrs()->set(static_cast<float>(att.roll / M_PI * 180.),
+                                                static_cast<float>(att.pitch / M_PI * 180.),
                                                 static_cast<float>(att.yaw / M_PI * 180.));
                                 break;
                             }
@@ -398,7 +397,7 @@ void MavlinkProtocol::runMessageReader()
                 }
             }
         }
-        usleep(100);
+        usleep(1000);
     }
 }
 

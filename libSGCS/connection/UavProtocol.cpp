@@ -115,10 +115,8 @@ void UavProtocol::startMessaging()
     m_sendTick = new std::thread([this]() {
         while (!m_sendTickStop.load())
         {
-            if (requestToSend())
-                usleep(5000);
-            else
-                usleep(100);
+            requestToSend();
+            usleep(5000);
         }
     });
 }

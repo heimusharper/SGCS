@@ -121,6 +121,6 @@ void IPInterfaceUDPServer::run()
                 }
             }
         }
-        usleep((sock <= 0) ? 1000000 : 20);
+        usleep((sock <= 0) ? 1000000 : 5000);
     }
 }
