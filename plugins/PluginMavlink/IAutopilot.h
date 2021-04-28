@@ -35,6 +35,8 @@ public:
     virtual bool requestLand() = 0;
     virtual bool requestRTL()  = 0;
 
+    virtual bool magCal(bool start) = 0;
+
     virtual void setMode(uint8_t base, uint32_t custom);
     //
     void setSend(const std::function<void(MavlinkHelper::MavlinkMessageTypeI *)> &send);

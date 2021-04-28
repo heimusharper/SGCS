@@ -381,10 +381,60 @@ void MavlinkProtocol::runMessageReader()
                             }
                             case MAVLINK_MSG_ID_STATUSTEXT:
                             {
-                                // mavlink_statustext_t text;
-                                // mavlink_msg_statustext_decode(&message, &text);
-                                // std::string data = std::string(text.text, strnlen(text.text, 50));
-                                // BOOST_LOG_TRIVIAL(warning) << "STATUS_TEXT " << data;
+                                mavlink_statustext_t text;
+                                mavlink_msg_statustext_decode(&message, &text);
+                                std::string data = std::string(text.text, strnlen(text.text, 50));
+                                BOOST_LOG_TRIVIAL(warning) << "STATUS_TEXT " << data;
+                                if (data.find("progress <") != std::string::npos)
+                                {
+                                    size_t from = data.find("<");
+                                    size_t to   = data.find(">");
+                                    if (from != std::string::npos && to != std::string::npos && from < data.size() &&
+                                        to < data.size())
+                                    {
+                                        BOOST_LOG_TRIVIAL(info)
+                                        << "PROGRESS | " << data.substr(from + 1, to - from - 1) << " | " << data;
+                                        int value = std::stoi(data.substr(from + 1, to - from - 1));
+                                        uav::Calibration::Process c;
+                                        uv->calibration()->compas(c);
+                                        c.onCalibration = uav::Calibration::Process::State::ON_PROGRESS;
+                                        c.progress      = (float)value / 100.f;
+                                        c.hasSides      = true;
+                                        uv->calibration()->setCompas(c);
+                                    }
+                                }
+                                else if (data.find("[cal]") != std::string::npos)
+                                {
+                                    uav::Calibration::Process c;
+                                    uv->calibration()->compas(c);
+                                    if (data.find("orientation detected") != std::string::npos)
+                                    {
+                                        if (data.find("down") != std::string::npos)
+                                            c.sideActive = (uint8_t)uav::Calibration::Sides::DOWN;
+                                        else if (data.find("up") != std::string::npos)
+                                            c.sideActive = (uint8_t)uav::Calibration::Sides::UP;
+                                        else if (data.find("left") != std::string::npos)
+                                            c.sideActive = (uint8_t)uav::Calibration::Sides::LEFT;
+                                        else if (data.find("right") != std::string::npos)
+                                            c.sideActive = (uint8_t)uav::Calibration::Sides::RIGHT;
+                                        else if (data.find("front") != std::string::npos)
+                                            c.sideActive = (uint8_t)uav::Calibration::Sides::FRONT;
+                                        else if (data.find("back") != std::string::npos)
+                                            c.sideActive = (uint8_t)uav::Calibration::Sides::BACK;
+                                    }
+                                    else if (data.find("side done,") != std::string::npos)
+                                    {
+                                        c.sidesReady |= c.sideActive;
+                                        c.sideActive = 0;
+                                    }
+                                    else if (data.find("calibration started") != std::string::npos)
+                                        c.onCalibration = uav::Calibration::Process::State::ON_PROGRESS;
+                                    else if (data.find("calibration done") != std::string::npos)
+                                        c.onCalibration = uav::Calibration::Process::State::DONE;
+                                    else if (data.find("calibration failed") != std::string::npos)
+                                        c.onCalibration = uav::Calibration::Process::State::FAILURE;
+                                    uv->calibration()->setCompas(c);
+                                }
                                 break;
                             }
                             default:
@@ -437,17 +487,20 @@ void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
     uav->position()->setHas(uav::Position::HAS::HAS_SOURCE_GPS);
     uav->speed()->setHas(uav::Speed::HAS_GROUND_SPEED);
     uav->status()->setHas(uav::Status::MAG | uav::Status::GPS | uav::Status::ACCEL);
+    uav->calibration()->setHas(uav::Calibration::HAS_MAGNETOMETER);
 
     MavlinkPositionControl *uavPositionControl = new MavlinkPositionControl(m_modes2.at(id));
     MavlinkAHRSControl *ahrsPositionControl    = new MavlinkAHRSControl(m_modes2.at(id));
     MavlinkSpeedControl *speedControl          = new MavlinkSpeedControl(m_modes2.at(id));
     MavlinkARMControl *armControl              = new MavlinkARMControl(m_modes2.at(id), uav);
     MavlinkRTCMSend *rtcmSend                  = new MavlinkRTCMSend(m_modes2.at(id));
+    MavlinkCalibrationControl *cal             = new MavlinkCalibrationControl(m_modes2.at(id));
 
     uav->position()->setControl(uavPositionControl);
     uav->ahrs()->addCallback(ahrsPositionControl);
     uav->speed()->addCallback(speedControl);
     uav->addControl(armControl);
+    uav->calibration()->addControl(cal);
     sgcs::GCSStatus::instance().rtk()->addCallback(rtcmSend);
 
     uav->setTakeoffAltitude(10);

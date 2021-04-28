@@ -21,6 +21,7 @@ SET(SRC_LIST
     Speed.cpp
     Mission.cpp
     Status.cpp
+    Calibration.cpp
     )
 SET(HEADER_LIST
     UAV.h
@@ -34,6 +35,7 @@ SET(HEADER_LIST
     Speed.h
     Mission.h
     Status.h
+    Calibration.h
     )
 
 ADD_LIBRARY(${PROJECT_NAME} SHARED ${SRC_LIST} ${HEADER_LIST})

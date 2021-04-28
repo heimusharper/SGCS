@@ -16,6 +16,10 @@ public:
     {
         return false;
     }
+    virtual bool magCal(bool start)
+    {
+        return false;
+    }
 
     virtual bool repositionOnboard(const geo::Coords3D &pos, const geo::Coords3D &base) override final;
     virtual bool repositionOffboard(const geo::Coords3D &pos, const geo::Coords3D &base) override final;

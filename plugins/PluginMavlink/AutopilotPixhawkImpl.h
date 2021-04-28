@@ -39,6 +39,8 @@ public:
 
     virtual void setMode(uint8_t base, uint32_t custom) override final;
 
+    virtual bool magCal(bool start) override final;
+
 protected:
     virtual void sendMode(uint8_t base, uint32_t custom) override final;
 

@@ -313,9 +313,9 @@ bool AutopilotPixhawkImpl::repositionAzimuth(float az)
 
 void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
 {
-    printMode(m_customMode);
+    // printMode(m_customMode);
 
-    BOOST_LOG_TRIVIAL(info) << "DO MODE " << (int)base << " " << custom;
+    // BOOST_LOG_TRIVIAL(info) << "DO MODE " << (int)base << " " << custom;
     IAutopilot::setMode(m_baseMode, custom);
     union px4::px4_custom_mode px4_mode;
     px4_mode.data = custom;
@@ -343,6 +343,15 @@ void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
     {
         repositionOffboard(geo::Coords3D(), geo::Coords3D());
     }
+}
+
+bool AutopilotPixhawkImpl::magCal(bool start)
+{
+    mavlink_message_t message;
+    mavlink_msg_command_long_pack_chan(
+    m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_PREFLIGHT_CALIBRATION, 0, 0, (start) ? 1 : 0, 0, 0, 0, 0, 0);
+    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::HIGHT)); // every second
+    return true;
 }
 /*
  * auto_mode_flags  = mavlink.MAV_MODE_FLAG_AUTO_ENABLED \

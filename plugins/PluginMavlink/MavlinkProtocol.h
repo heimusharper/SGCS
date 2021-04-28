@@ -122,6 +122,25 @@ private:
         IAutopilot *m_ap = nullptr;
     };
 
+    class MavlinkCalibrationControl : public uav::Calibration::CalibrationControlInterface
+    {
+    public:
+        MavlinkCalibrationControl(IAutopilot *ap) : m_ap(ap)
+        {
+        }
+        virtual bool startMagCal() override final
+        {
+            return m_ap->magCal(true);
+        }
+        virtual bool stopMagCal() override final
+        {
+            return m_ap->magCal(false);
+        }
+
+    private:
+        IAutopilot *m_ap = nullptr;
+    };
+
     class MavlinkPositionControl : public uav::Position::PositionControlInterface
     {
     public:

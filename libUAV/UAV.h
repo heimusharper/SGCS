@@ -17,6 +17,7 @@
 #ifndef UAVUAV_H
 #define UAVUAV_H
 #include "AHRS.h"
+#include "Calibration.h"
 #include "GPS.h"
 #include "Home.h"
 #include "Mission.h"
@@ -87,6 +88,8 @@ public:
 
     Status *status() const;
 
+    Calibration *calibration() const;
+
     int takeoffAltitude() const;
     void setTakeoffAltitude(int takeoffAltitude);
 
@@ -125,6 +128,8 @@ private:
     Mission *m_mission = nullptr;
 
     Status *m_status = nullptr;
+
+    Calibration *m_calibration = nullptr;
 
     UAVControlState m_state;
 

@@ -30,6 +30,7 @@ UAV::UAV(int id)
 , m_speed(new Speed())
 , m_mission(new Mission())
 , m_status(new Status())
+, m_calibration(new Calibration())
 , m_state(UAVControlState::WAIT)
 , m_takeoffAltitude(10)
 {
@@ -45,6 +46,7 @@ UAV::~UAV()
     delete m_speed;
     delete m_mission;
     delete m_status;
+    delete m_calibration;
 }
 
 int UAV::id() const
@@ -101,6 +103,11 @@ void UAV::setState(const UAVControlState &state)
 Status *UAV::status() const
 {
     return m_status;
+}
+
+Calibration *UAV::calibration() const
+{
+    return m_calibration;
 }
 
 Mission *UAV::mission() const
