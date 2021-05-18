@@ -18,7 +18,7 @@
 #define SERIALCONNECTION_H
 #include "IPConfig.h"
 #include "IPInterface.h"
-// #include "IPInterfaceTCPClient.h"
+#include "IPInterfaceTCPClient.h"
 // #include "IPInterfaceUDPClient.h"
 #include "IPInterfaceUDPServer.h"
 #include <boost/log/trivial.hpp>

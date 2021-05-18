@@ -23,8 +23,8 @@ IPConnection::IPConnection(sgcs::plugin::DataSourcePlugin::ConnectionFabric *con
 , m_connectionFabric(connectionFabric)
 {
     // TODO: tempolary onnly UDP client mode
-    // m_interface = new IPInterfaceTCPClient();
-    m_interface = new IPInterfaceUDPServer();
+    m_interface = new IPInterfaceTCPClient();
+    // m_interface = new IPInterfaceUDPServer();
     m_interface->setChildsHandler(this);
     if (!m_hostName.empty() && m_port >= 1024)
     {

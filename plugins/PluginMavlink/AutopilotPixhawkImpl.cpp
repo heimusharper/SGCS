@@ -7,7 +7,7 @@ AutopilotPixhawkImpl::AutopilotPixhawkImpl(int chan, int gcsID, int id, MavlinkH
 , m_waitForRepositionOFFBOARD(false)
 , m_target_main_mode(0)
 , m_target_sub_mode(0)
-, target_force_arm(false)
+, m_targetForceArm(false)
 , m_lastRepositionPos(geo::Coords3D())
 , m_lastYaw(NAN)
 {
@@ -25,6 +25,86 @@ AutopilotPixhawkImpl::~AutopilotPixhawkImpl()
         if (m_repositionThread->joinable())
             m_repositionThread->join();
         delete m_repositionThread;
+    }
+}
+
+void AutopilotPixhawkImpl::setHeartbeat(const mavlink_heartbeat_t &hrt)
+{
+    IAutopilot::setHeartbeat(hrt);
+    union px4::px4_custom_mode px4_mode;
+    px4_mode.data = m_customMode;
+
+    if (m_waitPrepareToARM)
+    {
+        // 2 seconds to start
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::_V2::system_clock::now() - m_waitPrepareToARMTimer);
+        if (ms.count() > 2000)
+        {
+            m_waitPrepareToARM = false;
+        }
+
+        if (m_target_main_mode == px4_mode.main_mode && m_target_sub_mode == px4_mode.sub_mode)
+        {
+            m_waitPrepareToARM = false;
+            requestARM(false, m_targetForceArm);
+        }
+    }
+    if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD && m_waitForRepositionOFFBOARD)
+    {
+        repositionOffboard(geo::Coords3D(), geo::Coords3D());
+    }
+}
+
+void AutopilotPixhawkImpl::setStatusText(const std::string &text)
+{
+    IAutopilot::setStatusText(text);
+    if (text.find("progress <") != std::string::npos)
+    {
+        size_t from = text.find("<");
+        size_t to   = text.find(">");
+        if (from != std::string::npos && to != std::string::npos && from < text.size() && to < text.size())
+        {
+            BOOST_LOG_TRIVIAL(info) << "PROGRESS | " << text.substr(from + 1, to - from - 1) << " | " << text;
+            int value = std::stoi(text.substr(from + 1, to - from - 1));
+            uav::Calibration::Process c;
+            m_uav->calibration()->compas(c);
+            c.onCalibration = uav::Calibration::Process::State::ON_PROGRESS;
+            c.progress      = (float)value / 100.f;
+            c.hasSides      = true;
+            m_uav->calibration()->setCompas(c);
+        }
+    }
+    else if (text.find("[cal]") != std::string::npos)
+    {
+        uav::Calibration::Process c;
+        m_uav->calibration()->compas(c);
+        if (text.find("orientation detected") != std::string::npos)
+        {
+            if (text.find("down") != std::string::npos)
+                c.sideActive = (uint8_t)uav::Calibration::Sides::DOWN;
+            else if (text.find("up") != std::string::npos)
+                c.sideActive = (uint8_t)uav::Calibration::Sides::UP;
+            else if (text.find("left") != std::string::npos)
+                c.sideActive = (uint8_t)uav::Calibration::Sides::LEFT;
+            else if (text.find("right") != std::string::npos)
+                c.sideActive = (uint8_t)uav::Calibration::Sides::RIGHT;
+            else if (text.find("front") != std::string::npos)
+                c.sideActive = (uint8_t)uav::Calibration::Sides::FRONT;
+            else if (text.find("back") != std::string::npos)
+                c.sideActive = (uint8_t)uav::Calibration::Sides::BACK;
+        }
+        else if (text.find("side done,") != std::string::npos)
+        {
+            c.sidesReady |= c.sideActive;
+            c.sideActive = 0;
+        }
+        else if (text.find("calibration started") != std::string::npos)
+            c.onCalibration = uav::Calibration::Process::State::ON_PROGRESS;
+        else if (text.find("calibration done") != std::string::npos)
+            c.onCalibration = uav::Calibration::Process::State::DONE;
+        else if (text.find("calibration failed") != std::string::npos)
+            c.onCalibration = uav::Calibration::Process::State::FAILURE;
+        m_uav->calibration()->setCompas(c);
     }
 }
 
@@ -86,11 +166,11 @@ bool AutopilotPixhawkImpl::setInterval(int sensors, int stat, int rc, int raw, i
     for (const std::pair<int, int> &p : m_msgInterval)
     {
         mavlink_message_t message;
-        mavlink_msg_command_long_pack_chan(m_gcs,
+        mavlink_msg_command_long_pack_chan(M_GCS,
                                            0,
-                                           m_chanel,
+                                           M_CHANEL,
                                            &message,
-                                           m_id,
+                                           M_ID,
                                            0,
                                            MAV_CMD_SET_MESSAGE_INTERVAL,
                                            1,
@@ -142,7 +222,7 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
             }
             m_target_main_mode      = px4_mode.main_mode;
             m_target_sub_mode       = px4_mode.sub_mode;
-            target_force_arm        = force;
+            m_targetForceArm        = force;
             m_waitPrepareToARM      = true;
             m_waitPrepareToARMTimer = std::chrono::system_clock::now();
             sendMode(m_baseMode, px4_mode.data);
@@ -154,6 +234,7 @@ bool AutopilotPixhawkImpl::requestARM(bool autoChangeMode, bool force, bool defa
 
 bool AutopilotPixhawkImpl::requestDisARM(bool force)
 {
+    m_waitPrepareToARM = false;
     m_repositionThreadWorks.store(false);
     BOOST_LOG_TRIVIAL(info) << "DO DISARM";
     disarm(force);
@@ -162,23 +243,18 @@ bool AutopilotPixhawkImpl::requestDisARM(bool force)
 
 bool AutopilotPixhawkImpl::requestTakeOff(const geo::Coords3D &target)
 {
-    /* Takeoff from ground / hand. Vehicles that support multiple takeoff modes (e.g. VTOL quadplane) should take off
-     * using the currently configured mode. |Minimum pitch (if airspeed sensor present), desired pitch without sensor |
-     * Empty | Empty | Yaw angle (if magnetometer present), ignored without magnetometer. NaN to use the current system
-     * yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.). | Latitude | Longitude | Altitude|  */
-
     BOOST_LOG_TRIVIAL(info) << "DO TAKEOFF " << target.lat() << " " << target.lon() << " " << target.alt();
     mavlink_message_t message;
     union px4::px4_custom_mode px4_mode;
     px4_mode.data = m_customMode;
     if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_AUTO)
-        mavlink_msg_command_long_pack_chan(m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_MISSION_START, 1, 0, 0, 0, 0, 0, 0, 0);
+        mavlink_msg_command_long_pack_chan(M_GCS, 0, M_CHANEL, &message, M_ID, 0, MAV_CMD_MISSION_START, 1, 0, 0, 0, 0, 0, 0, 0);
     else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_POSCTL || px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_ALTCTL)
-        mavlink_msg_command_long_pack_chan(m_gcs,
+        mavlink_msg_command_long_pack_chan(M_GCS,
                                            0,
-                                           m_chanel,
+                                           M_CHANEL,
                                            &message,
-                                           m_id,
+                                           M_ID,
                                            0,
                                            MAV_CMD_NAV_TAKEOFF,
                                            1,
@@ -311,48 +387,6 @@ bool AutopilotPixhawkImpl::repositionAzimuth(float az)
     return repositionOffboard(geo::Coords3D(), geo::Coords3D());
 }
 
-void AutopilotPixhawkImpl::setMode(uint8_t base, uint32_t custom)
-{
-    // printMode(m_customMode);
-
-    // BOOST_LOG_TRIVIAL(info) << "DO MODE " << (int)base << " " << custom;
-    IAutopilot::setMode(m_baseMode, custom);
-    union px4::px4_custom_mode px4_mode;
-    px4_mode.data = custom;
-
-    if (m_waitPrepareToARM)
-    {
-        // 2 seconds to start
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::_V2::system_clock::now() - m_waitPrepareToARMTimer);
-        if (ms.count() > 2000)
-        {
-            m_waitPrepareToARM = false;
-        }
-
-        if (m_target_main_mode == px4_mode.main_mode && m_target_sub_mode == px4_mode.sub_mode)
-        {
-            m_waitPrepareToARM = false;
-            requestARM(false, target_force_arm);
-        }
-    }
-    if (px4_mode.main_mode != px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD)
-    { // rm
-      // m_remove(MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT);
-    }
-    else if (px4_mode.main_mode == px4::PX4_CUSTOM_MAIN_MODE_OFFBOARD && m_waitForRepositionOFFBOARD)
-    {
-        repositionOffboard(geo::Coords3D(), geo::Coords3D());
-    }
-}
-
-bool AutopilotPixhawkImpl::magCal(bool start)
-{
-    mavlink_message_t message;
-    mavlink_msg_command_long_pack_chan(
-    m_gcs, 0, m_chanel, &message, m_id, 0, MAV_CMD_PREFLIGHT_CALIBRATION, 0, 0, (start) ? 1 : 0, 0, 0, 0, 0, 0);
-    m_send(new MavlinkHelper::MavlinkMessageType(std::move(message), 3, 200, uav::UavSendMessage::Priority::HIGHT)); // every second
-    return true;
-}
 /*
  * auto_mode_flags  = mavlink.MAV_MODE_FLAG_AUTO_ENABLED \
  *                 | mavlink.MAV_MODE_FLAG_STABILIZE_ENABLED \
@@ -512,12 +546,12 @@ void AutopilotPixhawkImpl::doRepositionTick()
                 mavlink_message_t message;
 #ifdef USE_GLOBAL_POSITION
                 // Global (WGS84) coordinate frame + MSL altitude. First value / x: latitude, second value / y: longitude, third value / z: positive altitude over mean sea level
-                mavlink_msg_set_position_target_global_int_pack_chan(m_gcs,
+                mavlink_msg_set_position_target_global_int_pack_chan(M_GCS,
                                                                      0,
-                                                                     m_chanel,
+                                                                     M_CHANEL,
                                                                      &message,
                                                                      m_bootTimeMS + compensate,
-                                                                     m_id,
+                                                                     M_ID,
                                                                      0,
                                                                      MAV_FRAME_GLOBAL,
                                                                      mask,

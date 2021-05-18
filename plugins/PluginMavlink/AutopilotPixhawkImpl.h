@@ -23,26 +23,32 @@ class AutopilotPixhawkImpl : public IAutopilot
 public:
     AutopilotPixhawkImpl(int chan, int gcsID, int id, MavlinkHelper::ProcessingMode mode);
     ~AutopilotPixhawkImpl();
-    virtual bool
-    setInterval(int sensors, int stat, int rc, int raw, int pos, int extra1, int extra2, int extra3, int adbs, int params) override final;
+    // messages
+    void setHeartbeat(const mavlink_heartbeat_t &hrt);
+    void setStatusText(const std::string &text);
+
+public:
     virtual bool requestARM(bool autoChangeMode, bool force, bool defaultModeAuto = false) override final;
     virtual bool requestDisARM(bool force) override final;
     virtual bool requestTakeOff(const geo::Coords3D &target) override final;
-    virtual bool requestLand() override final;
-    virtual bool requestRTL() override final;
-
-    virtual uav::UAVControlState getState(bool &done) const override final;
-
     virtual bool repositionOnboard(const geo::Coords3D &pos, const geo::Coords3D &base) override final;
     virtual bool repositionOffboard(const geo::Coords3D &pos, const geo::Coords3D &base) override final;
     virtual bool repositionAzimuth(float az) override final;
-
-    virtual void setMode(uint8_t base, uint32_t custom) override final;
-
-    virtual bool magCal(bool start) override final;
+    virtual bool requestLand() override final;
+    virtual bool requestRTL() override final;
 
 protected:
+    virtual bool
+    setInterval(int sensors, int stat, int rc, int raw, int pos, int extra1, int extra2, int extra3, int adbs, int params) override final;
     virtual void sendMode(uint8_t base, uint32_t custom) override final;
+    /*!
+     * \brief doRepositionTick do reposition
+     */
+    void doRepositionTick();
+
+protected:
+    virtual uav::UAVControlState getState(bool &done) const override final;
+    void printMode(uint32_t custom);
 
 private:
     bool m_waitPrepareToARM;
@@ -50,18 +56,11 @@ private:
     bool m_waitForRepositionOFFBOARD;
     uint8_t m_target_main_mode;
     uint8_t m_target_sub_mode;
-    bool target_force_arm;
-
+    bool m_targetForceArm;
     geo::Coords3D m_lastRepositionPos;
     geo::Coords3D m_lastBasePos;
     double m_lastYaw;
-
     std::list<std::pair<int, int>> m_msgInterval;
-
-    void printMode(uint32_t custom);
-
-    void doRepositionTick();
-
     std::mutex m_repositionLock;
     std::atomic_bool m_repositionThreadWorks;
     std::atomic_bool m_repositionThreadStop;

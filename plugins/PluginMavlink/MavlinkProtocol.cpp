@@ -139,7 +139,6 @@ void MavlinkProtocol::runMessageReader()
                                 // BOOST_LOG_TRIVIAL(info) << "WRITE" << message->mavlink().msgid;
                                 sendMessage(message);
                             });
-                            ap->ping();
                             checkUAV(id);
                         }
                         break;
@@ -148,17 +147,11 @@ void MavlinkProtocol::runMessageReader()
                         break;
                 }
             }
-            //
-            // BOOST_LOG_TRIVIAL(info) << "IN MESSAGE " << (int)message.sysid << " " << message.msgid;
             if (m_modes2.contains(message.sysid))
             {
                 IAutopilot *ap = m_modes2.at(message.sysid);
-                uav::UAV *uv   = m_uavs.at(message.sysid);
-                // BOOST_LOG_TRIVIAL(warning) << "HASAP " << ((ap) ? "TRUE" : "FALSE") << " HASUV " << ((uv) ? "TRUE" : "FALSE");
-                if (!ap || !uv)
+                if (!ap || !ap->getUav())
                     continue;
-                // MavlinkHelper::Autopilot ap               = m_modes[message.sysid]->ap;
-
                 switch (ap->processingMode())
                 {
                     case MavlinkHelper::ProcessingMode::UAV_MC:
@@ -178,54 +171,15 @@ void MavlinkProtocol::runMessageReader()
                             {
                                 mavlink_heartbeat_t hrt;
                                 mavlink_msg_heartbeat_decode(&message, &hrt);
-                                ap->setMode(hrt.base_mode, hrt.custom_mode);
-                                if (!m_isCheckType)
-                                {
-                                    m_isCheckType = true;
-                                    switch (MavlinkHelper::mavlinkUavType2SGCS((MAV_TYPE)hrt.type))
-                                    {
-                                        case MavlinkHelper::ProcessingMode::ANT:
-                                            break;
-                                        case MavlinkHelper::ProcessingMode::CAMERA:
-                                            break;
-                                        case MavlinkHelper::ProcessingMode::GIMBAL:
-                                            break;
-                                        case MavlinkHelper::ProcessingMode::MODEM:
-                                            break;
-                                        case MavlinkHelper::ProcessingMode::UAV_MC:
-                                            uv->setType(uav::UAVType::MULTICOPTER);
-                                            break;
-                                        case MavlinkHelper::ProcessingMode::UAV_PLANE:
-                                            uv->setType(uav::UAVType::PLANE);
-                                            break;
-                                        case MavlinkHelper::ProcessingMode::UAV_VTOL:
-                                            uv->setType(uav::UAVType::VTOL);
-                                            break;
-                                        case MavlinkHelper::ProcessingMode::UNDEFINED:
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                }
+                                ap->setHeartbeat(hrt);
 
-                                if (!ap->ready())
-                                {
-                                    doConfigure(message.sysid);
-                                    ap->setReady(true);
-                                }
-                                bool readyState = false;
-                                auto state      = ap->getState(readyState);
-                                if (readyState)
-                                    uv->state(state);
                                 break;
                             }
                             case MAVLINK_MSG_ID_ATTITUDE:
                             {
                                 mavlink_attitude_t att;
                                 mavlink_msg_attitude_decode(&message, &att);
-                                uv->ahrs()->set(static_cast<float>(att.roll / M_PI * 180.),
-                                                static_cast<float>(att.pitch / M_PI * 180.),
-                                                static_cast<float>(att.yaw / M_PI * 180.));
+                                ap->setAttitudes(att);
                                 break;
                             }
                             case MAVLINK_MSG_ID_GPS_RAW_INT:
@@ -233,72 +187,21 @@ void MavlinkProtocol::runMessageReader()
                                 // BOOST_LOG_TRIVIAL(info) << "MAVLINK_MSG_ID_GPS_RAW_INT";
                                 mavlink_gps_raw_int_t gps;
                                 mavlink_msg_gps_raw_int_decode(&message, &gps);
-
-                                float hacc = (float)gps.h_acc / 100.;
-                                float vacc = (float)gps.v_acc / 100.;
-                                uv->gps()->setDop(hacc, vacc);
-                                uv->gps()->setProv(gps.satellites_visible, 0);
-
-                                bool checkHome = false;
-                                switch (gps.fix_type)
-                                {
-                                    case GPS_FIX_TYPE_RTK_FIXED:
-                                        uv->gps()->setFixType(uav::GPS::FixType::RTK);
-                                        checkHome = true;
-                                        break;
-                                    case GPS_FIX_TYPE_RTK_FLOAT:
-                                    case GPS_FIX_TYPE_3D_FIX:
-                                    case GPS_FIX_TYPE_DGPS:
-                                        uv->gps()->setFixType(uav::GPS::FixType::FIX3D);
-                                        checkHome = true;
-                                        break;
-                                    case GPS_FIX_TYPE_NO_GPS:
-                                    case GPS_FIX_TYPE_NO_FIX:
-                                    case GPS_FIX_TYPE_2D_FIX:
-                                    case GPS_FIX_TYPE_STATIC:
-                                    case GPS_FIX_TYPE_PPP:
-                                    default:
-                                        uv->gps()->setFixType(uav::GPS::FixType::NOGPS);
-                                        break;
-                                }
-                                if (checkHome && m_waitForHomePoint)
-                                    ap->sendGetHomePoint();
+                                ap->setGPSRawInt(gps);
                                 break;
                             }
                             case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
                             {
                                 mavlink_global_position_int_t gps;
                                 mavlink_msg_global_position_int_decode(&message, &gps);
-                                geo::Coords3D coord(((double)gps.lat) / 1.E7, ((double)gps.lon) / 1.E7, ((double)gps.alt) / 1000.);
-                                uv->position()->setGps(std::move(coord));
+                                ap->setGlobalPositionInt(gps);
                                 break;
                             }
                             case MAVLINK_MSG_ID_SYS_STATUS:
                             {
                                 mavlink_sys_status_t stat;
                                 mavlink_msg_sys_status_decode(&message, &stat);
-                                {
-                                    uv->power()->setVoltage((double)stat.voltage_battery / 1000.);
-                                }
-                                {
-                                    MavlinkHelper::MavlinkSensors health;
-                                    health.value = stat.onboard_control_sensors_health;
-                                    MavlinkHelper::MavlinkSensors enabled;
-                                    enabled.value = stat.onboard_control_sensors_enabled;
-                                    MavlinkHelper::MavlinkSensors present;
-                                    present.value = stat.onboard_control_sensors_present;
-                                    uint16_t err  = 0;
-                                    {
-                                        if (!health.mag3d && present.mag3d && enabled.mag3d)
-                                            err |= uav::Status::MAG;
-                                        if ((!health.accel3d && present.accel3d && enabled.accel3d) ||
-                                            (!health.accel23d && present.accel23d && enabled.accel23d))
-                                            err |= uav::Status::ACCEL;
-                                        if (!health.gps && present.gps && enabled.gps)
-                                            err |= uav::Status::GPS;
-                                    }
-                                    uv->status()->setFailures(err);
-                                }
+                                ap->setSysStatus(stat);
                                 break;
                             }
                             case MAVLINK_MSG_ID_POSITION_TARGET_GLOBAL_INT:
@@ -311,19 +214,14 @@ void MavlinkProtocol::runMessageReader()
                             {
                                 mavlink_home_position_t pos;
                                 mavlink_msg_home_position_decode(&message, &pos);
-                                geo::Coords3D coord(((double)pos.latitude) / 1.E7,
-                                                    ((double)pos.longitude) / 1.E7,
-                                                    ((double)pos.altitude) / 1000.);
-                                uv->home()->setPosition(coord);
-                                m_waitForHomePoint = false;
+                                ap->setHomePosition(pos);
                                 break;
                             }
                             case MAVLINK_MSG_ID_VFR_HUD:
                             {
                                 mavlink_vfr_hud_t hud;
                                 mavlink_msg_vfr_hud_decode(&message, &hud);
-                                bool isFlight = (hud.throttle > 10);
-                                ap->setIsFlight(isFlight);
+                                ap->setVFRHud(hud);
                                 break;
                             }
                             case MAVLINK_MSG_ID_GPS_STATUS:
@@ -337,7 +235,9 @@ void MavlinkProtocol::runMessageReader()
                             {
                                 mavlink_param_value_t param;
                                 mavlink_msg_param_value_decode(&message, &param);
-                                std::string id = std::string(param.param_id, strnlen(param.param_id, 16));
+                                std::string data = std::string(param.param_id, strnlen(param.param_id, 15));
+                                ap->setParamValue(data, param.param_value);
+                                // std::string id = std::string(param.param_id, strnlen(param.param_id, 16));
                                 // BOOST_LOG_TRIVIAL(info) << "PARAM ID " << id << " VALUE " << param.param_value;
                                 break;
                             }
@@ -345,38 +245,14 @@ void MavlinkProtocol::runMessageReader()
                             {
                                 mavlink_command_ack_t ack;
                                 mavlink_msg_command_ack_decode(&message, &ack);
-                                switch (ack.result)
-                                {
-                                    case MAV_RESULT_ACCEPTED:
-                                    {
-                                        // BOOST_LOG_TRIVIAL(info)
-                                        //<< "ACK MESSAGE " << ack.command << " ACCEPTED " << (int)ack.progress << " "
-                                        //<< (int)ack.result << " " << ack.result_param2;
-                                        switch (ack.command)
-                                        {
-                                            case MAV_CMD_COMPONENT_ARM_DISARM:
-                                            {
-                                                ap->sendGetHomePoint(); // update home position
-                                                break;
-                                            }
-                                            default:
-                                                break;
-                                        }
-                                        break;
-                                    }
-                                    default:
-                                        // BOOST_LOG_TRIVIAL(warning)
-                                        //<< "ACK MESSAGE " << ack.command << " FAILED " << (int)ack.result
-                                        //<< (int)ack.progress << " " << ack.result_param2;
-                                        break;
-                                }
+                                ap->setAck(ack);
                                 break;
                             }
                             case MAVLINK_MSG_ID_SYSTEM_TIME:
                             {
                                 mavlink_system_time_t time;
                                 mavlink_msg_system_time_decode(&message, &time);
-                                ap->setBootTimeMS(time.time_boot_ms);
+                                ap->setSystemTime(time);
                                 break;
                             }
                             case MAVLINK_MSG_ID_STATUSTEXT:
@@ -384,57 +260,9 @@ void MavlinkProtocol::runMessageReader()
                                 mavlink_statustext_t text;
                                 mavlink_msg_statustext_decode(&message, &text);
                                 std::string data = std::string(text.text, strnlen(text.text, 50));
+                                ap->setStatusText(data);
                                 BOOST_LOG_TRIVIAL(warning) << "STATUS_TEXT " << data;
-                                if (data.find("progress <") != std::string::npos)
-                                {
-                                    size_t from = data.find("<");
-                                    size_t to   = data.find(">");
-                                    if (from != std::string::npos && to != std::string::npos && from < data.size() &&
-                                        to < data.size())
-                                    {
-                                        BOOST_LOG_TRIVIAL(info)
-                                        << "PROGRESS | " << data.substr(from + 1, to - from - 1) << " | " << data;
-                                        int value = std::stoi(data.substr(from + 1, to - from - 1));
-                                        uav::Calibration::Process c;
-                                        uv->calibration()->compas(c);
-                                        c.onCalibration = uav::Calibration::Process::State::ON_PROGRESS;
-                                        c.progress      = (float)value / 100.f;
-                                        c.hasSides      = true;
-                                        uv->calibration()->setCompas(c);
-                                    }
-                                }
-                                else if (data.find("[cal]") != std::string::npos)
-                                {
-                                    uav::Calibration::Process c;
-                                    uv->calibration()->compas(c);
-                                    if (data.find("orientation detected") != std::string::npos)
-                                    {
-                                        if (data.find("down") != std::string::npos)
-                                            c.sideActive = (uint8_t)uav::Calibration::Sides::DOWN;
-                                        else if (data.find("up") != std::string::npos)
-                                            c.sideActive = (uint8_t)uav::Calibration::Sides::UP;
-                                        else if (data.find("left") != std::string::npos)
-                                            c.sideActive = (uint8_t)uav::Calibration::Sides::LEFT;
-                                        else if (data.find("right") != std::string::npos)
-                                            c.sideActive = (uint8_t)uav::Calibration::Sides::RIGHT;
-                                        else if (data.find("front") != std::string::npos)
-                                            c.sideActive = (uint8_t)uav::Calibration::Sides::FRONT;
-                                        else if (data.find("back") != std::string::npos)
-                                            c.sideActive = (uint8_t)uav::Calibration::Sides::BACK;
-                                    }
-                                    else if (data.find("side done,") != std::string::npos)
-                                    {
-                                        c.sidesReady |= c.sideActive;
-                                        c.sideActive = 0;
-                                    }
-                                    else if (data.find("calibration started") != std::string::npos)
-                                        c.onCalibration = uav::Calibration::Process::State::ON_PROGRESS;
-                                    else if (data.find("calibration done") != std::string::npos)
-                                        c.onCalibration = uav::Calibration::Process::State::DONE;
-                                    else if (data.find("calibration failed") != std::string::npos)
-                                        c.onCalibration = uav::Calibration::Process::State::FAILURE;
-                                    uv->calibration()->setCompas(c);
-                                }
+
                                 break;
                             }
                             default:
@@ -451,36 +279,6 @@ void MavlinkProtocol::runMessageReader()
     }
 }
 
-void MavlinkProtocol::runPing()
-{
-    mavlink_message_t message;
-    mavlink_msg_heartbeat_pack(255, 0, &message, MAV_TYPE_GCS, MAV_AUTOPILOT_GENERIC, 0, 0, 0);
-    MavlinkHelper::MavlinkMessageType *msg =
-    new MavlinkHelper::MavlinkMessageType(std::move(message), -1, 1000, uav::UavSendMessage::Priority::LOW);
-    sendMessage(msg);
-}
-
-void MavlinkProtocol::doConfigure(int uav)
-{
-    if (!m_modes2.contains(uav))
-        return;
-    IAutopilot *ap = m_modes2.at(uav);
-    if (ap)
-    {
-        ap->setInterval(RunConfiguration::instance().get<MavlinkConfig>()->rateSensors(),
-                        RunConfiguration::instance().get<MavlinkConfig>()->rateStat(),
-                        RunConfiguration::instance().get<MavlinkConfig>()->rateRC(),
-                        RunConfiguration::instance().get<MavlinkConfig>()->rateRaw(),
-                        RunConfiguration::instance().get<MavlinkConfig>()->ratePos(),
-                        RunConfiguration::instance().get<MavlinkConfig>()->rateExtra1(),
-                        RunConfiguration::instance().get<MavlinkConfig>()->rateExtra2(),
-                        RunConfiguration::instance().get<MavlinkConfig>()->rateExtra3(),
-                        RunConfiguration::instance().get<MavlinkConfig>()->rateADSB(),
-                        RunConfiguration::instance().get<MavlinkConfig>()->rateParams());
-    }
-    runPing();
-}
-
 void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
 {
     uav->gps()->setHas(uav::GPS::HAS::HAS_HV_DOP | uav::GPS::HAS::HAS_PROVIDER_GPS);
@@ -492,7 +290,7 @@ void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
     MavlinkPositionControl *uavPositionControl = new MavlinkPositionControl(m_modes2.at(id));
     MavlinkAHRSControl *ahrsPositionControl    = new MavlinkAHRSControl(m_modes2.at(id));
     MavlinkSpeedControl *speedControl          = new MavlinkSpeedControl(m_modes2.at(id));
-    MavlinkARMControl *armControl              = new MavlinkARMControl(m_modes2.at(id), uav);
+    MavlinkARMControl *armControl              = new MavlinkARMControl(m_modes2.at(id));
     MavlinkRTCMSend *rtcmSend                  = new MavlinkRTCMSend(m_modes2.at(id));
     MavlinkCalibrationControl *cal             = new MavlinkCalibrationControl(m_modes2.at(id));
 
@@ -505,6 +303,7 @@ void MavlinkProtocol::setUAV(int id, uav::UAV *uav)
 
     uav->setTakeoffAltitude(10);
     uav->mission()->setMaxPatchsCount(1);
+    m_modes2.at(id)->setUav(uav);
     UavProtocol::setUAV(id, uav);
 }
 

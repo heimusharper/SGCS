@@ -10,72 +10,44 @@ IPInterfaceTCPClient::~IPInterfaceTCPClient()
     if (m_thread->joinable())
         m_thread->join();
     delete m_thread;
-    if (m_server)
-        delete m_server;
 }
 
 void IPInterfaceTCPClient::start()
 {
-    m_reconnect.store(true);
+    _dirty.store(true);
     m_stopThread.store(false);
     m_thread = new std::thread(&IPInterfaceTCPClient::run, this);
 }
 
 void IPInterfaceTCPClient::closeConnection()
 {
-    m_reconnect.store(false);
 }
 
 void IPInterfaceTCPClient::doConnect(const std::string &host, uint16_t port)
 {
-    m_bufferMutex.lock();
     m_hostName = host;
     m_port     = port;
-    m_bufferMutex.unlock();
-    m_reconnect.store(true);
+    _dirty.store(true);
 }
 
-void IPInterfaceTCPClient::pipeProcessFromParent(const tools::CharMap &data)
+void IPInterfaceTCPClient::setChildsHandler(IPInterface::CreateChild *c)
 {
-    m_bufferMutex.lock();
-    m_writeBuffer.push(data);
-    m_bufferMutex.unlock();
+    IPInterface::setChildsHandler(c);
+    if (m_server)
+        c->onChild(m_server);
 }
-
-/*std::queue<uint8_t> IPInterfaceTCPClient::readBuffer()
-{
-    if (!m_readBuffer.empty())
-    {
-        m_bufferMutex.lock();
-        std::queue<uint8_t> copy(m_readBuffer);
-        while (!m_readBuffer.empty())
-            m_readBuffer.pop();
-        m_bufferMutex.unlock();
-        return copy;
-    }
-    return std::queue<uint8_t>();
-}
-*/
 
 void IPInterfaceTCPClient::run()
 {
+    m_server       = new IPChild;
     TCPSocket sock = -1;
-    m_server       = new TCPServerClient("", 0);
-    m_childHandler->onChild(m_server);
+    if (m_childHandler)
+        m_childHandler->onChild(m_server);
 
     while (!m_stopThread.load())
     {
-        if (m_reconnect.load() && sock >= 0)
+        if (sock <= 0)
         {
-            shutdown(sock, SHUT_RDWR);
-            sock = -1;
-            m_reconnect.store(false);
-        }
-        if (sock < 0)
-        {
-            m_bufferMutex.lock();
-            // reconnect
-
             struct sockaddr_in servaddr;
             memset(&servaddr, 0, sizeof(servaddr));
             servaddr.sin_family      = AF_INET; // IPv4
@@ -101,34 +73,41 @@ void IPInterfaceTCPClient::run()
             }
             else
                 BOOST_LOG_TRIVIAL(info) << "Failed convert address " << m_hostName << " to binary net address";
-            m_bufferMutex.unlock();
         }
-
-        if (sock >= 0)
+        else
         {
+            if (_dirty.load())
+            {
+                _dirty.store(false);
+                close(sock);
+                sock = -1;
+                continue;
+            }
+
             tools::CharMap readBuffer;
             readBuffer.data    = new char[MAX_LINE];
             readBuffer.size    = MAX_LINE;
             int readBytesCount = recv(sock, (char *)readBuffer.data, MAX_LINE, MSG_DONTWAIT);
-            m_bufferMutex.lock();
             if (readBytesCount > 0)
             {
                 readBuffer.size = readBytesCount;
-                pipeWriteToParent(readBuffer);
+                m_server->writeToChild(readBuffer);
             }
             // prepare data to transmit
-            while (!m_writeBuffer.empty())
             {
-                tools::CharMap cm = m_writeBuffer.front();
-                m_writeBuffer.pop();
-                send(sock, (const char *)cm.data, cm.size, MSG_CONFIRM);
+                std::lock_guard grd(m_server->m_bufferMutex);
+                while (!m_server->m_writeBuffer.empty())
+                {
+                    tools::CharMap cm = m_server->m_writeBuffer.front();
+                    m_server->m_writeBuffer.pop();
+                    if (cm.size > 0)
+                    {
+                        send(sock, (const char *)cm.data, cm.size, MSG_DONTWAIT | MSG_NOSIGNAL);
+                    }
+                }
             }
-            m_bufferMutex.unlock();
         }
-        if (sock >= 0)
-            usleep(100);
-        else
-            usleep(1000000);
+        usleep((sock <= 0) ? 1000000 : 5000);
     }
     if (sock > 0)
     {

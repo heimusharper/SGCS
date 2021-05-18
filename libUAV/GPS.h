@@ -35,6 +35,7 @@ public:
     {
         NOGPS,
         FIX3D,
+        RTK_FLOAT,
         RTK
     };
 

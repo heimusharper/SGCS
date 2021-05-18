@@ -47,7 +47,8 @@ enum class UAVControlState
     MANUAL_OFFBOARD,
     RTL,
     LAND,
-    KILL
+    KILL,
+    UNDEFINED
 };
 
 class UAV : public UavObject<uint8_t>

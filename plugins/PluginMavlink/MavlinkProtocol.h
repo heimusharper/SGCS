@@ -57,6 +57,7 @@ protected:
                 mavlink_message_t mcopy;
                 memcpy(&mcopy, &msg, sizeof(mavlink_message_t));
                 messages.push_back(new MavlinkHelper::MavlinkMessageType(std::move(mcopy)));
+                BOOST_LOG_TRIVIAL(info) << "MESSAGE" << msg.msgid;
                 _mavlinkStoreMutex.lock();
                 _mavlinkMessages.push_back(new MavlinkHelper::MavlinkMessageType(std::move(msg)));
                 _mavlinkStoreMutex.unlock();
@@ -68,8 +69,6 @@ protected:
 private:
     void runMessageReader();
     void runPing();
-
-    void doConfigure(int uav);
 
 private:
     bool check(char c, mavlink_message_t *msg);
@@ -84,9 +83,6 @@ private:
     std::atomic_bool _stopThread;
     std::thread *_messageProcessorThread = nullptr;
     std::mutex _dataTaskMutex;
-    bool m_isCheckType = false;
-
-    bool m_waitForHomePoint = true;
 
     // std::map<int, IAutopilot *> m_modes;
     std::map<int, IAutopilot *> m_modes2;
@@ -130,11 +126,13 @@ private:
         }
         virtual bool startMagCal() override final
         {
-            return m_ap->magCal(true);
+            m_ap->magCal(true);
+            return true;
         }
         virtual bool stopMagCal() override final
         {
-            return m_ap->magCal(false);
+            m_ap->magCal(false);
+            return true;
         }
 
     private:
@@ -173,16 +171,16 @@ private:
     class MavlinkMissionControl : public uav::Mission::OnChangeMissionCallback
     {
     public:
-        MavlinkMissionControl(IAutopilot *ap, uav::UAV *u) : m_ap(ap), m_uav(u)
+        MavlinkMissionControl(IAutopilot *ap) : m_ap(ap)
         {
         }
 
         virtual void onUpdatePatchs() override final
         {
             // TODO: only first
-            if (m_uav->mission()->size() <= 0)
+            if (m_ap->getUav()->mission()->size() <= 0)
                 return;
-            const uav::MissionPath &mp = m_uav->mission()->patch(0);
+            const uav::MissionPath &mp = m_ap->getUav()->mission()->patch(0);
             bool update                = true;
             if (m_representation.contains(mp.uuid()))
                 if (m_representation.at(mp.uuid()) == mp.touchUuid())
@@ -197,15 +195,13 @@ private:
 
     private:
         IAutopilot *m_ap = nullptr;
-        uav::UAV *m_uav  = nullptr;
-
         std::map<boost::uuids::uuid, boost::uuids::uuid> m_representation;
     };
 
     class MavlinkARMControl : public uav::UAV::ControlInterface
     {
     public:
-        MavlinkARMControl(IAutopilot *ap, uav::UAV *u) : m_ap(ap), m_uav(u)
+        MavlinkARMControl(IAutopilot *ap) : m_ap(ap)
         {
         }
         virtual void changeState(uav::UAVControlState state, bool force = false) override final
@@ -224,18 +220,18 @@ private:
                 case uav::UAVControlState::MANUAL_OFFBOARD:
                 {
                     geo::Coords3D coord;
-                    m_uav->position()->gps(coord);
+                    m_ap->getUav()->position()->gps(coord);
                     geo::Coords3D home;
-                    m_uav->home()->position(home);
+                    m_ap->getUav()->home()->position(home);
                     m_ap->repositionOffboard(coord, home);
                     break;
                 }
                 case uav::UAVControlState::MANUAL_ONBOARD:
                 {
                     geo::Coords3D coord;
-                    m_uav->position()->gps(coord);
+                    m_ap->getUav()->position()->gps(coord);
                     geo::Coords3D home;
-                    m_uav->home()->position(home);
+                    m_ap->getUav()->home()->position(home);
                     m_ap->repositionOnboard(coord, home);
                     break;
                 }
@@ -248,8 +244,8 @@ private:
                 case uav::UAVControlState::STARTED:
                 {
                     geo::Coords3D coord;
-                    m_uav->position()->gps(coord);
-                    coord.setAlt(coord.alt() + m_uav->takeoffAltitude());
+                    m_ap->getUav()->position()->gps(coord);
+                    coord.setAlt(coord.alt() + m_ap->getUav()->takeoffAltitude());
                     m_ap->requestTakeOff(coord);
                     break;
                 }
@@ -263,7 +259,6 @@ private:
 
     private:
         IAutopilot *m_ap = nullptr;
-        uav::UAV *m_uav  = nullptr;
     };
 };
 
