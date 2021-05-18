@@ -76,7 +76,7 @@ private:
 
     const int DIFFERENT_CHANNEL;
     const uint8_t GCS_ID;
-    const std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> _bootTime;
+    const std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> _bootTime;
 
     std::vector<uav::UavSendMessage *> _mavlinkMessages;
     std::mutex _mavlinkStoreMutex;

@@ -1,6 +1,7 @@
 #ifndef AUTOPILOTAPMIMPL_H
 #define AUTOPILOTAPMIMPL_H
 #include "IAutopilot.h"
+#include "ardupilotmega/ardupilotmega.h"
 
 class AutopilotAPMImpl : public IAutopilot
 {
@@ -29,6 +30,8 @@ public:
     {
         return false;
     }
+
+    uint32_t modeStart() const;
 
 private:
     int m_srid = 0;
